@@ -5,11 +5,13 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/negbie/heplify-server/input"
 )
 
-type protos interface {
-	run()
-	end()
+type server interface {
+	Run()
+	End()
 }
 
 func main() {
@@ -19,25 +21,25 @@ func main() {
 	)
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	hep := protos.NewHEP()
-	protocols := []protos{hep}
+	hep := input.NewHEP()
+	servers := []server{hep}
 
-	for _, p := range protocols {
+	for _, srv := range servers {
 		wg.Add(1)
-		go func(p protos) {
+		go func(s server) {
 			defer wg.Done()
-			p.run()
-		}(p)
+			s.Run()
+		}(srv)
 	}
 
 	<-sigCh
 
-	for _, p := range protocols {
+	for _, srv := range servers {
 		wg.Add(1)
-		go func(p protos) {
+		go func(s server) {
 			defer wg.Done()
-			p.end()
-		}(p)
+			s.End()
+		}(srv)
 	}
 	wg.Wait()
 }
