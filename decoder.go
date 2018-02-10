@@ -1,4 +1,4 @@
-package hep
+package decoder
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/negbie/heplify/decoder"
+	"github.com/negbie/sipparser"
 )
 
 // The first 4 bytes are the string "HEP3". The next 2 bytes are the length of the
@@ -51,14 +51,12 @@ const (
 	Vlan              // Chunk 0x0012 VLAN
 )
 
-// Packet represents a parsed HEP packet
-type Packet struct {
+// HEPPacket represents a parsed HEP packet
+type HEPPacket struct {
 	Version           byte
 	Protocol          byte
-	IP4SrcIP          net.IP
-	IP4DstIP          net.IP
-	IP6SrcIP          net.IP
-	IP6DstIP          net.IP
+	SrcIP             net.IP
+	DstIP             net.IP
 	SrcPort           uint16
 	DstPort           uint16
 	Tsec              uint32
@@ -71,11 +69,115 @@ type Packet struct {
 	CompressedPayload []byte
 	CorrelationID     []byte
 	Vlan              uint16
+	SipMsg            *sipparser.SipMsg
+}
+
+// DecodeHEP returns a parsed HEP message
+func DecodeHEP(packet []byte) (*HEPPacket, error) {
+	newHepMsg := &HEPPacket{}
+	err := newHepMsg.parse(packet)
+	if err != nil {
+		return nil, err
+	}
+	return newHepMsg, nil
+}
+
+func (h *HEPPacket) parse(packet []byte) error {
+	if packet[0] == 0x48 && packet[3] == 0x33 {
+		err := h.parseHep3(packet)
+		if err != nil {
+			return err
+		}
+
+		if h.ProtoType == 1 {
+			h.SipMsg = sipparser.ParseMsg(string(h.Payload))
+		}
+		return nil
+	}
+	return errors.New("Not a valid HEP3 packet")
+}
+
+func (h *HEPPacket) parseHep3(packet []byte) error {
+	length := binary.BigEndian.Uint16(packet[4:6])
+	currentByte := uint16(6)
+	for currentByte < length {
+		hepChunk := packet[currentByte:]
+		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
+		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
+		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
+		chunkBody := hepChunk[6:chunkLength]
+
+		switch chunkType {
+		case Version:
+			h.Version = chunkBody[0]
+		case Protocol:
+			h.Protocol = chunkBody[0]
+		case IP4SrcIP:
+			h.SrcIP = chunkBody
+		case IP4DstIP:
+			h.DstIP = chunkBody
+		case IP6SrcIP:
+			h.SrcIP = chunkBody
+		case IP6DstIP:
+			h.DstIP = chunkBody
+		case SrcPort:
+			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
+		case DstPort:
+			h.DstPort = binary.BigEndian.Uint16(chunkBody)
+		case Tsec:
+			h.Tsec = binary.BigEndian.Uint32(chunkBody)
+		case Tmsec:
+			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
+		case ProtoType:
+			h.ProtoType = chunkBody[0]
+		case NodeID:
+			h.NodeID = binary.BigEndian.Uint32(chunkBody)
+		case KeepAliveTimer:
+			h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
+		case NodePW:
+			h.NodePW = chunkBody
+		case Payload:
+			h.Payload = chunkBody
+		case CompressedPayload:
+			h.CompressedPayload = chunkBody
+		case CorrelationID:
+			h.CorrelationID = chunkBody
+		case Vlan:
+			h.Vlan = binary.BigEndian.Uint16(chunkBody)
+		default:
+		}
+		currentByte += chunkLength
+	}
+	return nil
+}
+
+func (h *HEPPacket) parseNonHep(packet []byte) error {
+	h.Payload = packet
+	return nil
+}
+
+func (h *HEPPacket) String() {
+	fmt.Printf("Version: \t %d \n", h.Version)
+	fmt.Printf("Protocol: \t %d \n", h.Protocol)
+	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
+	fmt.Printf("SrcIP: \t %s \n", h.SrcIP.String())
+	fmt.Printf("DstIP: \t %s \n", h.DstIP.String())
+	fmt.Printf("SrcPort: \t %d \n", h.SrcPort)
+	fmt.Printf("DstPort: \t %d \n", h.DstPort)
+	fmt.Printf("Tsec: \t\t %d \n", h.Tsec)
+	fmt.Printf("Tmsec: \t\t %d \n", h.Tmsec)
+	fmt.Printf("Vlan: \t\t %d \n", h.Vlan)
+	fmt.Printf("NodeID: \t %d \n", h.NodeID)
+	fmt.Printf("NodePW: \t %s \n", string(h.NodePW))
+	fmt.Printf("KeepAliveTimer:  %d \n", h.KeepAliveTimer)
+	fmt.Printf("CorrelationID:   %s \n", string(h.CorrelationID))
+	fmt.Printf("Payload: \n%s\n", string(h.Payload))
+	//fmt.Printf("CompressedPayload: \t %s \n", string(h.CompressedPayload))
 }
 
 // EncodeHEP creates the HEP Packet which
 // will be send to wire
-func Encode(h *decoder.Packet) []byte {
+func EncodeHEP(h *HEPPacket) []byte {
 	buf := new(bytes.Buffer)
 	hepMsg := makeChuncks(h, buf)
 	binary.BigEndian.PutUint16(hepMsg[4:6], uint16(len(hepMsg)))
@@ -83,7 +185,7 @@ func Encode(h *decoder.Packet) []byte {
 }
 
 // makeChuncks will construct the respective HEP chunck
-func makeChuncks(h *decoder.Packet, w *bytes.Buffer) []byte {
+func makeChuncks(h *HEPPacket, w *bytes.Buffer) []byte {
 	w.Write(hepVer)
 	// hepMsg length placeholder. Will be written later
 	w.Write(hepLen)
@@ -198,97 +300,4 @@ func makeChuncks(h *decoder.Packet, w *bytes.Buffer) []byte {
 		w.Write(chunck16)
 	*/
 	return w.Bytes()
-}
-
-// DecodeHEP returns a parsed HEP message
-func Decode(packet []byte) (*Packet, error) {
-	newHepMsg := &Packet{}
-	err := newHepMsg.parse(packet)
-	if err != nil {
-		return nil, err
-	}
-	return newHepMsg, nil
-}
-
-func (h *Packet) parse(packet []byte) error {
-	if packet[0] == 0x48 && packet[3] == 0x33 {
-		return h.parseHep3(packet)
-	}
-	return errors.New("Not a valid HEP3 packet")
-}
-
-func (h *Packet) parseHep3(packet []byte) error {
-	length := binary.BigEndian.Uint16(packet[4:6])
-	currentByte := uint16(6)
-
-	for currentByte < length {
-		hepChunk := packet[currentByte:]
-		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
-		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
-		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
-		chunkBody := hepChunk[6:chunkLength]
-
-		switch chunkType {
-		case Version:
-			h.Version = chunkBody[0]
-		case Protocol:
-			h.Protocol = chunkBody[0]
-		case IP4SrcIP:
-			h.IP4SrcIP = chunkBody
-		case IP4DstIP:
-			h.IP4DstIP = chunkBody
-		case IP6SrcIP:
-			h.IP6SrcIP = chunkBody
-		case IP6DstIP:
-			h.IP6DstIP = chunkBody
-		case SrcPort:
-			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
-		case DstPort:
-			h.DstPort = binary.BigEndian.Uint16(chunkBody)
-		case Tsec:
-			h.Tsec = binary.BigEndian.Uint32(chunkBody)
-		case Tmsec:
-			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
-		case ProtoType:
-			h.ProtoType = chunkBody[0]
-		case NodeID:
-			h.NodeID = binary.BigEndian.Uint32(chunkBody)
-		case KeepAliveTimer:
-			h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
-		case NodePW:
-			h.NodePW = chunkBody
-		case Payload:
-			h.Payload = chunkBody
-		case CompressedPayload:
-			h.CompressedPayload = chunkBody
-		case CorrelationID:
-			h.CorrelationID = chunkBody
-		case Vlan:
-			h.Vlan = binary.BigEndian.Uint16(chunkBody)
-		default:
-		}
-		currentByte += chunkLength
-	}
-	return nil
-}
-
-func (h *Packet) String() {
-	fmt.Printf("Version: \t %d \n", h.Version)
-	fmt.Printf("Protocol: \t %d \n", h.Protocol)
-	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
-	fmt.Printf("IP4SrcIP: \t %s \n", h.IP4SrcIP.String())
-	fmt.Printf("IP4DstIP: \t %s \n", h.IP4DstIP.String())
-	fmt.Printf("IP6SrcIP: \t %s \n", h.IP6SrcIP.String())
-	fmt.Printf("IP6DstIP: \t %s \n", h.IP6DstIP.String())
-	fmt.Printf("SrcPort: \t %d \n", h.SrcPort)
-	fmt.Printf("DstPort: \t %d \n", h.DstPort)
-	fmt.Printf("Tsec: \t\t %d \n", h.Tsec)
-	fmt.Printf("Tmsec: \t\t %d \n", h.Tmsec)
-	fmt.Printf("Vlan: \t\t %d \n", h.Vlan)
-	fmt.Printf("NodeID: \t %d \n", h.NodeID)
-	fmt.Printf("NodePW: \t %s \n", string(h.NodePW))
-	fmt.Printf("KeepAliveTimer:  %d \n", h.KeepAliveTimer)
-	fmt.Printf("CorrelationID:   %s \n", string(h.CorrelationID))
-	fmt.Printf("Payload: \n%s\n", string(h.Payload))
-	//fmt.Printf("CompressedPayload: \t %s \n", string(h.CompressedPayload))
 }

@@ -4,20 +4,18 @@ import (
 	"bytes"
 	"net"
 	"runtime"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	hep "github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/database"
 	"github.com/negbie/heplify-server/logp"
-	"github.com/negbie/heplify-server/output"
 )
 
 type HEPInput struct {
 	addr    string
-	port    int
 	pool    chan chan struct{}
 	stats   HEPStats
 	stop    bool
@@ -33,7 +31,7 @@ type HEPStats struct {
 
 var (
 	hepInCh  = make(chan []byte, 20000)
-	hepOutCh = make(chan []byte, 20000)
+	hepOutCh = make(chan *decoder.HEPPacket, 20000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -44,15 +42,14 @@ var (
 
 func NewHEP() *HEPInput {
 	return &HEPInput{
-		port:    config.Cfg.HEPPort,
-		workers: config.Cfg.HEPWorkers,
+		addr:    config.Setting.HEPAddr,
+		workers: config.Setting.HEPWorkers,
 		pool:    make(chan chan struct{}, runtime.NumCPU()*1e2),
 	}
 }
 
 func (h *HEPInput) Run() {
-	hostPort := net.JoinHostPort(h.addr, strconv.Itoa(h.port))
-	udpAddr, _ := net.ResolveUDPAddr("udp", hostPort)
+	udpAddr, _ := net.ResolveUDPAddr("udp", h.addr)
 
 	conn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
@@ -71,18 +68,18 @@ func (h *HEPInput) Run() {
 	logp.Info("heplify-server is running")
 
 	go func() {
-		o := output.New(config.Cfg.OutName)
-		o.ConfFile = config.Cfg.OutConfigFile
-		o.ErrCount = &h.stats.ErrCount
-		o.Topic = config.Cfg.HEPTopic
+		d := database.New("mysql")
+		d.ErrCount = &h.stats.ErrCount
+		d.Topic = config.Setting.HEPTopic
+		d.Chan = hepOutCh
 
-		if err := o.Run(); err != nil {
+		if err := d.Run(); err != nil {
 			logp.Err("%v", err)
 		}
 	}()
 
 	for !h.stop {
-		buf := hepBuffer.Get().([]byte)
+		buf := make([]byte, 65536)
 		conn.SetReadDeadline(time.Now().Add(1e9))
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
@@ -101,12 +98,11 @@ func (h *HEPInput) End() {
 
 func (h *HEPInput) hepWorker(shut chan struct{}) {
 	var (
-		hepPkt *hep.Packet
+		hepPkt *decoder.HEPPacket
 		msg    = hepBuffer.Get().([]byte)
 		buf    = new(bytes.Buffer)
 		err    error
 		ok     bool
-		b      []byte
 	)
 
 GO:
@@ -124,7 +120,7 @@ GO:
 			}
 		}
 
-		hepPkt, err = hep.Decode(msg)
+		hepPkt, err = decoder.DecodeHEP(msg)
 		if hepPkt == nil || err != nil {
 			continue
 		}
@@ -132,9 +128,8 @@ GO:
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
 		if hepPkt != nil {
-
 			select {
-			case hepOutCh <- b:
+			case hepOutCh <- hepPkt:
 			default:
 			}
 		}
