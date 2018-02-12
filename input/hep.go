@@ -30,12 +30,12 @@ type HEPStats struct {
 }
 
 var (
-	hepInCh  = make(chan []byte, 20000)
-	hepOutCh = make(chan *decoder.HEPPacket, 20000)
+	hepInCh  = make(chan []byte, 10000)
+	hepOutCh = make(chan *decoder.HEPPacket, 10000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
-			return make([]byte, 65536)
+			return make([]byte, 8192)
 		},
 	}
 )
@@ -49,7 +49,10 @@ func NewHEP() *HEPInput {
 }
 
 func (h *HEPInput) Run() {
-	udpAddr, _ := net.ResolveUDPAddr("udp", h.addr)
+	udpAddr, err := net.ResolveUDPAddr("udp", h.addr)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
 
 	conn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
@@ -79,9 +82,9 @@ func (h *HEPInput) Run() {
 	}()
 
 	for !h.stop {
-		buf := make([]byte, 65536)
+		buf := hepBuffer.Get().([]byte)
 		conn.SetReadDeadline(time.Now().Add(1e9))
-		n, _, err := conn.ReadFromUDP(buf)
+		n, _, err := conn.ReadFrom(buf)
 		if err != nil {
 			continue
 		}
@@ -92,7 +95,7 @@ func (h *HEPInput) Run() {
 
 func (h *HEPInput) End() {
 	h.stop = true
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	close(hepInCh)
 }
 
@@ -108,7 +111,7 @@ func (h *HEPInput) hepWorker(shut chan struct{}) {
 GO:
 	for {
 
-		hepBuffer.Put(msg)
+		hepBuffer.Put(msg[:8192])
 		buf.Reset()
 
 		select {
@@ -127,11 +130,10 @@ GO:
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
-		if hepPkt != nil {
-			select {
-			case hepOutCh <- hepPkt:
-			default:
-			}
+		select {
+		case hepOutCh <- hepPkt:
+		default:
 		}
+
 	}
 }

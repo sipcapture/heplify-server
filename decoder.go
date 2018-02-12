@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
+	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
 )
 
@@ -61,6 +63,7 @@ type HEPPacket struct {
 	DstPort           uint16
 	Tsec              uint32
 	Tmsec             uint32
+	Timestamp         time.Time
 	ProtoType         byte
 	NodeID            uint32
 	KeepAliveTimer    uint16
@@ -70,6 +73,49 @@ type HEPPacket struct {
 	CorrelationID     []byte
 	Vlan              uint16
 	SipMsg            *sipparser.SipMsg
+}
+
+// SIPPacket represents a parsed SIP packet
+type SIPPacket struct {
+	Method          string
+	ReplyReason     string
+	Ruri            string
+	RuriUser        string
+	RuriDomain      string
+	FromUser        string
+	FromDomain      string
+	FromTag         string
+	ToUser          string
+	ToDomain        string
+	ToTag           string
+	PidUser         string
+	ContactUser     string
+	AuthUser        string
+	CallID          string
+	CallIDAleg      string
+	Via1            string
+	Via1Branch      string
+	Cseq            string
+	Diversion       string
+	Reason          string
+	ContentType     string
+	Auth            string
+	UserAgent       string
+	SourceIP        string
+	SourcePort      string
+	DestinationIP   string
+	DestinationPort string
+	ContactIP       string
+	ContactPort     string
+	OriginatorIP    string
+	OriginatorPort  string
+	Proto           string
+	Family          string
+	RTPStat         string
+	Type            string
+	NodeID          string
+	CorrelationID   string
+	Raw             *sipparser.SipMsg
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -84,20 +130,24 @@ func DecodeHEP(packet []byte) (*HEPPacket, error) {
 
 func (h *HEPPacket) parse(packet []byte) error {
 	if packet[0] == 0x48 && packet[3] == 0x33 {
-		err := h.parseHep3(packet)
+		err := h.parseHEP(packet)
 		if err != nil {
 			return err
 		}
 
-		if h.ProtoType == 1 {
-			h.SipMsg = sipparser.ParseMsg(string(h.Payload))
+		h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec))
+
+		err = h.parseSIP()
+		if err != nil {
+			return err
 		}
+
 		return nil
 	}
 	return errors.New("Not a valid HEP3 packet")
 }
 
-func (h *HEPPacket) parseHep3(packet []byte) error {
+func (h *HEPPacket) parseHEP(packet []byte) error {
 	length := binary.BigEndian.Uint16(packet[4:6])
 	currentByte := uint16(6)
 	for currentByte < length {
@@ -147,6 +197,55 @@ func (h *HEPPacket) parseHep3(packet []byte) error {
 		default:
 		}
 		currentByte += chunkLength
+	}
+	return nil
+}
+
+func (h *HEPPacket) parseSIP() error {
+
+	if h.ProtoType == 1 {
+
+		h.SipMsg = sipparser.ParseMsg(string(h.Payload))
+
+		if h.SipMsg.StartLine == nil {
+			h.SipMsg.StartLine = new(sipparser.StartLine)
+		}
+		if h.SipMsg.StartLine.Method == "" {
+			h.SipMsg.StartLine.Method = h.SipMsg.StartLine.Resp
+		}
+		if h.SipMsg.StartLine.URI == nil {
+			h.SipMsg.StartLine.URI = new(sipparser.URI)
+		}
+		if h.SipMsg.From == nil {
+			h.SipMsg.From = new(sipparser.From)
+		}
+		if h.SipMsg.From.URI == nil {
+			h.SipMsg.From.URI = new(sipparser.URI)
+		}
+		if h.SipMsg.To == nil {
+			h.SipMsg.To = new(sipparser.From)
+		}
+		if h.SipMsg.To.URI == nil {
+			h.SipMsg.To.URI = new(sipparser.URI)
+		}
+		if h.SipMsg.Contact == nil {
+			h.SipMsg.Contact = new(sipparser.From)
+		}
+		if h.SipMsg.Contact.URI == nil {
+			h.SipMsg.Contact.URI = new(sipparser.URI)
+		}
+		if h.SipMsg.Authorization == nil {
+			h.SipMsg.Authorization = new(sipparser.Authorization)
+		}
+		if h.SipMsg.RTPStat == nil {
+			h.SipMsg.RTPStat = new(sipparser.RTPStat)
+		}
+
+		if h.SipMsg.Error != nil {
+			logp.Err("%v", h.SipMsg.Error)
+			h.SipMsg = nil
+			return h.SipMsg.Error
+		}
 	}
 	return nil
 }

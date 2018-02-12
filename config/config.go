@@ -12,6 +12,7 @@ type Config struct {
 	NSQName string
 	NSQAddr string
 
+	DBDriver   string
 	DBAddr     string
 	DBName     string
 	DBUser     string
@@ -28,7 +29,8 @@ func NewConfig() *Config {
 		NSQName: "nsq",
 		NSQAddr: "localhost:4015",
 
-		DBAddr:     "localhost:3306",
+		DBDriver:   "mysql",
+		DBAddr:     "localhost",
 		DBName:     "homer_data",
 		DBUser:     "test",
 		DBPassword: "test",

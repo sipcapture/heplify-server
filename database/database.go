@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/config"
 )
 
 type Database struct {
@@ -21,7 +22,7 @@ type DBHandler interface {
 
 func New(name string) *Database {
 	var register = map[string]DBHandler{
-		"mysql": new(MySQL),
+		config.Setting.DBDriver: new(SQL),
 	}
 
 	return &Database{
