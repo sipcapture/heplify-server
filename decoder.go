@@ -8,7 +8,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
 )
 
@@ -241,10 +240,33 @@ func (h *HEPPacket) parseSIP() error {
 			h.SipMsg.RTPStat = new(sipparser.RTPStat)
 		}
 
-		if h.SipMsg.Error != nil {
+		if h.SipMsg.Cseq == nil {
+			fmt.Println("Cseq ALARM!")
+			fmt.Println(string(h.Payload))
+		}
+
+		if h.SipMsg.Via == nil {
+
+			fmt.Println("VIA ALARM!")
+			fmt.Println(string(h.Payload))
+
+		}
+
+		/* 		if h.SipMsg.Error != nil {
 			logp.Err("%v", h.SipMsg.Error)
+			logp.Err("%v", h.SipMsg.Msg)
 			h.SipMsg = nil
 			return h.SipMsg.Error
+		} */
+
+		/* 		if len(h.Payload) != len(h.SipMsg.Msg) {
+			fmt.Println(string(h.Payload))
+			h.Payload = nil
+		} */
+
+		if h.SipMsg == nil {
+			fmt.Println(string(h.Payload))
+			h.Payload = nil
 		}
 	}
 	return nil

@@ -124,7 +124,7 @@ GO:
 		}
 
 		hepPkt, err = decoder.DecodeHEP(msg)
-		if hepPkt == nil || err != nil {
+		if hepPkt.Payload == nil || err != nil {
 			continue
 		}
 
