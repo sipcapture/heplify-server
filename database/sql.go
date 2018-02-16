@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"net/url"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 )
 
 var (
-	callRegStmt = `(
+	sipQuery = `(
 			date, 
 			micro_ts,
 			method, 
@@ -58,7 +57,7 @@ var (
 			msg
 			) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 
-	jsonStmt = `(
+	rtcQuery = `(
 			date,
 			micro_ts,
 			correlation_id,
@@ -75,27 +74,13 @@ var (
 )
 
 type SQL struct {
-	//dbc        *dbr.Connection
-	//dbs        *dbr.Session
-	dbc        *sql.DB
-	regRows    []interface{}
-	regCnt     int
-	callRows   []interface{}
-	callCnt    int
-	dnsRows    []interface{}
-	dnsCnt     int
-	logRows    []interface{}
-	logCnt     int
-	rtcpRows   []interface{}
-	rtcpCnt    int
-	reportRows []interface{}
-	reportCnt  int
+	dbc *sql.DB
 }
 
 func (s *SQL) setup() error {
 	var err error
 	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPassword+"@tcp("+config.Setting.DBAddr+":3306)/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4,utf8&parseTime=true")); err != nil {
+		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPassword+"@tcp("+config.Setting.DBAddr+":3306)/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
 			logp.Err("%v", err)
 			return err
 		}
@@ -106,42 +91,57 @@ func (s *SQL) setup() error {
 		}
 	}
 
+	s.dbc.SetMaxIdleConns(10)
+	s.dbc.SetMaxOpenConns(10)
+
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()
 		logp.Err("%v", err)
 		return err
 	}
 
-	//s.dbs = s.dbc.NewSession(nil)
+	for i := 1; i < 100; i++ {
+		sipQuery += `,(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	}
+	for i := 1; i < 100; i++ {
+		rtcQuery += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
+	}
 
 	return nil
 }
 
 func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 	var (
-		pkt *decoder.HEPPacket
-		ok  bool
+		pkt        *decoder.HEPPacket
+		ok         bool
+		regCnt     int
+		callCnt    int
+		dnsCnt     int
+		logCnt     int
+		rtcpCnt    int
+		reportCnt  int
+		regRows    = make([]interface{}, 0, 100)
+		callRows   = make([]interface{}, 0, 100)
+		dnsRows    = make([]interface{}, 0, 100)
+		logRows    = make([]interface{}, 0, 100)
+		rtcpRows   = make([]interface{}, 0, 100)
+		reportRows = make([]interface{}, 0, 100)
 	)
 
 	logp.Info("Run MySQL Output, server: %+v, topic: %s\n", config.Setting.DBAddr, topic)
 
 	for {
 		pkt, ok = <-mCh
-		if pkt.ProtoType == 5 {
-			fmt.Println("HEP: ", string(pkt.CorrelationID))
-		}
 		if !ok {
 			break
 		}
 
-		//fmt.Println(pkt.SipMsg.Msg)
-
-		if pkt.ProtoType == 1 && pkt.SipMsg != nil {
+		if pkt.ProtoType == 1 && pkt.Payload != "" {
 
 			if pkt.SipMsg.Cseq.Method == "REGISTER" {
-				s.regRows = append(s.regRows, []interface{}{
+				regRows = append(regRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
+					pkt.Timestamp.UnixNano() / 1000,
 					pkt.SipMsg.StartLine.Method,
 					pkt.SipMsg.StartLine.RespText,
 					pkt.SipMsg.StartLine.URI.Raw,
@@ -149,13 +149,13 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					pkt.SipMsg.StartLine.URI.Host,
 					pkt.SipMsg.From.URI.User,
 					pkt.SipMsg.From.URI.Host,
-					pkt.SipMsg.From.Tag,
+					short(pkt.SipMsg.From.Tag, 64),
 					pkt.SipMsg.To.URI.User,
 					pkt.SipMsg.To.URI.Host,
-					pkt.SipMsg.To.Tag,
+					short(pkt.SipMsg.To.Tag, 64),
 					pkt.SipMsg.PAssertedIdVal,
 					pkt.SipMsg.Contact.URI.User,
-					pkt.SipMsg.Authorization.Val,
+					"", // TODO auth_user,
 					pkt.SipMsg.CallId,
 					"", // TODO CallId-Aleg,
 					pkt.SipMsg.Via[0].Via,
@@ -164,11 +164,11 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					"", // TODO diversion,
 					"", // TODO reason,
 					pkt.SipMsg.ContentType,
-					pkt.SipMsg.Authorization.Credentials,
+					short(pkt.SipMsg.Authorization.Val, 256),
 					pkt.SipMsg.UserAgent,
-					pkt.SrcIP.String(),
+					pkt.SrcIP,
 					pkt.SrcPort,
-					pkt.DstIP.String(),
+					pkt.DstIP,
 					pkt.DstPort,
 					pkt.SipMsg.Contact.URI.Host,
 					0,  // TODO contact_port,
@@ -176,20 +176,22 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					0,  // TODO originator_port,
 					pkt.Protocol,
 					pkt.Version,
-					pkt.SipMsg.RTPStat.Val,
+					short(pkt.SipMsg.RTPStat.Val, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
 					pkt.SipMsg.CallId,
-					pkt.SipMsg.Msg}...)
+					short(pkt.Payload, 3000)}...)
 
-				s.regCnt++
-				if s.regCnt >= 300 {
-					s.batchInsert("INSERT INTO sip_capture_registration_", s.regRows)
+				regCnt++
+				if regCnt == 100 {
+					s.batchInsert("call", regRows)
+					regRows = []interface{}{}
+					regCnt = 0
 				}
 			} else {
-				s.callRows = append(s.callRows, []interface{}{
+				callRows = append(callRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
+					pkt.Timestamp.UnixNano() / 1000,
 					pkt.SipMsg.StartLine.Method,
 					pkt.SipMsg.StartLine.RespText,
 					pkt.SipMsg.StartLine.URI.Raw,
@@ -197,13 +199,13 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					pkt.SipMsg.StartLine.URI.Host,
 					pkt.SipMsg.From.URI.User,
 					pkt.SipMsg.From.URI.Host,
-					pkt.SipMsg.From.Tag,
+					short(pkt.SipMsg.From.Tag, 64),
 					pkt.SipMsg.To.URI.User,
 					pkt.SipMsg.To.URI.Host,
-					pkt.SipMsg.To.Tag,
+					short(pkt.SipMsg.To.Tag, 64),
 					pkt.SipMsg.PAssertedIdVal,
 					pkt.SipMsg.Contact.URI.User,
-					pkt.SipMsg.Authorization.Val,
+					"", // TODO auth_user,
 					pkt.SipMsg.CallId,
 					"", // TODO CallId-Aleg,
 					pkt.SipMsg.Via[0].Via,
@@ -212,11 +214,11 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					"", // TODO diversion,
 					"", // TODO reason,
 					pkt.SipMsg.ContentType,
-					pkt.SipMsg.Authorization.Credentials,
+					short(pkt.SipMsg.Authorization.Val, 256),
 					pkt.SipMsg.UserAgent,
-					pkt.SrcIP.String(),
+					pkt.SrcIP,
 					pkt.SrcPort,
-					pkt.DstIP.String(),
+					pkt.DstIP,
 					pkt.DstPort,
 					pkt.SipMsg.Contact.URI.Host,
 					0,  // TODO contact_port,
@@ -224,150 +226,119 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					0,  // TODO originator_port,
 					pkt.Protocol,
 					pkt.Version,
-					pkt.SipMsg.RTPStat.Val,
+					short(pkt.SipMsg.RTPStat.Val, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
 					pkt.SipMsg.CallId,
-					pkt.SipMsg.Msg}...)
+					short(pkt.Payload, 3000)}...)
 
-				s.callCnt++
-				if s.callCnt >= 300 {
-					s.batchInsert("INSERT INTO sip_capture_call_", s.callRows)
+				callCnt++
+				if callCnt == 100 {
+					s.batchInsert("register", callRows)
+					callRows = []interface{}{}
+					callCnt = 0
 				}
 			}
-		} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != nil {
+		} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
 			switch pkt.ProtoType {
 			case 5:
-				s.rtcpRows = append(s.rtcpRows, []interface{}{
+				rtcpRows = append(rtcpRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
-					string(pkt.CorrelationID),
-					pkt.SrcIP.String(), pkt.SrcPort, pkt.DstIP.String(), pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, string(pkt.Payload)}...)
+					pkt.Timestamp.UnixNano() / 1000,
+					pkt.CorrelationID,
+					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
-				s.rtcpCnt++
-				if s.rtcpCnt >= 100 {
-					s.batchInsert("INSERT INTO rtcp_capture_all_", s.rtcpRows)
+				rtcpCnt++
+				if rtcpCnt == 100 {
+					s.batchInsert("rtcp", rtcpRows)
+					rtcpRows = []interface{}{}
+					rtcpCnt = 0
 				}
 			case 38:
-				s.reportRows = append(s.reportRows, []interface{}{
+				reportRows = append(reportRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
-					string(pkt.CorrelationID),
-					pkt.SrcIP.String(), pkt.SrcPort, pkt.DstIP.String(), pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, string(pkt.Payload)}...)
+					pkt.Timestamp.UnixNano() / 1000,
+					pkt.CorrelationID,
+					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
-				s.reportCnt++
-				if s.reportCnt >= 100 {
-					s.batchInsert("INSERT INTO report_capture_all_", s.reportRows)
+				reportCnt++
+				if reportCnt == 100 {
+					s.batchInsert("report", reportRows)
+					reportRows = []interface{}{}
+					reportCnt = 0
 				}
 			case 53:
-				s.dnsRows = append(s.dnsRows, []interface{}{
+				dnsRows = append(dnsRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
-					string(pkt.CorrelationID),
-					pkt.SrcIP.String(), pkt.SrcPort, pkt.DstIP.String(), pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, string(pkt.Payload)}...)
+					pkt.Timestamp.UnixNano() / 1000,
+					pkt.CorrelationID,
+					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
-				s.dnsCnt++
-				if s.dnsCnt >= 100 {
-					s.batchInsert("INSERT INTO dns_capture_all_", s.dnsRows)
+				dnsCnt++
+				if dnsCnt == 100 {
+					s.batchInsert("dns", dnsRows)
+					dnsRows = []interface{}{}
+					dnsCnt = 0
 				}
 			case 100:
-				s.logRows = append(s.logRows, []interface{}{
+				logRows = append(logRows, []interface{}{
 					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / (int64(time.Microsecond) / int64(time.Nanosecond)),
-					string(pkt.CorrelationID),
-					pkt.SrcIP.String(), pkt.SrcPort, pkt.DstIP.String(), pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, string(pkt.Payload)}...)
+					pkt.Timestamp.UnixNano() / 1000,
+					pkt.CorrelationID,
+					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
-				s.logCnt++
-				if s.logCnt >= 100 {
-					s.batchInsert("INSERT INTO logs_capture_all_", s.logRows)
+				logCnt++
+				if logCnt == 100 {
+					s.batchInsert("log", logRows)
+					logRows = []interface{}{}
+					logCnt = 0
 				}
-
 			}
-
 		}
 	}
 }
 
 func (s *SQL) batchInsert(query string, rows []interface{}) {
 	switch query {
-	case "INSERT INTO sip_capture_call_":
-
-		query = query + time.Now().Format("20060102") + callRegStmt
-		for i := 1; i < s.callCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-		//fmt.Println(rows)
-		//fmt.Println(query)
-		fmt.Println("call count", s.callCnt)
-		s.callRows = []interface{}{}
-		s.callCnt = 0
-
-	case "INSERT INTO sip_capture_registration_":
-
-		query = query + time.Now().Format("20060102") + callRegStmt
-		for i := 1; i < s.regCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-		//fmt.Println(rows)
-		//fmt.Println(query)
-		fmt.Println("reg count", s.regCnt)
-		s.regRows = []interface{}{}
-		s.regCnt = 0
-
-	case "INSERT INTO rtcp_capture_all_":
-		query = query + time.Now().Format("20060102") + jsonStmt
-		for i := 1; i < s.rtcpCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-
-		s.rtcpRows = []interface{}{}
-		s.rtcpCnt = 0
-
-	case "INSERT INTO report_capture_all_":
-		query = query + time.Now().Format("20060102") + jsonStmt
-		for i := 1; i < s.reportCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-
-		s.reportRows = []interface{}{}
-		s.reportCnt = 0
-
-	case "INSERT INTO dns_capture_all_":
-		query = query + time.Now().Format("20060102") + jsonStmt
-		for i := 1; i < s.dnsCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-
-		s.dnsRows = []interface{}{}
-		s.dnsCnt = 0
-
-	case "INSERT INTO log_capture_all_":
-		query = query + time.Now().Format("20060102") + jsonStmt
-		for i := 1; i < s.logCnt; i++ {
-			query += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
-		}
-
-		s.logRows = []interface{}{}
-		s.logCnt = 0
+	case "call":
+		query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + sipQuery
+	case "register":
+		query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + sipQuery
+	case "rtcp":
+		query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + rtcQuery
+	case "report":
+		query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + rtcQuery
+	case "dns":
+		query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
+	case "log":
+		query = "INSERT INTO log_capture_all_" + time.Now().Format("20060102") + rtcQuery
 	}
 
-	stmt, _ := s.dbc.Prepare(query)
-	_, err := stmt.Exec(rows...)
+	_, err := s.dbc.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
 		//*ec++
 	}
 
-	/* 	go func() {
-		_, err := s.dbs.InsertBySql(query, rows...).Exec()
-		if err != nil {
-			logp.Err("%v", err)
-			//*ec++
-		}
-	}() */
-
 }
+
+func short(s string, i int) string {
+	if len(s) > i {
+		return s[:i]
+	}
+	return s
+}
+
+/*
+func short(s string, i int) string {
+	runes := []rune(s)
+	if len(runes) > i {
+		return string(runes[:i])
+	}
+	return s
+}
+*/

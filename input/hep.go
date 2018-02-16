@@ -124,7 +124,7 @@ GO:
 		}
 
 		hepPkt, err = decoder.DecodeHEP(msg)
-		if hepPkt.Payload == nil || err != nil {
+		if err != nil {
 			continue
 		}
 
@@ -134,6 +134,5 @@ GO:
 		case hepOutCh <- hepPkt:
 		default:
 		}
-
 	}
 }

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"unicode/utf8"
 
+	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
 )
 
@@ -56,8 +58,8 @@ const (
 type HEPPacket struct {
 	Version           byte
 	Protocol          byte
-	SrcIP             net.IP
-	DstIP             net.IP
+	SrcIP             string
+	DstIP             string
 	SrcPort           uint16
 	DstPort           uint16
 	Tsec              uint32
@@ -66,10 +68,10 @@ type HEPPacket struct {
 	ProtoType         byte
 	NodeID            uint32
 	KeepAliveTimer    uint16
-	NodePW            []byte
-	Payload           []byte
-	CompressedPayload []byte
-	CorrelationID     []byte
+	NodePW            string
+	Payload           string
+	CompressedPayload string
+	CorrelationID     string
 	Vlan              uint16
 	SipMsg            *sipparser.SipMsg
 }
@@ -134,11 +136,13 @@ func (h *HEPPacket) parse(packet []byte) error {
 			return err
 		}
 
-		h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec))
+		h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 
-		err = h.parseSIP()
-		if err != nil {
-			return err
+		if h.ProtoType == 1 && len(h.Payload) > 100 {
+			err = h.parseSIP()
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -147,6 +151,8 @@ func (h *HEPPacket) parse(packet []byte) error {
 }
 
 func (h *HEPPacket) parseHEP(packet []byte) error {
+	var netSrcIP net.IP
+	var netDstIP net.IP
 	length := binary.BigEndian.Uint16(packet[4:6])
 	currentByte := uint16(6)
 	for currentByte < length {
@@ -162,13 +168,17 @@ func (h *HEPPacket) parseHEP(packet []byte) error {
 		case Protocol:
 			h.Protocol = chunkBody[0]
 		case IP4SrcIP:
-			h.SrcIP = chunkBody
+			netSrcIP = chunkBody
+			h.SrcIP = netSrcIP.String()
 		case IP4DstIP:
-			h.DstIP = chunkBody
+			netDstIP = chunkBody
+			h.DstIP = netDstIP.String()
 		case IP6SrcIP:
-			h.SrcIP = chunkBody
+			netSrcIP = chunkBody
+			h.SrcIP = netSrcIP.String()
 		case IP6DstIP:
-			h.DstIP = chunkBody
+			netDstIP = chunkBody
+			h.DstIP = netDstIP.String()
 		case SrcPort:
 			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
 		case DstPort:
@@ -184,13 +194,26 @@ func (h *HEPPacket) parseHEP(packet []byte) error {
 		case KeepAliveTimer:
 			h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
 		case NodePW:
-			h.NodePW = chunkBody
+			h.NodePW = string(chunkBody)
 		case Payload:
-			h.Payload = chunkBody
+			h.Payload = string(chunkBody)
+			if !utf8.ValidString(h.Payload) {
+				v := make([]rune, 0, len(h.Payload))
+				for i, r := range h.Payload {
+					if r == utf8.RuneError {
+						_, size := utf8.DecodeRuneInString(h.Payload[i:])
+						if size == 1 {
+							continue
+						}
+					}
+					v = append(v, r)
+				}
+				h.Payload = string(v)
+			}
 		case CompressedPayload:
-			h.CompressedPayload = chunkBody
+			h.CompressedPayload = string(chunkBody)
 		case CorrelationID:
-			h.CorrelationID = chunkBody
+			h.CorrelationID = string(chunkBody)
 		case Vlan:
 			h.Vlan = binary.BigEndian.Uint16(chunkBody)
 		default:
@@ -202,78 +225,55 @@ func (h *HEPPacket) parseHEP(packet []byte) error {
 
 func (h *HEPPacket) parseSIP() error {
 
-	if h.ProtoType == 1 {
+	h.SipMsg = sipparser.ParseMsg(h.Payload)
 
-		h.SipMsg = sipparser.ParseMsg(string(h.Payload))
-
-		if h.SipMsg.StartLine == nil {
-			h.SipMsg.StartLine = new(sipparser.StartLine)
-		}
-		if h.SipMsg.StartLine.Method == "" {
-			h.SipMsg.StartLine.Method = h.SipMsg.StartLine.Resp
-		}
-		if h.SipMsg.StartLine.URI == nil {
-			h.SipMsg.StartLine.URI = new(sipparser.URI)
-		}
-		if h.SipMsg.From == nil {
-			h.SipMsg.From = new(sipparser.From)
-		}
-		if h.SipMsg.From.URI == nil {
-			h.SipMsg.From.URI = new(sipparser.URI)
-		}
-		if h.SipMsg.To == nil {
-			h.SipMsg.To = new(sipparser.From)
-		}
-		if h.SipMsg.To.URI == nil {
-			h.SipMsg.To.URI = new(sipparser.URI)
-		}
-		if h.SipMsg.Contact == nil {
-			h.SipMsg.Contact = new(sipparser.From)
-		}
-		if h.SipMsg.Contact.URI == nil {
-			h.SipMsg.Contact.URI = new(sipparser.URI)
-		}
-		if h.SipMsg.Authorization == nil {
-			h.SipMsg.Authorization = new(sipparser.Authorization)
-		}
-		if h.SipMsg.RTPStat == nil {
-			h.SipMsg.RTPStat = new(sipparser.RTPStat)
-		}
-
-		if h.SipMsg.Cseq == nil {
-			fmt.Println("Cseq ALARM!")
-			fmt.Println(string(h.Payload))
-		}
-
-		if h.SipMsg.Via == nil {
-
-			fmt.Println("VIA ALARM!")
-			fmt.Println(string(h.Payload))
-
-		}
-
-		/* 		if h.SipMsg.Error != nil {
-			logp.Err("%v", h.SipMsg.Error)
-			logp.Err("%v", h.SipMsg.Msg)
-			h.SipMsg = nil
-			return h.SipMsg.Error
-		} */
-
-		/* 		if len(h.Payload) != len(h.SipMsg.Msg) {
-			fmt.Println(string(h.Payload))
-			h.Payload = nil
-		} */
-
-		if h.SipMsg == nil {
-			fmt.Println(string(h.Payload))
-			h.Payload = nil
-		}
+	if h.SipMsg.StartLine == nil {
+		h.SipMsg.StartLine = new(sipparser.StartLine)
 	}
-	return nil
-}
+	if h.SipMsg.StartLine.Method == "" {
+		h.SipMsg.StartLine.Method = h.SipMsg.StartLine.Resp
+	}
+	if h.SipMsg.StartLine.URI == nil {
+		h.SipMsg.StartLine.URI = new(sipparser.URI)
+	}
+	if h.SipMsg.From == nil {
+		h.SipMsg.From = new(sipparser.From)
+	}
+	if h.SipMsg.From.URI == nil {
+		h.SipMsg.From.URI = new(sipparser.URI)
+	}
+	if h.SipMsg.To == nil {
+		h.SipMsg.To = new(sipparser.From)
+	}
+	if h.SipMsg.To.URI == nil {
+		h.SipMsg.To.URI = new(sipparser.URI)
+	}
+	if h.SipMsg.Contact == nil {
+		h.SipMsg.Contact = new(sipparser.From)
+	}
+	if h.SipMsg.Contact.URI == nil {
+		h.SipMsg.Contact.URI = new(sipparser.URI)
+	}
+	if h.SipMsg.Authorization == nil {
+		h.SipMsg.Authorization = new(sipparser.Authorization)
+	}
+	if h.SipMsg.Via == nil {
+		h.SipMsg.Via = make([]*sipparser.Via, 1)
+		h.SipMsg.Via[0] = new(sipparser.Via)
+	}
+	if h.SipMsg.Cseq == nil {
+		h.SipMsg.Cseq = new(sipparser.Cseq)
+	}
+	if h.SipMsg.RTPStat == nil {
+		h.SipMsg.RTPStat = new(sipparser.RTPStat)
+	}
 
-func (h *HEPPacket) parseNonHep(packet []byte) error {
-	h.Payload = packet
+	if h.SipMsg.Error != nil {
+		logp.Err("%v", h.SipMsg.Error)
+		logp.Err("%v", h.SipMsg.Msg)
+		return h.SipMsg.Error
+	}
+
 	return nil
 }
 
@@ -281,8 +281,8 @@ func (h *HEPPacket) String() {
 	fmt.Printf("Version: \t %d \n", h.Version)
 	fmt.Printf("Protocol: \t %d \n", h.Protocol)
 	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
-	fmt.Printf("SrcIP: \t %s \n", h.SrcIP.String())
-	fmt.Printf("DstIP: \t %s \n", h.DstIP.String())
+	fmt.Printf("SrcIP: \t\t %s \n", h.SrcIP)
+	fmt.Printf("DstIP: \t\t %s \n", h.DstIP)
 	fmt.Printf("SrcPort: \t %d \n", h.SrcPort)
 	fmt.Printf("DstPort: \t %d \n", h.DstPort)
 	fmt.Printf("Tsec: \t\t %d \n", h.Tsec)
@@ -293,7 +293,6 @@ func (h *HEPPacket) String() {
 	fmt.Printf("KeepAliveTimer:  %d \n", h.KeepAliveTimer)
 	fmt.Printf("CorrelationID:   %s \n", string(h.CorrelationID))
 	fmt.Printf("Payload: \n%s\n", string(h.Payload))
-	//fmt.Printf("CompressedPayload: \t %s \n", string(h.CompressedPayload))
 }
 
 // EncodeHEP creates the HEP Packet which
@@ -326,25 +325,25 @@ func makeChuncks(h *HEPPacket, w *bytes.Buffer) []byte {
 		w.Write([]byte{0x00, 0x00, 0x00, 0x03})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.SrcIP)))
 		w.Write(hepLen)
-		w.Write(h.SrcIP)
+		w.Write([]byte(h.SrcIP))
 
 		// Chunk IPv4 destination address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x04})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.DstIP)))
 		w.Write(hepLen)
-		w.Write(h.DstIP)
+		w.Write([]byte(h.DstIP))
 	} else if h.Version == 0x0a {
 		// Chunk IPv6 source address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x05})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.SrcIP)))
 		w.Write(hepLen)
-		w.Write(h.SrcIP)
+		w.Write([]byte(h.SrcIP))
 
 		// Chunk IPv6 destination address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x06})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.DstIP)))
 		w.Write(hepLen)
-		w.Write(h.DstIP)
+		w.Write([]byte(h.DstIP))
 	}
 
 	// Chunk protocol source port
@@ -389,23 +388,23 @@ func makeChuncks(h *HEPPacket, w *bytes.Buffer) []byte {
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0e})
 	binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.NodePW)))
 	w.Write(hepLen)
-	w.Write(h.NodePW)
+	w.Write([]byte(h.NodePW))
 
 	// Chunk captured packet payload
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0f})
 	binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.Payload)))
 	w.Write(hepLen)
-	w.Write(h.Payload)
+	w.Write([]byte(h.Payload))
 
 	// Chunk captured compressed payload (gzip/inflate)
 	//w.Write([]byte{0x00,0x00, 0x00,0x10})
 
-	if h.CorrelationID != nil {
+	if h.CorrelationID != "" {
 		// Chunk internal correlation id
 		w.Write([]byte{0x00, 0x00, 0x00, 0x11})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.CorrelationID)))
 		w.Write(hepLen)
-		w.Write(h.CorrelationID)
+		w.Write([]byte(h.CorrelationID))
 	}
 	/*
 		// Chunk VLAN
