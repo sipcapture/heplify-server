@@ -12,6 +12,7 @@ import (
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
 	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/heplify-server/metric"
 )
 
 type HEPInput struct {
@@ -30,8 +31,9 @@ type HEPStats struct {
 }
 
 var (
-	hepInCh  = make(chan []byte, 10000)
-	hepOutCh = make(chan *decoder.HEPPacket, 10000)
+	inCh     = make(chan []byte, 10000)
+	dbCh     = make(chan *decoder.HEPPacket, 10000)
+	metricCh = make(chan *decoder.HEPPacket, 10000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -68,15 +70,23 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("heplify-server is running")
+	logp.Info("heplify-server is listening at %s with %d workers", h.addr, h.workers)
 
 	go func() {
 		d := database.New("mysql")
 		d.ErrCount = &h.stats.ErrCount
-		d.Topic = config.Setting.HEPTopic
-		d.Chan = hepOutCh
+		d.Chan = dbCh
 
 		if err := d.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+	}()
+
+	go func() {
+		m := metric.New("prometheus")
+		m.Chan = metricCh
+
+		if err := m.Run(); err != nil {
 			logp.Err("%v", err)
 		}
 	}()
@@ -89,14 +99,14 @@ func (h *HEPInput) Run() {
 			continue
 		}
 		atomic.AddUint64(&h.stats.PktCount, 1)
-		hepInCh <- buf[:n]
+		inCh <- buf[:n]
 	}
 }
 
 func (h *HEPInput) End() {
 	h.stop = true
 	time.Sleep(1 * time.Second)
-	close(hepInCh)
+	close(inCh)
 }
 
 func (h *HEPInput) hepWorker(shut chan struct{}) {
@@ -117,7 +127,7 @@ GO:
 		select {
 		case <-shut:
 			break GO
-		case msg, ok = <-hepInCh:
+		case msg, ok = <-inCh:
 			if !ok {
 				break GO
 			}
@@ -131,8 +141,15 @@ GO:
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
 		select {
-		case hepOutCh <- hepPkt:
+		case dbCh <- hepPkt:
 		default:
+			//logp.Warn("overflowing db channel")
+		}
+
+		select {
+		case metricCh <- hepPkt:
+		default:
+			//logp.Warn("overflowing metric channel")
 		}
 	}
 }

@@ -46,7 +46,7 @@ func (n *NSQ) add(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 			break
 		}
 
-		err = n.producer.Publish(topic, msg.Payload)
+		err = n.producer.Publish(topic, []byte(msg.Payload))
 		if err != nil {
 			logp.Err("%v", err)
 			*ec++

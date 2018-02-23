@@ -4,11 +4,10 @@ import (
 	"runtime"
 
 	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
 )
 
 type Database struct {
-	DB       DBHandler
+	DBH      DBHandler
 	ErrCount *uint64
 
 	Topic string
@@ -22,11 +21,12 @@ type DBHandler interface {
 
 func New(name string) *Database {
 	var register = map[string]DBHandler{
-		config.Setting.DBDriver: new(SQL),
+		"mysql":    new(SQL),
+		"postgres": new(SQL),
 	}
 
 	return &Database{
-		DB: register[name],
+		DBH: register[name],
 	}
 }
 
@@ -36,7 +36,7 @@ func (d *Database) Run() error {
 		err error
 	)
 
-	err = d.DB.setup()
+	err = d.DBH.setup()
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (d *Database) Run() error {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
 			topic := d.Topic
-			d.DB.insert(topic, d.Chan, d.ErrCount)
+			d.DBH.insert(topic, d.Chan, d.ErrCount)
 		}()
 	}
 

@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -55,7 +57,7 @@ var (
 			node, 
 			correlation_id,
 			msg
-			) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+			) VALUES `
 
 	rtcQuery = `(
 			date,
@@ -70,7 +72,7 @@ var (
 			type,
 			node,
 			msg
-			) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+			) VALUES `
 )
 
 type SQL struct {
@@ -79,13 +81,21 @@ type SQL struct {
 
 func (s *SQL) setup() error {
 	var err error
+	addr := strings.Split(config.Setting.DBAddr, ":")
+
+	if len(addr) != 2 {
+		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
+		logp.Err("%v", err)
+		return err
+	}
+
 	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPassword+"@tcp("+config.Setting.DBAddr+":3306)/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
+		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPassword+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
 			logp.Err("%v", err)
 			return err
 		}
 	} else {
-		if s.dbc, err = sql.Open(config.Setting.DBDriver, "host="+config.Setting.DBAddr+"port=5432"+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPassword); err != nil {
+		if s.dbc, err = sql.Open(config.Setting.DBDriver, "host="+addr[0]+"port="+addr[1]+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPassword); err != nil {
 			logp.Err("%v", err)
 			return err
 		}
@@ -100,12 +110,17 @@ func (s *SQL) setup() error {
 		return err
 	}
 
-	for i := 1; i < 100; i++ {
-		sipQuery += `,(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	for i := 0; i < config.Setting.DBBulk; i++ {
+		sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 	}
-	for i := 1; i < 100; i++ {
-		rtcQuery += `,(?,?,?,?,?,?,?,?,?,?,?,?)`
+	sipQuery = sipQuery[:len(sipQuery)-1]
+
+	for i := 0; i < config.Setting.DBBulk/20; i++ {
+		rtcQuery += `(?,?,?,?,?,?,?,?,?,?,?,?),`
 	}
+	rtcQuery = rtcQuery[:len(rtcQuery)-1]
+
+	logp.Info("%s output address: %v, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 
 	return nil
 }
@@ -113,6 +128,8 @@ func (s *SQL) setup() error {
 func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 	var (
 		pkt        *decoder.HEPPacket
+		ts         string
+		tsNano     int64
 		ok         bool
 		regCnt     int
 		callCnt    int
@@ -120,15 +137,15 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 		logCnt     int
 		rtcpCnt    int
 		reportCnt  int
-		regRows    = make([]interface{}, 0, 100)
-		callRows   = make([]interface{}, 0, 100)
-		dnsRows    = make([]interface{}, 0, 100)
-		logRows    = make([]interface{}, 0, 100)
-		rtcpRows   = make([]interface{}, 0, 100)
-		reportRows = make([]interface{}, 0, 100)
+		sipBulkCnt = config.Setting.DBBulk
+		rtcBulkCnt = config.Setting.DBBulk / 20
+		regRows    = make([]interface{}, 0, sipBulkCnt)
+		callRows   = make([]interface{}, 0, sipBulkCnt)
+		dnsRows    = make([]interface{}, 0, rtcBulkCnt)
+		logRows    = make([]interface{}, 0, rtcBulkCnt)
+		rtcpRows   = make([]interface{}, 0, rtcBulkCnt)
+		reportRows = make([]interface{}, 0, rtcBulkCnt)
 	)
-
-	logp.Info("Run MySQL Output, server: %+v, topic: %s\n", config.Setting.DBAddr, topic)
 
 	for {
 		pkt, ok = <-mCh
@@ -136,12 +153,15 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 			break
 		}
 
-		if pkt.ProtoType == 1 && pkt.Payload != "" {
+		ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
+		tsNano = pkt.Timestamp.UnixNano() / 1000
+
+		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SipMsg != nil {
 
 			if pkt.SipMsg.Cseq.Method == "REGISTER" {
 				regRows = append(regRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.SipMsg.StartLine.Method,
 					pkt.SipMsg.StartLine.RespText,
 					pkt.SipMsg.StartLine.URI.Raw,
@@ -183,15 +203,15 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.Payload, 3000)}...)
 
 				regCnt++
-				if regCnt == 100 {
-					s.batchInsert("call", regRows)
+				if regCnt == sipBulkCnt {
+					s.bulkInsert("register", regRows)
 					regRows = []interface{}{}
 					regCnt = 0
 				}
 			} else {
 				callRows = append(callRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.SipMsg.StartLine.Method,
 					pkt.SipMsg.StartLine.RespText,
 					pkt.SipMsg.StartLine.URI.Raw,
@@ -233,67 +253,68 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.Payload, 3000)}...)
 
 				callCnt++
-				if callCnt == 100 {
-					s.batchInsert("register", callRows)
+				if callCnt == sipBulkCnt {
+					s.bulkInsert("call", callRows)
 					callRows = []interface{}{}
 					callCnt = 0
 				}
 			}
 		} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
+			fmt.Println(pkt.CorrelationID)
 			switch pkt.ProtoType {
 			case 5:
 				rtcpRows = append(rtcpRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.CorrelationID,
 					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				rtcpCnt++
-				if rtcpCnt == 100 {
-					s.batchInsert("rtcp", rtcpRows)
+				if rtcpCnt == rtcBulkCnt {
+					s.bulkInsert("rtcp", rtcpRows)
 					rtcpRows = []interface{}{}
 					rtcpCnt = 0
 				}
 			case 38:
 				reportRows = append(reportRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.CorrelationID,
 					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				reportCnt++
-				if reportCnt == 100 {
-					s.batchInsert("report", reportRows)
+				if reportCnt == rtcBulkCnt {
+					s.bulkInsert("report", reportRows)
 					reportRows = []interface{}{}
 					reportCnt = 0
 				}
 			case 53:
 				dnsRows = append(dnsRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.CorrelationID,
 					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				dnsCnt++
-				if dnsCnt == 100 {
-					s.batchInsert("dns", dnsRows)
+				if dnsCnt == rtcBulkCnt {
+					s.bulkInsert("dns", dnsRows)
 					dnsRows = []interface{}{}
 					dnsCnt = 0
 				}
 			case 100:
 				logRows = append(logRows, []interface{}{
-					pkt.Timestamp.Format("2006-01-02 15:04:05"),
-					pkt.Timestamp.UnixNano() / 1000,
+					ts,
+					tsNano,
 					pkt.CorrelationID,
 					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				logCnt++
-				if logCnt == 100 {
-					s.batchInsert("log", logRows)
+				if logCnt == rtcBulkCnt {
+					s.bulkInsert("log", logRows)
 					logRows = []interface{}{}
 					logCnt = 0
 				}
@@ -302,7 +323,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 	}
 }
 
-func (s *SQL) batchInsert(query string, rows []interface{}) {
+func (s *SQL) bulkInsert(query string, rows []interface{}) {
 	switch query {
 	case "call":
 		query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + sipQuery

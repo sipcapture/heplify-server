@@ -6,8 +6,8 @@ import (
 	"github.com/negbie/heplify-server"
 )
 
-type MessageQueue struct {
-	Queue    QueueHandler
+type Queue struct {
+	QH       QueueHandler
 	ErrCount *uint64
 
 	Topic string
@@ -19,23 +19,23 @@ type QueueHandler interface {
 	add(string, chan *decoder.HEPPacket, *uint64)
 }
 
-func New(name string) *MessageQueue {
+func New(name string) *Queue {
 	var register = map[string]QueueHandler{
 		"nsq": new(NSQ),
 	}
 
-	return &MessageQueue{
-		Queue: register[name],
+	return &Queue{
+		QH: register[name],
 	}
 }
 
-func (m *MessageQueue) Run() error {
+func (q *Queue) Run() error {
 	var (
 		wg  sync.WaitGroup
 		err error
 	)
 
-	err = m.Queue.setup()
+	err = q.QH.setup()
 	if err != nil {
 		return err
 	}
@@ -43,14 +43,14 @@ func (m *MessageQueue) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		topic := m.Topic
-		m.Queue.add(topic, m.Chan, m.ErrCount)
+		topic := q.Topic
+		q.QH.add(topic, q.Chan, q.ErrCount)
 	}()
 
 	wg.Wait()
 	return nil
 }
 
-func (m *MessageQueue) End() {
-	close(m.Chan)
+func (q *Queue) End() {
+	close(q.Chan)
 }
