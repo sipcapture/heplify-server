@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
@@ -16,18 +17,19 @@ import (
 )
 
 type HEPInput struct {
-	addr    string
-	pool    chan chan struct{}
-	stats   HEPStats
-	stop    bool
-	workers int
+	addr     string
+	pool     chan chan struct{}
+	stats    HEPStats
+	stop     bool
+	workers  int
+	dupCache *freecache.Cache
 }
 
 type HEPStats struct {
 	PktCount uint64
 	HEPCount uint64
+	DupCount uint64
 	ErrCount uint64
-	Workers  int32
 }
 
 var (
@@ -44,9 +46,10 @@ var (
 
 func NewHEP() *HEPInput {
 	return &HEPInput{
-		addr:    config.Setting.HEPAddr,
-		workers: config.Setting.HEPWorkers,
-		pool:    make(chan chan struct{}, runtime.NumCPU()*1e2),
+		addr:     config.Setting.HEPAddr,
+		workers:  config.Setting.HEPWorkers,
+		pool:     make(chan chan struct{}, runtime.NumCPU()*1e2),
+		dupCache: freecache.NewCache(20 * 1024 * 1024),
 	}
 }
 
@@ -61,7 +64,6 @@ func (h *HEPInput) Run() {
 		logp.Critical("%v", err)
 	}
 
-	atomic.AddInt32(&h.stats.Workers, int32(h.workers))
 	for n := 0; n < h.workers; n++ {
 		go func() {
 			shut := make(chan struct{})
@@ -133,6 +135,16 @@ GO:
 			}
 		}
 
+		_, err = h.dupCache.Get(msg)
+		if err == nil {
+			atomic.AddUint64(&h.stats.DupCount, 1)
+			continue
+		}
+		err = h.dupCache.Set(msg, nil, 4)
+		if err != nil {
+			logp.Warn("%v", err)
+		}
+
 		hepPkt, err = decoder.DecodeHEP(msg)
 		if err != nil {
 			continue
@@ -143,13 +155,13 @@ GO:
 		select {
 		case dbCh <- hepPkt:
 		default:
-			//logp.Warn("overflowing db channel")
+			logp.Warn("overflowing db channel")
 		}
 
 		select {
 		case metricCh <- hepPkt:
 		default:
-			//logp.Warn("overflowing metric channel")
+			logp.Warn("overflowing metric channel")
 		}
 	}
 }

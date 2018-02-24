@@ -41,6 +41,7 @@ func init() {
 	flag.StringVar(&config.Setting.MQAddr, "qs", "localhost:4015", "Message queue server address")
 	flag.StringVar(&config.Setting.MQTopic, "qt", "hep", "Message queue topic name")
 	flag.StringVar(&config.Setting.PromAddr, "ps", "0.0.0.0:8888", "Prometheus exposing address")
+	flag.StringVar(&config.Setting.PromTarget, "pt", "", "Prometheus collecting targets")
 	flag.StringVar(&config.Setting.DBDriver, "dd", "mysql", "Database driver [mysql, postgres]")
 	flag.StringVar(&config.Setting.DBAddr, "ds", "localhost:3306", "Database server address")
 	flag.IntVar(&config.Setting.DBBulk, "dk", 100, "Number of rows to insert at once")

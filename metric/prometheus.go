@@ -3,6 +3,7 @@ package metric
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -12,6 +13,7 @@ import (
 )
 
 type Prometheus struct {
+	Targets           []string
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
@@ -19,6 +21,8 @@ type Prometheus struct {
 
 func (p *Prometheus) setup() error {
 	var err error
+
+	p.Targets = strings.Split(config.Setting.PromTarget, ",")
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
 
@@ -95,7 +99,12 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 
 		if pkt.SipMsg != nil {
 
-			p.CounterVecMetrics["method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
+			for _, t := range p.Targets {
+				if pkt.SrcIP == t || pkt.DstIP == t {
+					p.CounterVecMetrics["method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
+				}
+
+			}
 
 		}
 

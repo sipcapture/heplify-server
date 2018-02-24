@@ -175,13 +175,13 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.SipMsg.To.Tag, 64),
 					pkt.SipMsg.PAssertedIdVal,
 					pkt.SipMsg.Contact.URI.User,
-					"", // TODO auth_user,
+					pkt.SipMsg.Authorization.Username,
 					pkt.SipMsg.CallId,
 					"", // TODO CallId-Aleg,
 					pkt.SipMsg.Via[0].Via,
 					pkt.SipMsg.Via[0].Branch,
 					pkt.SipMsg.Cseq.Val,
-					"", // TODO diversion,
+					pkt.SipMsg.DiversionVal,
 					"", // TODO reason,
 					pkt.SipMsg.ContentType,
 					short(pkt.SipMsg.Authorization.Val, 256),
@@ -191,7 +191,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					pkt.DstIP,
 					pkt.DstPort,
 					pkt.SipMsg.Contact.URI.Host,
-					0,  // TODO contact_port,
+					pkt.SipMsg.Contact.URI.PortInt,
 					"", // TODO originator_ip,
 					0,  // TODO originator_port,
 					pkt.Protocol,
@@ -225,13 +225,13 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.SipMsg.To.Tag, 64),
 					pkt.SipMsg.PAssertedIdVal,
 					pkt.SipMsg.Contact.URI.User,
-					"", // TODO auth_user,
+					pkt.SipMsg.Authorization.Username,
 					pkt.SipMsg.CallId,
 					"", // TODO CallId-Aleg,
 					pkt.SipMsg.Via[0].Via,
 					pkt.SipMsg.Via[0].Branch,
 					pkt.SipMsg.Cseq.Val,
-					"", // TODO diversion,
+					pkt.SipMsg.DiversionVal,
 					"", // TODO reason,
 					pkt.SipMsg.ContentType,
 					short(pkt.SipMsg.Authorization.Val, 256),
@@ -241,7 +241,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					pkt.DstIP,
 					pkt.DstPort,
 					pkt.SipMsg.Contact.URI.Host,
-					0,  // TODO contact_port,
+					pkt.SipMsg.Contact.URI.PortInt,
 					"", // TODO originator_ip,
 					0,  // TODO originator_port,
 					pkt.Protocol,
@@ -260,7 +260,6 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 				}
 			}
 		} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
-			fmt.Println(pkt.CorrelationID)
 			switch pkt.ProtoType {
 			case 5:
 				rtcpRows = append(rtcpRows, []interface{}{
