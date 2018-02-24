@@ -108,6 +108,7 @@ func (h *HEPInput) Run() {
 func (h *HEPInput) End() {
 	h.stop = true
 	time.Sleep(1 * time.Second)
+	logp.Info("heplify-server has been stopped")
 	close(inCh)
 }
 

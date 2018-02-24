@@ -13,7 +13,8 @@ import (
 )
 
 type Prometheus struct {
-	Targets           []string
+	TargetIP          []string
+	TargetName        []string
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
@@ -22,42 +23,57 @@ type Prometheus struct {
 func (p *Prometheus) setup() error {
 	var err error
 
-	p.Targets = strings.Split(config.Setting.PromTarget, ",")
+	p.TargetIP = strings.Split(config.Setting.PromTargetIP, ",")
+	p.TargetName = strings.Split(config.Setting.PromTargetName, ",")
+
+	if len(p.TargetIP) != len(p.TargetName) {
+		return fmt.Errorf("please give every prometheus target a IP address and a name")
+	}
+
+	for _, tn := range p.TargetName {
+		if len(tn) < 2 {
+			return fmt.Errorf("please give every prometheus target a unique name with at least 2 characters")
+		}
+	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
+	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
+	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
 
 	p.GaugeMetrics["kind"] = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "kind",
 		Help: "SIP packet kind",
 	})
 
-	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
-
 	p.GaugeVecMetrics["size"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "size",
 		Help: "SIP packet size",
 	}, []string{"type"})
-
-	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
-
-	p.CounterVecMetrics["method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "method_response",
-		Help: "SIP method and response counter",
-	}, []string{"method", "response"})
 
 	p.CounterVecMetrics["packets"] = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "packets",
 		Help: "Packet type counter",
 	}, []string{"type"})
 
+	for _, tn := range p.TargetName {
+
+		p.CounterVecMetrics[tn+"_method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: tn + "_method_response",
+			Help: "SIP method and response counter",
+		}, []string{"method", "response"})
+
+	}
+
 	for k := range p.GaugeMetrics {
+		logp.Info("register prometheus gaugeMetric %s", k)
 		prometheus.MustRegister(p.GaugeMetrics[k])
 	}
 	for k := range p.GaugeVecMetrics {
+		logp.Info("register prometheus gaugeVecMetric %s", k)
 		prometheus.MustRegister(p.GaugeVecMetrics[k])
 	}
 	for k := range p.CounterVecMetrics {
-		fmt.Println(k)
+		logp.Info("register prometheus counterVecMetric %s", k)
 		prometheus.MustRegister(p.CounterVecMetrics[k])
 	}
 
@@ -99,14 +115,12 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 
 		if pkt.SipMsg != nil {
 
-			for _, t := range p.Targets {
-				if pkt.SrcIP == t || pkt.DstIP == t {
-					p.CounterVecMetrics["method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
+			for k, tn := range p.TargetName {
+				if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
+					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
 				}
 
 			}
-
 		}
-
 	}
 }

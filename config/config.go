@@ -12,8 +12,9 @@ type Config struct {
 	MQAddr  string
 	MQTopic string
 
-	PromAddr   string
-	PromTarget string
+	PromAddr       string
+	PromTargetIP   string
+	PromTargetName string
 
 	DBDriver   string
 	DBAddr     string
@@ -34,8 +35,9 @@ func NewConfig() *Config {
 		MQAddr:  "localhost:4015",
 		MQTopic: "hep",
 
-		PromAddr:   "0.0.0.0:8888",
-		PromTarget: "",
+		PromAddr:       "0.0.0.0:8888",
+		PromTargetIP:   "",
+		PromTargetName: "",
 
 		DBDriver:   "mysql",
 		DBAddr:     "localhost:3306",

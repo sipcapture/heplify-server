@@ -130,7 +130,7 @@ func DecodeHEP(packet []byte) (*HEPPacket, error) {
 }
 
 func (h *HEPPacket) parse(packet []byte) error {
-	if packet[0] == 0x48 && packet[3] == 0x33 {
+	if packet[0] == 0x48 && packet[2] == 0x50 && packet[3] == 0x33 {
 		err := h.parseHEP(packet)
 		if err != nil {
 			return err
@@ -141,6 +141,8 @@ func (h *HEPPacket) parse(packet []byte) error {
 		if h.ProtoType == 1 && len(h.Payload) > 100 {
 			err = h.parseSIP()
 			if err != nil {
+				logp.Err("%v", h.SipMsg.Error)
+				logp.Err("%v", h.SipMsg.Msg)
 				return err
 			}
 		}
@@ -269,8 +271,6 @@ func (h *HEPPacket) parseSIP() error {
 	}
 
 	if h.SipMsg.Error != nil {
-		logp.Err("%v", h.SipMsg.Error)
-		logp.Err("%v", h.SipMsg.Msg)
 		return h.SipMsg.Error
 	}
 

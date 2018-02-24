@@ -341,9 +341,7 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 	_, err := s.dbc.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
-		//*ec++
 	}
-
 }
 
 func short(s string, i int) string {
