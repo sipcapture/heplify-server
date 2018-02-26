@@ -3,6 +3,7 @@ package metric
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -40,46 +41,59 @@ func (p *Prometheus) setup() error {
 	p.TargetName = strings.Split(promTargetName, ",")
 
 	dup := make(map[string]bool)
+
 	uniqueNames := []string{}
 	for _, tn := range p.TargetName {
 		if _, v := dup[tn]; !v {
 			dup[tn] = true
 			uniqueNames = append(uniqueNames, tn)
+		} else {
+			return fmt.Errorf("please give every prometheus target a unique name")
+		}
+		if len(tn) < 2 {
+			return fmt.Errorf("please give every prometheus target name at least 2 characters")
 		}
 	}
 
+	uniqueIP := []string{}
+	for _, ti := range p.TargetIP {
+		if _, v := dup[ti]; !v {
+			dup[ti] = true
+			uniqueIP = append(uniqueIP, ti)
+		} else {
+			return fmt.Errorf("please give every prometheus target a unique IP")
+		}
+		if len(ti) < 7 {
+			return fmt.Errorf("please give every prometheus target IP at least 7 characters")
+		}
+	}
+
+	p.TargetIP = uniqueIP
 	p.TargetName = uniqueNames
 
 	if len(p.TargetIP) != len(p.TargetName) {
-		return fmt.Errorf("please give every prometheus target a IP address and a name")
-	}
-
-	for _, tn := range p.TargetName {
-		if len(tn) < 2 {
-			return fmt.Errorf("please give every prometheus target a unique name with at least 2 characters")
-		}
+		return fmt.Errorf("please give every prometheus target a IP address and a unique name")
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
 	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
 	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
 
-	p.GaugeMetrics["kind"] = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "kind",
-		Help: "SIP packet kind",
-	})
-
-	p.GaugeVecMetrics["size"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "size",
-		Help: "SIP packet size",
+	p.GaugeVecMetrics["hep_size"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "hep_size",
+		Help: "HEP packet size",
 	}, []string{"type"})
 
-	p.CounterVecMetrics["packets"] = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "packets",
-		Help: "Packet type counter",
+	p.CounterVecMetrics["hep_packets"] = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "hep_packets",
+		Help: "HEP packet type counter",
 	}, []string{"type"})
 
 	for _, tn := range p.TargetName {
+		p.GaugeMetrics[tn+"call_setup_time"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "call_setup_time",
+			Help: "SIP call setup time",
+		})
 
 		p.CounterVecMetrics[tn+"_method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: tn + "_method_response",
@@ -124,17 +138,17 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 		}
 
 		if pkt.ProtoType == 1 {
-			p.CounterVecMetrics["packets"].WithLabelValues("sip").Inc()
-			p.GaugeVecMetrics["size"].WithLabelValues("sip").Add(float64(len(pkt.Payload) / 1048576))
+			p.CounterVecMetrics["hep_packets"].WithLabelValues("sip").Inc()
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("sip").Add(float64(len(pkt.Payload) / 1048576))
 		} else if pkt.ProtoType == 5 {
-			p.CounterVecMetrics["packets"].WithLabelValues("rtcp").Inc()
-			p.GaugeVecMetrics["size"].WithLabelValues("rtcp").Add(float64(len(pkt.Payload) / 1048576))
+			p.CounterVecMetrics["hep_packets"].WithLabelValues("rtcp").Inc()
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("rtcp").Add(float64(len(pkt.Payload) / 1048576))
 		} else if pkt.ProtoType == 38 {
-			p.CounterVecMetrics["packets"].WithLabelValues("horaclifix").Inc()
-			p.GaugeVecMetrics["size"].WithLabelValues("horaclifix").Add(float64(len(pkt.Payload) / 1048576))
+			p.CounterVecMetrics["hep_packets"].WithLabelValues("horaclifix").Inc()
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("horaclifix").Add(float64(len(pkt.Payload) / 1048576))
 		} else if pkt.ProtoType == 100 {
-			p.CounterVecMetrics["packets"].WithLabelValues("log").Inc()
-			p.GaugeVecMetrics["size"].WithLabelValues("log").Add(float64(len(pkt.Payload) / 1048576))
+			p.CounterVecMetrics["hep_packets"].WithLabelValues("log").Inc()
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("log").Add(float64(len(pkt.Payload) / 1048576))
 		}
 
 		if pkt.SipMsg != nil {
@@ -142,9 +156,30 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 			for k, tn := range p.TargetName {
 				if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
 					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
+
+					if pkt.SipMsg.RTPStatVal != "" {
+						p.dissectStats(tn, pkt.SipMsg.RTPStatVal)
+					}
 				}
 
 			}
 		}
 	}
+}
+
+func (p *Prometheus) dissectStats(tn, stats string) {
+	m := make(map[string]string)
+	sr := strings.Split(stats, ";")
+
+	for _, pair := range sr {
+		ss := strings.Split(pair, "=")
+		m[ss[0]] = ss[1]
+	}
+
+	cs, err := strconv.Atoi(m["CS"])
+	if err != nil {
+		logp.Err("%v", err)
+	}
+
+	p.GaugeMetrics[tn+"call_setup_time"].Set(float64(cs))
 }

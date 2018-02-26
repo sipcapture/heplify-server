@@ -268,9 +268,6 @@ func (h *HEPPacket) parseSIP() error {
 	if h.SipMsg.Cseq == nil {
 		h.SipMsg.Cseq = new(sipparser.Cseq)
 	}
-	if h.SipMsg.RTPStat == nil {
-		h.SipMsg.RTPStat = new(sipparser.RTPStat)
-	}
 
 	if h.SipMsg.Error != nil {
 		return h.SipMsg.Error
