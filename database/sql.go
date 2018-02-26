@@ -338,6 +338,8 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 		query = "INSERT INTO log_capture_all_" + time.Now().Format("20060102") + rtcQuery
 	}
 
+	logp.Debug("sql", "%s\n%#v", query, rows)
+
 	_, err := s.dbc.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)

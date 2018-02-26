@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -20,11 +21,34 @@ type Prometheus struct {
 	CounterVecMetrics map[string]*prometheus.CounterVec
 }
 
+func cutSpace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
+}
+
 func (p *Prometheus) setup() error {
 	var err error
 
-	p.TargetIP = strings.Split(config.Setting.PromTargetIP, ",")
-	p.TargetName = strings.Split(config.Setting.PromTargetName, ",")
+	promTargetIP := cutSpace(config.Setting.PromTargetIP)
+	promTargetName := cutSpace(config.Setting.PromTargetName)
+
+	p.TargetIP = strings.Split(promTargetIP, ",")
+	p.TargetName = strings.Split(promTargetName, ",")
+
+	dup := make(map[string]bool)
+	uniqueNames := []string{}
+	for _, tn := range p.TargetName {
+		if _, v := dup[tn]; !v {
+			dup[tn] = true
+			uniqueNames = append(uniqueNames, tn)
+		}
+	}
+
+	p.TargetName = uniqueNames
 
 	if len(p.TargetIP) != len(p.TargetName) {
 		return fmt.Errorf("please give every prometheus target a IP address and a name")

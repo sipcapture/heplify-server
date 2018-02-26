@@ -138,7 +138,7 @@ func (h *HEPPacket) parse(packet []byte) error {
 
 		h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 
-		if h.ProtoType == 1 && len(h.Payload) > 100 {
+		if h.ProtoType == 1 && len(h.Payload) > 64 {
 			err = h.parseSIP()
 			if err != nil {
 				logp.Err("%v", h.SipMsg.Error)
@@ -146,6 +146,8 @@ func (h *HEPPacket) parse(packet []byte) error {
 				return err
 			}
 		}
+
+		logp.Debug("hep", "%#v", h)
 
 		return nil
 	}

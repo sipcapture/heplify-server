@@ -23,7 +23,7 @@ func (n *NSQ) setup() error {
 	cfg.UserAgent = fmt.Sprintf("heplify-server-nsq-%s", nsq.VERSION)
 	cfg.DialTimeout = time.Millisecond * time.Duration(2000)
 
-	n.producer, err = nsq.NewProducer(config.Setting.NSQAddr, cfg)
+	n.producer, err = nsq.NewProducer(config.Setting.MQAddr, cfg)
 	if err != nil {
 		logp.Err("%v", err)
 		return err
@@ -38,7 +38,7 @@ func (n *NSQ) add(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 		ok  bool
 	)
 
-	logp.Info("Run NSQ Output, server: %+v, topic: %s\n", config.Setting.NSQAddr, topic)
+	logp.Info("Run NSQ Output, server: %+v, topic: %s\n", config.Setting.MQAddr, topic)
 
 	for {
 		msg, ok = <-mCh
