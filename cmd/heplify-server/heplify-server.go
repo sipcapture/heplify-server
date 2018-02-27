@@ -40,7 +40,7 @@ func init() {
 	flag.StringVar(&config.Setting.MQName, "qn", "nsq", "Message queue name")
 	flag.StringVar(&config.Setting.MQAddr, "qs", "localhost:4015", "Message queue server address")
 	flag.StringVar(&config.Setting.MQTopic, "qt", "hep", "Message queue topic name")
-	flag.StringVar(&config.Setting.PromAddr, "ps", "0.0.0.0:8888", "Prometheus exposing address")
+	flag.StringVar(&config.Setting.PromAddr, "ps", "0.0.0.0:9999", "Prometheus exposing address")
 	flag.StringVar(&config.Setting.PromTargetIP, "pi", "", "Prometheus target IP")
 	flag.StringVar(&config.Setting.PromTargetName, "pn", "", "Prometheus unique target name")
 	flag.StringVar(&config.Setting.DBDriver, "dd", "mysql", "Database driver [mysql, postgres]")

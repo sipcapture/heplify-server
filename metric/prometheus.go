@@ -57,7 +57,7 @@ func (p *Prometheus) setup() error {
 
 	uniqueIP := []string{}
 	for _, ti := range p.TargetIP {
-		if _, v := dup[ti]; !v {
+		if _, ok := dup[ti]; !ok {
 			dup[ti] = true
 			uniqueIP = append(uniqueIP, ti)
 		} else {
@@ -139,16 +139,16 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 
 		if pkt.ProtoType == 1 {
 			p.CounterVecMetrics["hep_packets"].WithLabelValues("sip").Inc()
-			p.GaugeVecMetrics["hep_size"].WithLabelValues("sip").Add(float64(len(pkt.Payload) / 1048576))
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("sip").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 5 {
 			p.CounterVecMetrics["hep_packets"].WithLabelValues("rtcp").Inc()
-			p.GaugeVecMetrics["hep_size"].WithLabelValues("rtcp").Add(float64(len(pkt.Payload) / 1048576))
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 38 {
 			p.CounterVecMetrics["hep_packets"].WithLabelValues("horaclifix").Inc()
-			p.GaugeVecMetrics["hep_size"].WithLabelValues("horaclifix").Add(float64(len(pkt.Payload) / 1048576))
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 100 {
 			p.CounterVecMetrics["hep_packets"].WithLabelValues("log").Inc()
-			p.GaugeVecMetrics["hep_size"].WithLabelValues("log").Add(float64(len(pkt.Payload) / 1048576))
+			p.GaugeVecMetrics["hep_size"].WithLabelValues("log").Set(float64(len(pkt.Payload)))
 		}
 
 		if pkt.SipMsg != nil {
@@ -173,13 +173,19 @@ func (p *Prometheus) dissectStats(tn, stats string) {
 
 	for _, pair := range sr {
 		ss := strings.Split(pair, "=")
-		m[ss[0]] = ss[1]
+		if len(ss) == 2 {
+			m[ss[0]] = ss[1]
+		}
 	}
 
-	cs, err := strconv.Atoi(m["CS"])
-	if err != nil {
-		logp.Err("%v", err)
+	if v, ok := m["CS"]; ok {
+		if len(v) >= 1 {
+			cs, err := strconv.Atoi(v)
+			if err == nil {
+				p.GaugeMetrics[tn+"call_setup_time"].Set(float64(cs / 1000))
+			} else {
+				logp.Err("%v", err)
+			}
+		}
 	}
-
-	p.GaugeMetrics[tn+"call_setup_time"].Set(float64(cs))
 }

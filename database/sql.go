@@ -85,18 +85,15 @@ func (s *SQL) setup() error {
 
 	if len(addr) != 2 {
 		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
-		logp.Err("%v", err)
 		return err
 	}
 
 	if config.Setting.DBDriver == "mysql" {
 		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPassword+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
-			logp.Err("%v", err)
 			return err
 		}
 	} else {
 		if s.dbc, err = sql.Open(config.Setting.DBDriver, "host="+addr[0]+"port="+addr[1]+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPassword); err != nil {
-			logp.Err("%v", err)
 			return err
 		}
 	}
@@ -106,7 +103,6 @@ func (s *SQL) setup() error {
 
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()
-		logp.Err("%v", err)
 		return err
 	}
 
@@ -158,34 +154,38 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 
 		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SipMsg != nil {
 
+			if len(pkt.SipMsg.Cseq.Method) < 3 {
+				logp.Warn("faulty cseq method: %s\nin sip msg:", pkt.SipMsg.Cseq.Method, pkt.SipMsg.Msg)
+			}
+
 			if pkt.SipMsg.Cseq.Method == "REGISTER" {
 				regRows = append(regRows, []interface{}{
 					ts,
 					tsNano,
-					pkt.SipMsg.StartLine.Method,
-					pkt.SipMsg.StartLine.RespText,
-					pkt.SipMsg.StartLine.URI.Raw,
-					pkt.SipMsg.StartLine.URI.User,
-					pkt.SipMsg.StartLine.URI.Host,
-					pkt.SipMsg.From.URI.User,
-					pkt.SipMsg.From.URI.Host,
+					short(pkt.SipMsg.StartLine.Method, 50),
+					short(pkt.SipMsg.StartLine.RespText, 100),
+					short(pkt.SipMsg.StartLine.URI.Raw, 200),
+					short(pkt.SipMsg.StartLine.URI.User, 100),
+					short(pkt.SipMsg.StartLine.URI.Host, 150),
+					short(pkt.SipMsg.From.URI.User, 100),
+					short(pkt.SipMsg.From.URI.Host, 150),
 					short(pkt.SipMsg.From.Tag, 64),
-					pkt.SipMsg.To.URI.User,
-					pkt.SipMsg.To.URI.Host,
+					short(pkt.SipMsg.To.URI.User, 100),
+					short(pkt.SipMsg.To.URI.Host, 150),
 					short(pkt.SipMsg.To.Tag, 64),
-					pkt.SipMsg.PAssertedIdVal,
-					pkt.SipMsg.Contact.URI.User,
-					pkt.SipMsg.Authorization.Username,
-					pkt.SipMsg.CallId,
+					short(pkt.SipMsg.PAssertedIdVal, 100),
+					short(pkt.SipMsg.Contact.URI.User, 120),
+					short(pkt.SipMsg.Authorization.Username, 120),
+					short(pkt.SipMsg.CallId, 120),
 					"", // TODO CallId-Aleg,
-					pkt.SipMsg.Via[0].Via,
-					pkt.SipMsg.Via[0].Branch,
-					pkt.SipMsg.Cseq.Val,
-					pkt.SipMsg.DiversionVal,
+					short(pkt.SipMsg.Via[0].Via, 256),
+					short(pkt.SipMsg.Via[0].Branch, 80),
+					short(pkt.SipMsg.Cseq.Val, 25),
+					short(pkt.SipMsg.DiversionVal, 256),
 					"", // TODO reason,
-					pkt.SipMsg.ContentType,
+					short(pkt.SipMsg.ContentType, 256),
 					short(pkt.SipMsg.Authorization.Val, 256),
-					pkt.SipMsg.UserAgent,
+					short(pkt.SipMsg.UserAgent, 256),
 					pkt.SrcIP,
 					pkt.SrcPort,
 					pkt.DstIP,
@@ -199,7 +199,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.SipMsg.RTPStatVal, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
-					pkt.SipMsg.CallId,
+					short(pkt.SipMsg.CallId, 120),
 					short(pkt.Payload, 3000)}...)
 
 				regCnt++
@@ -212,30 +212,30 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 				callRows = append(callRows, []interface{}{
 					ts,
 					tsNano,
-					pkt.SipMsg.StartLine.Method,
-					pkt.SipMsg.StartLine.RespText,
-					pkt.SipMsg.StartLine.URI.Raw,
-					pkt.SipMsg.StartLine.URI.User,
-					pkt.SipMsg.StartLine.URI.Host,
-					pkt.SipMsg.From.URI.User,
-					pkt.SipMsg.From.URI.Host,
+					short(pkt.SipMsg.StartLine.Method, 50),
+					short(pkt.SipMsg.StartLine.RespText, 100),
+					short(pkt.SipMsg.StartLine.URI.Raw, 200),
+					short(pkt.SipMsg.StartLine.URI.User, 100),
+					short(pkt.SipMsg.StartLine.URI.Host, 150),
+					short(pkt.SipMsg.From.URI.User, 100),
+					short(pkt.SipMsg.From.URI.Host, 150),
 					short(pkt.SipMsg.From.Tag, 64),
-					pkt.SipMsg.To.URI.User,
-					pkt.SipMsg.To.URI.Host,
+					short(pkt.SipMsg.To.URI.User, 100),
+					short(pkt.SipMsg.To.URI.Host, 150),
 					short(pkt.SipMsg.To.Tag, 64),
-					pkt.SipMsg.PAssertedIdVal,
-					pkt.SipMsg.Contact.URI.User,
-					pkt.SipMsg.Authorization.Username,
-					pkt.SipMsg.CallId,
+					short(pkt.SipMsg.PAssertedIdVal, 100),
+					short(pkt.SipMsg.Contact.URI.User, 120),
+					short(pkt.SipMsg.Authorization.Username, 120),
+					short(pkt.SipMsg.CallId, 120),
 					"", // TODO CallId-Aleg,
-					pkt.SipMsg.Via[0].Via,
-					pkt.SipMsg.Via[0].Branch,
-					pkt.SipMsg.Cseq.Val,
-					pkt.SipMsg.DiversionVal,
+					short(pkt.SipMsg.Via[0].Via, 256),
+					short(pkt.SipMsg.Via[0].Branch, 80),
+					short(pkt.SipMsg.Cseq.Val, 25),
+					short(pkt.SipMsg.DiversionVal, 256),
 					"", // TODO reason,
-					pkt.SipMsg.ContentType,
+					short(pkt.SipMsg.ContentType, 256),
 					short(pkt.SipMsg.Authorization.Val, 256),
-					pkt.SipMsg.UserAgent,
+					short(pkt.SipMsg.UserAgent, 256),
 					pkt.SrcIP,
 					pkt.SrcPort,
 					pkt.DstIP,
@@ -249,7 +249,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 					short(pkt.SipMsg.RTPStatVal, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
-					pkt.SipMsg.CallId,
+					short(pkt.SipMsg.CallId, 120),
 					short(pkt.Payload, 3000)}...)
 
 				callCnt++

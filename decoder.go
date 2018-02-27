@@ -142,8 +142,11 @@ func (h *HEPPacket) parse(packet []byte) error {
 			err = h.parseSIP()
 			if err != nil {
 				logp.Err("%v", h.SipMsg.Error)
-				logp.Err("%v", h.SipMsg.Msg)
-				return err
+				if len(h.SipMsg.Msg) > 64 {
+					logp.Err("%v", h.SipMsg.Msg)
+				} else {
+					return err
+				}
 			}
 		}
 
@@ -267,6 +270,21 @@ func (h *HEPPacket) parseSIP() error {
 	}
 	if h.SipMsg.Cseq == nil {
 		h.SipMsg.Cseq = new(sipparser.Cseq)
+	}
+
+	if len(h.SipMsg.StartLine.RespText) > 100 {
+		logp.Warn(h.SipMsg.Msg)
+	}
+	if len(h.SipMsg.From.URI.User) > 100 {
+		logp.Warn(h.SipMsg.Msg)
+	}
+
+	if len(h.SipMsg.To.URI.User) > 100 {
+		logp.Warn(h.SipMsg.Msg)
+	}
+
+	if len(h.SipMsg.StartLine.URI.Raw) > 180 {
+		logp.Warn(h.SipMsg.Msg)
 	}
 
 	if h.SipMsg.Error != nil {
