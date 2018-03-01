@@ -22,15 +22,6 @@ type Prometheus struct {
 	CounterVecMetrics map[string]*prometheus.CounterVec
 }
 
-func cutSpace(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, str)
-}
-
 func (p *Prometheus) setup() error {
 	var err error
 
@@ -90,9 +81,39 @@ func (p *Prometheus) setup() error {
 	}, []string{"type"})
 
 	for _, tn := range p.TargetName {
-		p.GaugeMetrics[tn+"call_setup_time"] = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: tn + "call_setup_time",
-			Help: "SIP call setup time",
+		p.GaugeMetrics[tn+"_xrtp_cs"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_cs",
+			Help: "XRTP call setup time",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_jir"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_jir",
+			Help: "XRTP received jitter",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_jis"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_jis",
+			Help: "XRTP sent jitter",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_plr"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_plr",
+			Help: "XRTP received packets lost",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_pls"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_pls",
+			Help: "XRTP sent packets lost",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_dli"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_dli",
+			Help: "XRTP min rtt",
+		})
+
+		p.GaugeMetrics[tn+"_xrtp_mos"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_mos",
+			Help: "XRTP mos",
 		})
 
 		p.CounterVecMetrics[tn+"_method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -125,14 +146,14 @@ func (p *Prometheus) setup() error {
 	return err
 }
 
-func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
+func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 	var (
-		pkt *decoder.HEPPacket
+		pkt *decoder.HEP
 		ok  bool
 	)
 
 	for {
-		pkt, ok = <-mCh
+		pkt, ok = <-hCh
 		if !ok {
 			break
 		}
@@ -151,14 +172,14 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 			p.GaugeVecMetrics["hep_size"].WithLabelValues("log").Set(float64(len(pkt.Payload)))
 		}
 
-		if pkt.SipMsg != nil {
+		if pkt.SIP != nil {
 
 			for k, tn := range p.TargetName {
 				if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
-					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SipMsg.StartLine.Method, pkt.SipMsg.Cseq.Method).Inc()
+					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
 
-					if pkt.SipMsg.RTPStatVal != "" {
-						p.dissectStats(tn, pkt.SipMsg.RTPStatVal)
+					if pkt.SIP.RTPStatVal != "" {
+						p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
 					}
 				}
 
@@ -167,7 +188,9 @@ func (p *Prometheus) collect(mCh chan *decoder.HEPPacket) {
 	}
 }
 
-func (p *Prometheus) dissectStats(tn, stats string) {
+func (p *Prometheus) dissectXRTPStats(tn, stats string) {
+	var err error
+	cs, pr, ps, plr, pls, jir, jis, dli, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
 	m := make(map[string]string)
 	sr := strings.Split(stats, ";")
 
@@ -180,12 +203,108 @@ func (p *Prometheus) dissectStats(tn, stats string) {
 
 	if v, ok := m["CS"]; ok {
 		if len(v) >= 1 {
-			cs, err := strconv.Atoi(v)
+			cs, err = strconv.Atoi(v)
 			if err == nil {
-				p.GaugeMetrics[tn+"call_setup_time"].Set(float64(cs / 1000))
+				p.GaugeMetrics[tn+"_xrtp_cs"].Set(float64(cs / 1000))
 			} else {
 				logp.Err("%v", err)
 			}
 		}
 	}
+	if v, ok := m["PR"]; ok {
+		if len(v) >= 1 {
+			pr, err = strconv.Atoi(v)
+			if err == nil {
+			} else {
+				logp.Err("%v", err)
+			}
+		}
+	}
+	if v, ok := m["PS"]; ok {
+		if len(v) >= 1 {
+			ps, err = strconv.Atoi(v)
+			if err == nil {
+			} else {
+				logp.Err("%v", err)
+			}
+		}
+	}
+	if v, ok := m["PL"]; ok {
+		if len(v) >= 1 {
+			pl := strings.Split(v, ",")
+			if len(pl) == 2 {
+				plr, err = strconv.Atoi(pl[0])
+				if err == nil {
+					p.GaugeMetrics[tn+"_xrtp_plr"].Set(float64(plr))
+				} else {
+					logp.Err("%v", err)
+				}
+				pls, err = strconv.Atoi(pl[1])
+				if err == nil {
+					p.GaugeMetrics[tn+"_xrtp_pls"].Set(float64(pls))
+				} else {
+					logp.Err("%v", err)
+				}
+			}
+		}
+	}
+	if v, ok := m["JI"]; ok {
+		if len(v) >= 1 {
+			ji := strings.Split(v, ",")
+			if len(ji) == 2 {
+				jir, err = strconv.Atoi(ji[0])
+				if err == nil {
+					p.GaugeMetrics[tn+"_xrtp_jir"].Set(float64(jir))
+				} else {
+					logp.Err("%v", err)
+				}
+				jis, err = strconv.Atoi(ji[1])
+				if err == nil {
+					p.GaugeMetrics[tn+"_xrtp_jis"].Set(float64(jis))
+				} else {
+					logp.Err("%v", err)
+				}
+			}
+		}
+	}
+	if v, ok := m["DL"]; ok {
+		if len(v) >= 1 {
+			dl := strings.Split(v, ",")
+			if len(dl) == 3 {
+				dli, err = strconv.Atoi(dl[0])
+				if err == nil {
+					p.GaugeMetrics[tn+"_xrtp_dli"].Set(float64(dli))
+				} else {
+					logp.Err("%v", err)
+				}
+			}
+		}
+	}
+
+	if pr == 0 && ps == 0 {
+		pr, ps = 1, 1
+	}
+
+	loss := ((plr + pls) * 100) / (pr + ps)
+	el := (jir * 2) + (dli + 20)
+
+	if el < 160 {
+		r = 93.2 - (float64(el) / 40)
+	} else {
+		r = 93.2 - (float64(el-120) / 10)
+	}
+	r = r - (float64(loss) * 2.5)
+
+	mos = 1 + (0.035)*r + (0.000007)*r*(r-60)*(100-r)
+	p.GaugeMetrics[tn+"_xrtp_mos"].Set(mos)
+
+}
+
+func cutSpace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }

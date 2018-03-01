@@ -12,14 +12,14 @@ func (g *Graylog) setup() error {
 	return err
 }
 
-func (g *Graylog) send(mCh chan *decoder.HEPPacket) {
+func (g *Graylog) send(hCh chan *decoder.HEP) {
 	var (
-		pkt *decoder.HEPPacket
+		pkt *decoder.HEP
 		ok  bool
 	)
 
 	for {
-		pkt, ok = <-mCh
+		pkt, ok = <-hCh
 		if !ok {
 			break
 		}

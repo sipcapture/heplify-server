@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
 )
@@ -54,8 +55,8 @@ const (
 	Vlan              // Chunk 0x0012 VLAN
 )
 
-// HEPPacket represents a parsed HEP packet
-type HEPPacket struct {
+// HEP represents a parsed HEP packet
+type HEP struct {
 	Version           byte
 	Protocol          byte
 	SrcIP             string
@@ -73,11 +74,12 @@ type HEPPacket struct {
 	CompressedPayload string
 	CorrelationID     string
 	Vlan              uint16
-	SipMsg            *sipparser.SipMsg
+	AlegID            string
+	SIP               *sipparser.SipMsg
 }
 
-// SIPPacket represents a parsed SIP packet
-type SIPPacket struct {
+// SIP represents a parsed SIP packet
+type SIP struct {
 	Method          string
 	ReplyReason     string
 	Ruri            string
@@ -108,8 +110,6 @@ type SIPPacket struct {
 	DestinationPort string
 	ContactIP       string
 	ContactPort     string
-	OriginatorIP    string
-	OriginatorPort  string
 	Proto           string
 	Family          string
 	RTPStat         string
@@ -120,16 +120,16 @@ type SIPPacket struct {
 }
 
 // DecodeHEP returns a parsed HEP message
-func DecodeHEP(packet []byte) (*HEPPacket, error) {
-	newHepMsg := &HEPPacket{}
-	err := newHepMsg.parse(packet)
+func DecodeHEP(packet []byte) (*HEP, error) {
+	hep := &HEP{}
+	err := hep.parse(packet)
 	if err != nil {
 		return nil, err
 	}
-	return newHepMsg, nil
+	return hep, nil
 }
 
-func (h *HEPPacket) parse(packet []byte) error {
+func (h *HEP) parse(packet []byte) error {
 	if packet[0] == 0x48 && packet[2] == 0x50 && packet[3] == 0x33 {
 		err := h.parseHEP(packet)
 		if err != nil {
@@ -141,11 +141,13 @@ func (h *HEPPacket) parse(packet []byte) error {
 		if h.ProtoType == 1 && len(h.Payload) > 64 {
 			err = h.parseSIP()
 			if err != nil {
-				logp.Err("%v", h.SipMsg.Error)
-				if len(h.SipMsg.Msg) > 64 {
-					logp.Err("%v", h.SipMsg.Msg)
-				} else {
-					return err
+				logp.Warn("%v", err)
+				logp.Warn("%v", h.SIP.Msg)
+				return err
+			}
+			for _, v := range h.SIP.Headers {
+				if v.Header == config.Setting.AlegID {
+					h.AlegID = v.Val
 				}
 			}
 		}
@@ -157,7 +159,7 @@ func (h *HEPPacket) parse(packet []byte) error {
 	return errors.New("Not a valid HEP3 packet")
 }
 
-func (h *HEPPacket) parseHEP(packet []byte) error {
+func (h *HEP) parseHEP(packet []byte) error {
 	var netSrcIP net.IP
 	var netDstIP net.IP
 	length := binary.BigEndian.Uint16(packet[4:6])
@@ -230,71 +232,63 @@ func (h *HEPPacket) parseHEP(packet []byte) error {
 	return nil
 }
 
-func (h *HEPPacket) parseSIP() error {
+func (h *HEP) parseSIP() error {
 
-	h.SipMsg = sipparser.ParseMsg(h.Payload)
+	h.SIP = sipparser.ParseMsg(h.Payload)
 
-	if h.SipMsg.StartLine == nil {
-		h.SipMsg.StartLine = new(sipparser.StartLine)
+	if h.SIP.StartLine == nil {
+		h.SIP.StartLine = new(sipparser.StartLine)
 	}
-	if h.SipMsg.StartLine.Method == "" {
-		h.SipMsg.StartLine.Method = h.SipMsg.StartLine.Resp
+	if h.SIP.StartLine.Method == "" {
+		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
-	if h.SipMsg.StartLine.URI == nil {
-		h.SipMsg.StartLine.URI = new(sipparser.URI)
+	if h.SIP.StartLine.URI == nil {
+		h.SIP.StartLine.URI = new(sipparser.URI)
 	}
-	if h.SipMsg.From == nil {
-		h.SipMsg.From = new(sipparser.From)
+	if h.SIP.From == nil {
+		h.SIP.From = new(sipparser.From)
 	}
-	if h.SipMsg.From.URI == nil {
-		h.SipMsg.From.URI = new(sipparser.URI)
+	if h.SIP.From.URI == nil {
+		h.SIP.From.URI = new(sipparser.URI)
 	}
-	if h.SipMsg.To == nil {
-		h.SipMsg.To = new(sipparser.From)
+	if h.SIP.To == nil {
+		h.SIP.To = new(sipparser.From)
 	}
-	if h.SipMsg.To.URI == nil {
-		h.SipMsg.To.URI = new(sipparser.URI)
+	if h.SIP.To.URI == nil {
+		h.SIP.To.URI = new(sipparser.URI)
 	}
-	if h.SipMsg.Contact == nil {
-		h.SipMsg.Contact = new(sipparser.From)
+	if h.SIP.Contact == nil {
+		h.SIP.Contact = new(sipparser.From)
 	}
-	if h.SipMsg.Contact.URI == nil {
-		h.SipMsg.Contact.URI = new(sipparser.URI)
+	if h.SIP.Contact.URI == nil {
+		h.SIP.Contact.URI = new(sipparser.URI)
 	}
-	if h.SipMsg.Authorization == nil {
-		h.SipMsg.Authorization = new(sipparser.Authorization)
+	if h.SIP.Authorization == nil {
+		h.SIP.Authorization = new(sipparser.Authorization)
 	}
-	if h.SipMsg.Via == nil {
-		h.SipMsg.Via = make([]*sipparser.Via, 1)
-		h.SipMsg.Via[0] = new(sipparser.Via)
+	if h.SIP.Via == nil {
+		h.SIP.Via = make([]*sipparser.Via, 1)
+		h.SIP.Via[0] = new(sipparser.Via)
 	}
-	if h.SipMsg.Cseq == nil {
-		h.SipMsg.Cseq = new(sipparser.Cseq)
+	if h.SIP.Cseq == nil {
+		h.SIP.Cseq = new(sipparser.Cseq)
 	}
-
-	if len(h.SipMsg.StartLine.RespText) > 100 {
-		logp.Warn(h.SipMsg.Msg)
-	}
-	if len(h.SipMsg.From.URI.User) > 100 {
-		logp.Warn(h.SipMsg.Msg)
+	if h.SIP.Reason == nil {
+		h.SIP.Reason = new(sipparser.Reason)
 	}
 
-	if len(h.SipMsg.To.URI.User) > 100 {
-		logp.Warn(h.SipMsg.Msg)
-	}
-
-	if len(h.SipMsg.StartLine.URI.Raw) > 180 {
-		logp.Warn(h.SipMsg.Msg)
-	}
-
-	if h.SipMsg.Error != nil {
-		return h.SipMsg.Error
+	if h.SIP.Error != nil {
+		return h.SIP.Error
+	} else if len(h.SIP.Cseq.Method) < 3 {
+		return errors.New("Could not find a valid CSeq in packet")
+	} else if len(h.SIP.CallId) < 3 {
+		return errors.New("Could not find a valid Call-ID in packet")
 	}
 
 	return nil
 }
 
-func (h *HEPPacket) String() {
+func (h *HEP) String() {
 	fmt.Printf("Version: \t %d \n", h.Version)
 	fmt.Printf("Protocol: \t %d \n", h.Protocol)
 	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
@@ -314,7 +308,7 @@ func (h *HEPPacket) String() {
 
 // EncodeHEP creates the HEP Packet which
 // will be send to wire
-func EncodeHEP(h *HEPPacket) []byte {
+func EncodeHEP(h *HEP) []byte {
 	buf := new(bytes.Buffer)
 	hepMsg := makeChuncks(h, buf)
 	binary.BigEndian.PutUint16(hepMsg[4:6], uint16(len(hepMsg)))
@@ -322,7 +316,7 @@ func EncodeHEP(h *HEPPacket) []byte {
 }
 
 // makeChuncks will construct the respective HEP chunck
-func makeChuncks(h *HEPPacket, w *bytes.Buffer) []byte {
+func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	w.Write(hepVer)
 	// hepMsg length placeholder. Will be written later
 	w.Write(hepLen)

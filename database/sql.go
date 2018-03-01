@@ -48,8 +48,6 @@ var (
 			destination_port,
 			contact_ip, 
 			contact_port,
-			originator_ip, 
-			originator_port,
 			proto, 
 			family, 
 			rtp_stat,
@@ -107,7 +105,7 @@ func (s *SQL) setup() error {
 	}
 
 	for i := 0; i < config.Setting.DBBulk; i++ {
-		sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+		sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 	}
 	sipQuery = sipQuery[:len(sipQuery)-1]
 
@@ -121,9 +119,9 @@ func (s *SQL) setup() error {
 	return nil
 }
 
-func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
+func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 	var (
-		pkt        *decoder.HEPPacket
+		pkt        *decoder.HEP
 		ts         string
 		tsNano     int64
 		ok         bool
@@ -144,7 +142,7 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 	)
 
 	for {
-		pkt, ok = <-mCh
+		pkt, ok = <-hCh
 		if !ok {
 			break
 		}
@@ -152,55 +150,49 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 		ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
 		tsNano = pkt.Timestamp.UnixNano() / 1000
 
-		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SipMsg != nil {
+		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 
-			if len(pkt.SipMsg.Cseq.Method) < 3 {
-				logp.Warn("faulty cseq method: %s\nin sip msg:", pkt.SipMsg.Cseq.Method, pkt.SipMsg.Msg)
-			}
-
-			if pkt.SipMsg.Cseq.Method == "REGISTER" {
+			if pkt.SIP.Cseq.Method == "REGISTER" {
 				regRows = append(regRows, []interface{}{
 					ts,
 					tsNano,
-					short(pkt.SipMsg.StartLine.Method, 50),
-					short(pkt.SipMsg.StartLine.RespText, 100),
-					short(pkt.SipMsg.StartLine.URI.Raw, 200),
-					short(pkt.SipMsg.StartLine.URI.User, 100),
-					short(pkt.SipMsg.StartLine.URI.Host, 150),
-					short(pkt.SipMsg.From.URI.User, 100),
-					short(pkt.SipMsg.From.URI.Host, 150),
-					short(pkt.SipMsg.From.Tag, 64),
-					short(pkt.SipMsg.To.URI.User, 100),
-					short(pkt.SipMsg.To.URI.Host, 150),
-					short(pkt.SipMsg.To.Tag, 64),
-					short(pkt.SipMsg.PAssertedIdVal, 100),
-					short(pkt.SipMsg.Contact.URI.User, 120),
-					short(pkt.SipMsg.Authorization.Username, 120),
-					short(pkt.SipMsg.CallId, 120),
-					"", // TODO CallId-Aleg,
-					short(pkt.SipMsg.Via[0].Via, 256),
-					short(pkt.SipMsg.Via[0].Branch, 80),
-					short(pkt.SipMsg.Cseq.Val, 25),
-					short(pkt.SipMsg.DiversionVal, 256),
-					"", // TODO reason,
-					short(pkt.SipMsg.ContentType, 256),
-					short(pkt.SipMsg.Authorization.Val, 256),
-					short(pkt.SipMsg.UserAgent, 256),
+					short(pkt.SIP.StartLine.Method, 50),
+					short(pkt.SIP.StartLine.RespText, 100),
+					short(pkt.SIP.StartLine.URI.Raw, 200),
+					short(pkt.SIP.StartLine.URI.User, 100),
+					short(pkt.SIP.StartLine.URI.Host, 150),
+					short(pkt.SIP.From.URI.User, 100),
+					short(pkt.SIP.From.URI.Host, 150),
+					short(pkt.SIP.From.Tag, 64),
+					short(pkt.SIP.To.URI.User, 100),
+					short(pkt.SIP.To.URI.Host, 150),
+					short(pkt.SIP.To.Tag, 64),
+					short(pkt.SIP.PAssertedIdVal, 100),
+					short(pkt.SIP.Contact.URI.User, 120),
+					short(pkt.SIP.Authorization.Username, 120),
+					short(pkt.SIP.CallId, 120),
+					pkt.AlegID,
+					short(pkt.SIP.Via[0].Via, 256),
+					short(pkt.SIP.Via[0].Branch, 80),
+					short(pkt.SIP.Cseq.Val, 25),
+					short(pkt.SIP.DiversionVal, 256),
+					pkt.SIP.Reason.Cause,
+					short(pkt.SIP.ContentType, 256),
+					short(pkt.SIP.Authorization.Val, 256),
+					short(pkt.SIP.UserAgent, 256),
 					pkt.SrcIP,
 					pkt.SrcPort,
 					pkt.DstIP,
 					pkt.DstPort,
-					pkt.SipMsg.Contact.URI.Host,
-					pkt.SipMsg.Contact.URI.PortInt,
-					"", // TODO originator_ip,
-					0,  // TODO originator_port,
+					pkt.SIP.Contact.URI.Host,
+					pkt.SIP.Contact.URI.PortInt,
 					pkt.Protocol,
 					pkt.Version,
-					short(pkt.SipMsg.RTPStatVal, 256),
+					short(pkt.SIP.RTPStatVal, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
-					short(pkt.SipMsg.CallId, 120),
-					short(pkt.Payload, 3000)}...)
+					short(pkt.SIP.CallId, 120),
+					short(pkt.SIP.Msg, 3000)}...)
 
 				regCnt++
 				if regCnt == sipBulkCnt {
@@ -212,45 +204,43 @@ func (s *SQL) insert(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 				callRows = append(callRows, []interface{}{
 					ts,
 					tsNano,
-					short(pkt.SipMsg.StartLine.Method, 50),
-					short(pkt.SipMsg.StartLine.RespText, 100),
-					short(pkt.SipMsg.StartLine.URI.Raw, 200),
-					short(pkt.SipMsg.StartLine.URI.User, 100),
-					short(pkt.SipMsg.StartLine.URI.Host, 150),
-					short(pkt.SipMsg.From.URI.User, 100),
-					short(pkt.SipMsg.From.URI.Host, 150),
-					short(pkt.SipMsg.From.Tag, 64),
-					short(pkt.SipMsg.To.URI.User, 100),
-					short(pkt.SipMsg.To.URI.Host, 150),
-					short(pkt.SipMsg.To.Tag, 64),
-					short(pkt.SipMsg.PAssertedIdVal, 100),
-					short(pkt.SipMsg.Contact.URI.User, 120),
-					short(pkt.SipMsg.Authorization.Username, 120),
-					short(pkt.SipMsg.CallId, 120),
-					"", // TODO CallId-Aleg,
-					short(pkt.SipMsg.Via[0].Via, 256),
-					short(pkt.SipMsg.Via[0].Branch, 80),
-					short(pkt.SipMsg.Cseq.Val, 25),
-					short(pkt.SipMsg.DiversionVal, 256),
-					"", // TODO reason,
-					short(pkt.SipMsg.ContentType, 256),
-					short(pkt.SipMsg.Authorization.Val, 256),
-					short(pkt.SipMsg.UserAgent, 256),
+					short(pkt.SIP.StartLine.Method, 50),
+					short(pkt.SIP.StartLine.RespText, 100),
+					short(pkt.SIP.StartLine.URI.Raw, 200),
+					short(pkt.SIP.StartLine.URI.User, 100),
+					short(pkt.SIP.StartLine.URI.Host, 150),
+					short(pkt.SIP.From.URI.User, 100),
+					short(pkt.SIP.From.URI.Host, 150),
+					short(pkt.SIP.From.Tag, 64),
+					short(pkt.SIP.To.URI.User, 100),
+					short(pkt.SIP.To.URI.Host, 150),
+					short(pkt.SIP.To.Tag, 64),
+					short(pkt.SIP.PAssertedIdVal, 100),
+					short(pkt.SIP.Contact.URI.User, 120),
+					short(pkt.SIP.Authorization.Username, 120),
+					short(pkt.SIP.CallId, 120),
+					pkt.AlegID,
+					short(pkt.SIP.Via[0].Via, 256),
+					short(pkt.SIP.Via[0].Branch, 80),
+					short(pkt.SIP.Cseq.Val, 25),
+					short(pkt.SIP.DiversionVal, 256),
+					pkt.SIP.Reason.Cause,
+					short(pkt.SIP.ContentType, 256),
+					short(pkt.SIP.Authorization.Val, 256),
+					short(pkt.SIP.UserAgent, 256),
 					pkt.SrcIP,
 					pkt.SrcPort,
 					pkt.DstIP,
 					pkt.DstPort,
-					pkt.SipMsg.Contact.URI.Host,
-					pkt.SipMsg.Contact.URI.PortInt,
-					"", // TODO originator_ip,
-					0,  // TODO originator_port,
+					pkt.SIP.Contact.URI.Host,
+					pkt.SIP.Contact.URI.PortInt,
 					pkt.Protocol,
 					pkt.Version,
-					short(pkt.SipMsg.RTPStatVal, 256),
+					short(pkt.SIP.RTPStatVal, 256),
 					pkt.ProtoType,
 					pkt.NodeID,
-					short(pkt.SipMsg.CallId, 120),
-					short(pkt.Payload, 3000)}...)
+					short(pkt.SIP.CallId, 120),
+					short(pkt.SIP.Msg, 3000)}...)
 
 				callCnt++
 				if callCnt == sipBulkCnt {

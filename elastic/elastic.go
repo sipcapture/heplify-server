@@ -8,12 +8,12 @@ import (
 
 type Elastic struct {
 	EH   ElasticHandler
-	Chan chan *decoder.HEPPacket
+	Chan chan *decoder.HEP
 }
 
 type ElasticHandler interface {
 	setup() error
-	send(chan *decoder.HEPPacket)
+	send(chan *decoder.HEP)
 }
 
 func New(name string) *Elastic {

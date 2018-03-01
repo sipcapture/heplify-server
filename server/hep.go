@@ -33,9 +33,9 @@ type HEPStats struct {
 }
 
 var (
-	inCh     = make(chan []byte, 10000)
-	dbCh     = make(chan *decoder.HEPPacket, 10000)
-	metricCh = make(chan *decoder.HEPPacket, 10000)
+	inCh = make(chan []byte, 10000)
+	dbCh = make(chan *decoder.HEP, 10000)
+	mCh  = make(chan *decoder.HEP, 10000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -74,24 +74,28 @@ func (h *HEPInput) Run() {
 
 	logp.Info("heplify-server is listening at %s with %d workers", h.addr, h.workers)
 
-	go func() {
-		d := database.New("mysql")
-		d.ErrCount = &h.stats.ErrCount
-		d.Chan = dbCh
+	if config.Setting.DBAddr != "" {
+		go func() {
+			d := database.New("mysql")
+			d.ErrCount = &h.stats.ErrCount
+			d.Chan = dbCh
 
-		if err := d.Run(); err != nil {
-			logp.Err("%v", err)
-		}
-	}()
+			if err := d.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+		}()
+	}
 
-	go func() {
-		m := metric.New("prometheus")
-		m.Chan = metricCh
+	if config.Setting.PromAddr != "" {
+		go func() {
+			m := metric.New("prometheus")
+			m.Chan = mCh
 
-		if err := m.Run(); err != nil {
-			logp.Err("%v", err)
-		}
-	}()
+			if err := m.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+		}()
+	}
 
 	for !h.stop {
 		buf := hepBuffer.Get().([]byte)
@@ -114,7 +118,7 @@ func (h *HEPInput) End() {
 
 func (h *HEPInput) hepWorker(shut chan struct{}) {
 	var (
-		hepPkt *decoder.HEPPacket
+		hepPkt *decoder.HEP
 		msg    = hepBuffer.Get().([]byte)
 		buf    = new(bytes.Buffer)
 		err    error
@@ -153,16 +157,20 @@ GO:
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
-		select {
-		case dbCh <- hepPkt:
-		default:
-			logp.Warn("overflowing db channel")
+		if config.Setting.DBAddr != "" {
+			select {
+			case dbCh <- hepPkt:
+			default:
+				logp.Warn("overflowing db channel")
+			}
 		}
 
-		select {
-		case metricCh <- hepPkt:
-		default:
-			logp.Warn("overflowing metric channel")
+		if config.Setting.PromAddr != "" {
+			select {
+			case mCh <- hepPkt:
+			default:
+				logp.Warn("overflowing metric channel")
+			}
 		}
 	}
 }

@@ -11,12 +11,12 @@ type Queue struct {
 	ErrCount *uint64
 
 	Topic string
-	Chan  chan *decoder.HEPPacket
+	Chan  chan *decoder.HEP
 }
 
 type QueueHandler interface {
 	setup() error
-	add(string, chan *decoder.HEPPacket, *uint64)
+	add(string, chan *decoder.HEP, *uint64)
 }
 
 func New(name string) *Queue {

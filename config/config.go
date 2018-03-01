@@ -22,7 +22,9 @@ type Config struct {
 	DBName     string
 	DBUser     string
 	DBPassword string
-	Logging    *logp.Logging
+
+	Logging *logp.Logging
+	AlegID  string
 }
 
 func NewConfig() *Config {
@@ -45,6 +47,8 @@ func NewConfig() *Config {
 		DBName:     "homer_data",
 		DBUser:     "test",
 		DBPassword: "test",
+
+		AlegID: "x-cid",
 	}
 }
 

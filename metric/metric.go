@@ -8,12 +8,12 @@ import (
 
 type Metric struct {
 	MH   MetricHandler
-	Chan chan *decoder.HEPPacket
+	Chan chan *decoder.HEP
 }
 
 type MetricHandler interface {
 	setup() error
-	collect(chan *decoder.HEPPacket)
+	collect(chan *decoder.HEP)
 }
 
 func New(name string) *Metric {

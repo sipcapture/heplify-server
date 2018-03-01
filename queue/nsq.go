@@ -31,9 +31,9 @@ func (n *NSQ) setup() error {
 	return nil
 }
 
-func (n *NSQ) add(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
+func (n *NSQ) add(topic string, hCh chan *decoder.HEP, ec *uint64) {
 	var (
-		msg *decoder.HEPPacket
+		msg *decoder.HEP
 		err error
 		ok  bool
 	)
@@ -41,7 +41,7 @@ func (n *NSQ) add(topic string, mCh chan *decoder.HEPPacket, ec *uint64) {
 	logp.Info("Run NSQ Output, server: %+v, topic: %s\n", config.Setting.MQAddr, topic)
 
 	for {
-		msg, ok = <-mCh
+		msg, ok = <-hCh
 		if !ok {
 			break
 		}
