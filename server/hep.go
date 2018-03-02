@@ -72,7 +72,7 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("heplify-server is listening at %s with %d workers", h.addr, h.workers)
+	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
 
 	if config.Setting.DBAddr != "" {
 		go func() {

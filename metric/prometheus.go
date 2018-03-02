@@ -106,9 +106,9 @@ func (p *Prometheus) setup() error {
 			Help: "XRTP sent packets lost",
 		})
 
-		p.GaugeMetrics[tn+"_xrtp_dli"] = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: tn + "_xrtp_dli",
-			Help: "XRTP min rtt",
+		p.GaugeMetrics[tn+"_xrtp_dle"] = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: tn + "_xrtp_dle",
+			Help: "XRTP mean rtt",
 		})
 
 		p.GaugeMetrics[tn+"_xrtp_mos"] = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -119,20 +119,20 @@ func (p *Prometheus) setup() error {
 		p.CounterVecMetrics[tn+"_method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: tn + "_method_response",
 			Help: "SIP method and response counter",
-		}, []string{"method", "response"})
+		}, []string{"response", "method"})
 
 	}
 
 	for k := range p.GaugeMetrics {
-		logp.Info("register prometheus gaugeMetric %s", k)
+		logp.Info("prometheus register gaugeMetric %s", k)
 		prometheus.MustRegister(p.GaugeMetrics[k])
 	}
 	for k := range p.GaugeVecMetrics {
-		logp.Info("register prometheus gaugeVecMetric %s", k)
+		logp.Info("prometheus register gaugeVecMetric %s", k)
 		prometheus.MustRegister(p.GaugeVecMetrics[k])
 	}
 	for k := range p.CounterVecMetrics {
-		logp.Info("register prometheus counterVecMetric %s", k)
+		logp.Info("prometheus register counterVecMetric %s", k)
 		prometheus.MustRegister(p.CounterVecMetrics[k])
 	}
 
@@ -190,7 +190,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 
 func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
-	cs, pr, ps, plr, pls, jir, jis, dli, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
+	cs, pr, ps, plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
 	m := make(map[string]string)
 	sr := strings.Split(stats, ";")
 
@@ -271,9 +271,9 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 		if len(v) >= 1 {
 			dl := strings.Split(v, ",")
 			if len(dl) == 3 {
-				dli, err = strconv.Atoi(dl[0])
+				dle, err = strconv.Atoi(dl[0])
 				if err == nil {
-					p.GaugeMetrics[tn+"_xrtp_dli"].Set(float64(dli))
+					p.GaugeMetrics[tn+"_xrtp_dle"].Set(float64(dle))
 				} else {
 					logp.Err("%v", err)
 				}
@@ -286,7 +286,7 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	}
 
 	loss := ((plr + pls) * 100) / (pr + ps)
-	el := (jir * 2) + (dli + 20)
+	el := (jir * 2) + (dle + 10)
 
 	if el < 160 {
 		r = 93.2 - (float64(el) / 40)
