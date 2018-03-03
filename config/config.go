@@ -1,57 +1,62 @@
 package config
 
-import "github.com/negbie/heplify-server/logp"
+var Setting HeplifyServer
 
-var Setting Config
+type HeplifyServer struct {
+	HEPAddr    string `default:"0.0.0.0:9060"`
+	HEPWorkers int    `default:"100"`
 
-type Config struct {
-	HEPAddr    string
-	HEPWorkers int
+	MQName  string `default:""`
+	MQAddr  string `default:""`
+	MQTopic string `default:""`
 
-	MQName  string
-	MQAddr  string
-	MQTopic string
+	PromAddr       string `default:""`
+	PromHunterIP   string `default:""`
+	PromHunterName string `default:""`
 
-	PromAddr       string
-	PromTargetIP   string
-	PromTargetName string
+	DBDriver string `default:"mysql"`
+	DBAddr   string `default:"localhost:3306"`
+	DBBulk   int    `default:"100"`
+	DBName   string `default:"homer_data"`
+	DBUser   string `default:"test"`
+	DBPass   string `default:"test"`
 
-	DBDriver   string
-	DBAddr     string
-	DBBulk     int
-	DBName     string
-	DBUser     string
-	DBPassword string
+	AlegID string `default:"x-cid"`
 
-	Logging *logp.Logging
-	AlegID  string
+	Loglvl string `default:"info"`
+	LogStd bool   `default:"false"`
+	Logdbg string `default:""`
 }
 
-func NewConfig() *Config {
-	return &Config{
+func NewConfig() *HeplifyServer {
+	return &HeplifyServer{
 
 		HEPAddr:    "0.0.0.0:9060",
 		HEPWorkers: 100,
 
-		MQName:  "nsq",
-		MQAddr:  "localhost:4015",
-		MQTopic: "hep",
+		MQName:  "",
+		MQAddr:  "",
+		MQTopic: "",
 
-		PromAddr:       "0.0.0.0:8888",
-		PromTargetIP:   "",
-		PromTargetName: "",
+		PromAddr:       "",
+		PromHunterIP:   "",
+		PromHunterName: "",
 
-		DBDriver:   "mysql",
-		DBAddr:     "localhost:3306",
-		DBBulk:     100,
-		DBName:     "homer_data",
-		DBUser:     "test",
-		DBPassword: "test",
+		DBDriver: "mysql",
+		DBAddr:   "localhost:3306",
+		DBBulk:   100,
+		DBName:   "homer_data",
+		DBUser:   "test",
+		DBPass:   "test",
 
 		AlegID: "x-cid",
+
+		Loglvl: "info",
+		LogStd: false,
+		Logdbg: "",
 	}
 }
 
-func Get() *Config {
+func Get() *HeplifyServer {
 	return NewConfig()
 }

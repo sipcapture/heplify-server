@@ -15,8 +15,8 @@ import (
 )
 
 type Prometheus struct {
-	TargetIP          []string
-	TargetName        []string
+	HunterIP          []string
+	HunterName        []string
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
@@ -25,45 +25,45 @@ type Prometheus struct {
 func (p *Prometheus) setup() error {
 	var err error
 
-	promTargetIP := cutSpace(config.Setting.PromTargetIP)
-	promTargetName := cutSpace(config.Setting.PromTargetName)
+	promHunterIP := cutSpace(config.Setting.PromHunterIP)
+	promHunterName := cutSpace(config.Setting.PromHunterName)
 
-	p.TargetIP = strings.Split(promTargetIP, ",")
-	p.TargetName = strings.Split(promTargetName, ",")
+	p.HunterIP = strings.Split(promHunterIP, ",")
+	p.HunterName = strings.Split(promHunterName, ",")
 
 	dup := make(map[string]bool)
 
 	uniqueNames := []string{}
-	for _, tn := range p.TargetName {
+	for _, tn := range p.HunterName {
 		if _, v := dup[tn]; !v {
 			dup[tn] = true
 			uniqueNames = append(uniqueNames, tn)
 		} else {
-			return fmt.Errorf("please give every prometheus target a unique name")
+			return fmt.Errorf("please give every prometheus Hunter a unique name")
 		}
 		if len(tn) < 2 {
-			return fmt.Errorf("please give every prometheus target name at least 2 characters")
+			return fmt.Errorf("please give every prometheus Hunter name at least 2 characters")
 		}
 	}
 
 	uniqueIP := []string{}
-	for _, ti := range p.TargetIP {
+	for _, ti := range p.HunterIP {
 		if _, ok := dup[ti]; !ok {
 			dup[ti] = true
 			uniqueIP = append(uniqueIP, ti)
 		} else {
-			return fmt.Errorf("please give every prometheus target a unique IP")
+			return fmt.Errorf("please give every prometheus Hunter a unique IP")
 		}
 		if len(ti) < 7 {
-			return fmt.Errorf("please give every prometheus target IP at least 7 characters")
+			return fmt.Errorf("please give every prometheus Hunter IP at least 7 characters")
 		}
 	}
 
-	p.TargetIP = uniqueIP
-	p.TargetName = uniqueNames
+	p.HunterIP = uniqueIP
+	p.HunterName = uniqueNames
 
-	if len(p.TargetIP) != len(p.TargetName) {
-		return fmt.Errorf("please give every prometheus target a IP address and a unique name")
+	if len(p.HunterIP) != len(p.HunterName) {
+		return fmt.Errorf("please give every prometheus Hunter a IP address and a unique name")
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
@@ -80,7 +80,7 @@ func (p *Prometheus) setup() error {
 		Help: "HEP packet type counter",
 	}, []string{"type"})
 
-	for _, tn := range p.TargetName {
+	for _, tn := range p.HunterName {
 		p.GaugeMetrics[tn+"_xrtp_cs"] = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: tn + "_xrtp_cs",
 			Help: "XRTP call setup time",
@@ -174,8 +174,8 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 
 		if pkt.SIP != nil {
 
-			for k, tn := range p.TargetName {
-				if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
+			for k, tn := range p.HunterName {
+				if pkt.SrcIP == p.HunterIP[k] || pkt.DstIP == p.HunterIP[k] {
 					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
 
 					if pkt.SIP.RTPStatVal != "" {

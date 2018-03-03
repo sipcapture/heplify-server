@@ -1,21 +1,16 @@
 package logp
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 var (
-	toStderr          *bool
-	debugSelectorsStr *string
-
-	// Beat start time
-	startTime time.Time
+	ToStderr          *bool
+	DebugSelectorsStr *string
 )
 
 type Logging struct {
@@ -27,16 +22,9 @@ type Logging struct {
 	Level     string
 }
 
-func init() {
-	startTime = time.Now()
-
-	toStderr = flag.Bool("e", false, "Log to stderr and disable syslog/file output")
-	debugSelectorsStr = flag.String("d", "", "Enable certain debug selectors [hep,sql]")
-}
-
 func HandleFlags(name string) error {
 	level := _log.level
-	selectors := strings.Split(*debugSelectorsStr, ",")
+	selectors := strings.Split(*DebugSelectorsStr, ",")
 	debugSelectors, debugAll := parseSelectors(selectors)
 	if debugAll || len(debugSelectors) > 0 {
 		level = LOG_DEBUG
@@ -73,8 +61,8 @@ func Init(name string, config *Logging) error {
 			debugSelectors = []string{"*"}
 		}
 	}
-	if len(*debugSelectorsStr) > 0 {
-		debugSelectors = strings.Split(*debugSelectorsStr, ",")
+	if len(*DebugSelectorsStr) > 0 {
+		debugSelectors = strings.Split(*DebugSelectorsStr, ",")
 		logLevel = LOG_DEBUG
 	}
 
@@ -93,13 +81,13 @@ func Init(name string, config *Logging) error {
 		toFiles = true
 	}
 
-	// toStderr disables logging to syslog/files
-	if *toStderr {
+	// ToStderr disables logging to syslog/files
+	if *ToStderr {
 		toSyslog = false
 		toFiles = false
 	}
 
-	LogInit(Priority(logLevel), "", toSyslog, *toStderr, debugSelectors)
+	LogInit(Priority(logLevel), "", toSyslog, *ToStderr, debugSelectors)
 	if len(debugSelectors) > 0 {
 		config.Selectors = debugSelectors
 	}
@@ -138,7 +126,7 @@ func Init(name string, config *Logging) error {
 }
 
 func SetStderr() {
-	if !*toStderr {
+	if !*ToStderr {
 		SetToStderr(false, "")
 		Debug("log", "Disable stderr logging")
 	}

@@ -1,0 +1,26 @@
+HEPAddr         = "0.0.0.0:9060"
+HEPWorkers      = 100
+MQName          = ""
+MQAddr          = ""
+MQTopic         = ""
+PromAddr        = ""
+PromHunterIP    = ""
+PromHunterName  = ""
+DBDriver        = "mysql"
+DBAddr          = "localhost:3306"
+DBBulk          = 100
+DBName          = "homer_data"
+DBUser          = "test"
+DBPass          = "test"
+AlegID          = "x-cid"
+Loglvl          = "info"
+LogStd          = false
+Logdbg          = ""
+
+# Examples:
+# -------------------------------------
+# PromAddr        = "0.0.0.0:9999"
+# PromHunterIP    = "10.1.2.3,10.1.2.4"
+# PromHunterName  = "lb1,lb2"
+# Loglvl          = "warning"
+# Logdbg          = "hep,sql"

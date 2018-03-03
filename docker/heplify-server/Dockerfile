@@ -1,9 +1,12 @@
 # sudo docker build -t negbie/heplify-server:latest .
 
 FROM golang:latest as builder
-RUN go get -d -v -u github.com/negbie/heplify-server/
+
+RUN go get -d -v github.com/negbie/heplify-server/
 WORKDIR /go/src/github.com/negbie/heplify-server/cmd/heplify-server/
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w' -installsuffix cgo -o heplify-server .
+RUN set -x && \ 
+    go get -d -v . && \
+    CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w' -installsuffix cgo -o heplify-server .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
