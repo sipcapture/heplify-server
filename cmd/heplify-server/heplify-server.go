@@ -23,10 +23,8 @@ type server interface {
 }
 
 func init() {
-	var (
-		logging     logp.Logging
-		fileRotator logp.FileRotator
-	)
+	var logging logp.Logging
+	var fileRotator logp.FileRotator
 
 	c := multiconfig.New()
 	cfg := new(config.HeplifyServer)
@@ -41,9 +39,9 @@ func init() {
 		fmt.Println("Could not find heplify-server.toml, use flag defaults")
 	}
 
+	logp.DebugSelectorsStr = &config.Setting.LogDbg
+	logging.Level = config.Setting.LogLvl
 	logp.ToStderr = &config.Setting.LogStd
-	logp.DebugSelectorsStr = &config.Setting.Logdbg
-	logging.Level = config.Setting.Loglvl
 	fileRotator.Path = "./"
 	fileRotator.Name = "heplify-server.log"
 	logging.Files = &fileRotator
@@ -56,10 +54,8 @@ func init() {
 }
 
 func main() {
-	var (
-		wg    sync.WaitGroup
-		sigCh = make(chan os.Signal, 1)
-	)
+	var wg sync.WaitGroup
+	var sigCh = make(chan os.Signal, 1)
 
 	//go http.ListenAndServe(":8181", http.DefaultServeMux)
 

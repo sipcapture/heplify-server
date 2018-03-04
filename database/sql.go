@@ -180,9 +180,9 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					short(pkt.SIP.ContentType, 256),
 					short(pkt.SIP.Authorization.Val, 256),
 					short(pkt.SIP.UserAgent, 256),
-					pkt.SrcIP,
+					pkt.SrcIPString,
 					pkt.SrcPort,
-					pkt.DstIP,
+					pkt.DstIPString,
 					pkt.DstPort,
 					pkt.SIP.Contact.URI.Host,
 					pkt.SIP.Contact.URI.PortInt,
@@ -228,9 +228,9 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					short(pkt.SIP.ContentType, 256),
 					short(pkt.SIP.Authorization.Val, 256),
 					short(pkt.SIP.UserAgent, 256),
-					pkt.SrcIP,
+					pkt.SrcIPString,
 					pkt.SrcPort,
-					pkt.DstIP,
+					pkt.DstIPString,
 					pkt.DstPort,
 					pkt.SIP.Contact.URI.Host,
 					pkt.SIP.Contact.URI.PortInt,
@@ -256,7 +256,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					ts,
 					tsNano,
 					pkt.CorrelationID,
-					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				rtcpCnt++
@@ -270,7 +270,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					ts,
 					tsNano,
 					pkt.CorrelationID,
-					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				reportCnt++
@@ -284,7 +284,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					ts,
 					tsNano,
 					pkt.CorrelationID,
-					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				dnsCnt++
@@ -298,7 +298,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					ts,
 					tsNano,
 					pkt.CorrelationID,
-					pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				logCnt++

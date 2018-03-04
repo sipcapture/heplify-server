@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"time"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
@@ -59,8 +61,10 @@ const (
 type HEP struct {
 	Version           byte
 	Protocol          byte
-	SrcIP             string
-	DstIP             string
+	SrcIP             net.IP
+	DstIP             net.IP
+	SrcIPString       string
+	DstIPString       string
 	SrcPort           uint16
 	DstPort           uint16
 	Tsec              uint32
@@ -160,8 +164,6 @@ func (h *HEP) parse(packet []byte) error {
 }
 
 func (h *HEP) parseHEP(packet []byte) error {
-	var netSrcIP net.IP
-	var netDstIP net.IP
 	length := binary.BigEndian.Uint16(packet[4:6])
 	currentByte := uint16(6)
 	for currentByte < length {
@@ -177,17 +179,17 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case Protocol:
 			h.Protocol = chunkBody[0]
 		case IP4SrcIP:
-			netSrcIP = chunkBody
-			h.SrcIP = netSrcIP.String()
+			h.SrcIP = chunkBody
+			h.SrcIPString = h.SrcIP.String()
 		case IP4DstIP:
-			netDstIP = chunkBody
-			h.DstIP = netDstIP.String()
+			h.DstIP = chunkBody
+			h.DstIPString = h.DstIP.String()
 		case IP6SrcIP:
-			netSrcIP = chunkBody
-			h.SrcIP = netSrcIP.String()
+			h.SrcIP = chunkBody
+			h.SrcIPString = h.SrcIP.String()
 		case IP6DstIP:
-			netDstIP = chunkBody
-			h.DstIP = netDstIP.String()
+			h.DstIP = chunkBody
+			h.DstIPString = h.DstIP.String()
 		case SrcPort:
 			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
 		case DstPort:
@@ -205,7 +207,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case NodePW:
 			h.NodePW = string(chunkBody)
 		case Payload:
-			h.Payload = string(chunkBody)
+			h.Payload = toString(chunkBody)
 			if !utf8.ValidString(h.Payload) {
 				v := make([]rune, 0, len(h.Payload))
 				for i, r := range h.Payload {
@@ -217,7 +219,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 					}
 					v = append(v, r)
 				}
-				h.Payload = string(v)
+				h.Payload = toStringRune(v)
 			}
 		case CompressedPayload:
 			h.CompressedPayload = string(chunkBody)
@@ -431,4 +433,23 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 		w.Write(chunck16)
 	*/
 	return w.Bytes()
+}
+
+// toString needs no copy to change slice to string
+func toString(bs []byte) (s string) {
+	// return *(*string)(unsafe.Pointer(&bs))
+	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	pstring.Data = pbytes.Data
+	pstring.Len = pbytes.Len
+	return
+}
+
+func toStringRune(bs []rune) (s string) {
+	// return *(*string)(unsafe.Pointer(&bs))
+	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	pstring.Data = pbytes.Data
+	pstring.Len = pbytes.Len
+	return
 }

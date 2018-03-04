@@ -13,14 +13,14 @@ DBName          = "homer_data"
 DBUser          = "test"
 DBPass          = "test"
 AlegID          = "x-cid"
-Loglvl          = "info"
-LogStd          = false
-Logdbg          = ""
+LogDbg          = ""
+LogLvl          = "info"
+LogStd          = fals
 
 # Examples:
 # -------------------------------------
 # PromAddr        = "0.0.0.0:9999"
 # PromHunterIP    = "10.1.2.3,10.1.2.4"
 # PromHunterName  = "lb1,lb2"
-# Loglvl          = "warning"
-# Logdbg          = "hep,sql"
+# LogDbg          = "hep,sql"
+# LogLvl          = "warning"

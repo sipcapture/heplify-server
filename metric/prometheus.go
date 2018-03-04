@@ -175,7 +175,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 		if pkt.SIP != nil {
 
 			for k, tn := range p.HunterName {
-				if pkt.SrcIP == p.HunterIP[k] || pkt.DstIP == p.HunterIP[k] {
+				if pkt.SrcIPString == p.HunterIP[k] || pkt.DstIPString == p.HunterIP[k] {
 					p.CounterVecMetrics[tn+"_method_response"].WithLabelValues(pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
 
 					if pkt.SIP.RTPStatVal != "" {
