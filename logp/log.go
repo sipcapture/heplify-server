@@ -161,6 +161,8 @@ func Err(format string, v ...interface{}) {
 
 func Critical(format string, v ...interface{}) {
 	msg(LOG_CRIT, "CRIT", format, v...)
+	fmt.Println(v)
+	os.Exit(1)
 }
 
 // WTF prints the message at CRIT level and panics immediately with the same

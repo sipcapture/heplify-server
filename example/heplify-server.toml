@@ -15,7 +15,7 @@ DBPass          = "test"
 AlegID          = "x-cid"
 LogDbg          = ""
 LogLvl          = "info"
-LogStd          = fals
+LogStd          = false
 
 # Examples:
 # -------------------------------------

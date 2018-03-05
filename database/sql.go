@@ -96,8 +96,8 @@ func (s *SQL) setup() error {
 		}
 	}
 
-	s.dbc.SetMaxIdleConns(10)
-	s.dbc.SetMaxOpenConns(10)
+	s.dbc.SetMaxOpenConns(100)
+	s.dbc.SetMaxIdleConns(50)
 
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()

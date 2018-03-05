@@ -48,7 +48,7 @@ func NewHEP() *HEPInput {
 	return &HEPInput{
 		addr:     config.Setting.HEPAddr,
 		workers:  config.Setting.HEPWorkers,
-		pool:     make(chan chan struct{}, runtime.NumCPU()*1e2),
+		pool:     make(chan chan struct{}, runtime.NumCPU()*1e4),
 		dupCache: freecache.NewCache(20 * 1024 * 1024),
 	}
 }
