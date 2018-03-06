@@ -2,8 +2,6 @@ package queue
 
 import (
 	"sync"
-
-	"github.com/negbie/heplify-server"
 )
 
 type Queue struct {
@@ -11,17 +9,18 @@ type Queue struct {
 	ErrCount *uint64
 
 	Topic string
-	Chan  chan *decoder.HEP
+	Chan  chan []byte
 }
 
 type QueueHandler interface {
 	setup() error
-	add(string, chan *decoder.HEP, *uint64)
+	add(string, chan []byte, *uint64)
 }
 
 func New(name string) *Queue {
 	var register = map[string]QueueHandler{
-		"nsq": new(NSQ),
+		"nsq":   new(NSQ),
+		"kafka": new(Kafka),
 	}
 
 	return &Queue{

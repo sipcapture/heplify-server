@@ -74,7 +74,9 @@ var (
 )
 
 type SQL struct {
-	dbc *sql.DB
+	dbc     *sql.DB
+	sipBulk int
+	rtcBulk int
 }
 
 func (s *SQL) setup() error {
@@ -96,25 +98,36 @@ func (s *SQL) setup() error {
 		}
 	}
 
-	s.dbc.SetMaxOpenConns(100)
-	s.dbc.SetMaxIdleConns(50)
+	s.dbc.SetMaxOpenConns(40)
+	s.dbc.SetMaxIdleConns(20)
 
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()
 		return err
 	}
 
-	for i := 0; i < config.Setting.DBBulk; i++ {
+	s.sipBulk = config.Setting.DBBulk
+	s.rtcBulk = config.Setting.DBBulk / 10
+
+	if s.sipBulk < 1 {
+		s.sipBulk = 1
+	}
+
+	if s.rtcBulk < 1 {
+		s.rtcBulk = 1
+	}
+
+	for i := 0; i < s.sipBulk; i++ {
 		sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 	}
 	sipQuery = sipQuery[:len(sipQuery)-1]
 
-	for i := 0; i < config.Setting.DBBulk/20; i++ {
+	for i := 0; i < s.rtcBulk; i++ {
 		rtcQuery += `(?,?,?,?,?,?,?,?,?,?,?,?),`
 	}
 	rtcQuery = rtcQuery[:len(rtcQuery)-1]
 
-	logp.Info("%s output address: %v, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
+	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 
 	return nil
 }
@@ -131,14 +144,12 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 		logCnt     int
 		rtcpCnt    int
 		reportCnt  int
-		sipBulkCnt = config.Setting.DBBulk
-		rtcBulkCnt = config.Setting.DBBulk / 20
-		regRows    = make([]interface{}, 0, sipBulkCnt)
-		callRows   = make([]interface{}, 0, sipBulkCnt)
-		dnsRows    = make([]interface{}, 0, rtcBulkCnt)
-		logRows    = make([]interface{}, 0, rtcBulkCnt)
-		rtcpRows   = make([]interface{}, 0, rtcBulkCnt)
-		reportRows = make([]interface{}, 0, rtcBulkCnt)
+		regRows    = make([]interface{}, 0, s.sipBulk)
+		callRows   = make([]interface{}, 0, s.sipBulk)
+		dnsRows    = make([]interface{}, 0, s.rtcBulk)
+		logRows    = make([]interface{}, 0, s.rtcBulk)
+		rtcpRows   = make([]interface{}, 0, s.rtcBulk)
+		reportRows = make([]interface{}, 0, s.rtcBulk)
 	)
 
 	for {
@@ -195,7 +206,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					short(pkt.SIP.Msg, 3000)}...)
 
 				regCnt++
-				if regCnt == sipBulkCnt {
+				if regCnt == s.sipBulk {
 					s.bulkInsert("register", regRows)
 					regRows = []interface{}{}
 					regCnt = 0
@@ -243,7 +254,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					short(pkt.SIP.Msg, 3000)}...)
 
 				callCnt++
-				if callCnt == sipBulkCnt {
+				if callCnt == s.sipBulk {
 					s.bulkInsert("call", callRows)
 					callRows = []interface{}{}
 					callCnt = 0
@@ -260,7 +271,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				rtcpCnt++
-				if rtcpCnt == rtcBulkCnt {
+				if rtcpCnt == s.rtcBulk {
 					s.bulkInsert("rtcp", rtcpRows)
 					rtcpRows = []interface{}{}
 					rtcpCnt = 0
@@ -274,7 +285,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				reportCnt++
-				if reportCnt == rtcBulkCnt {
+				if reportCnt == s.rtcBulk {
 					s.bulkInsert("report", reportRows)
 					reportRows = []interface{}{}
 					reportCnt = 0
@@ -288,7 +299,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				dnsCnt++
-				if dnsCnt == rtcBulkCnt {
+				if dnsCnt == s.rtcBulk {
 					s.bulkInsert("dns", dnsRows)
 					dnsRows = []interface{}{}
 					dnsCnt = 0
@@ -302,7 +313,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 				logCnt++
-				if logCnt == rtcBulkCnt {
+				if logCnt == s.rtcBulk {
 					s.bulkInsert("log", logRows)
 					logRows = []interface{}{}
 					logCnt = 0

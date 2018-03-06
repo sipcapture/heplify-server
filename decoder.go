@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"reflect"
 	"time"
 	"unicode/utf8"
-	"unsafe"
 
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
@@ -165,73 +163,76 @@ func (h *HEP) parse(packet []byte) error {
 
 func (h *HEP) parseHEP(packet []byte) error {
 	length := binary.BigEndian.Uint16(packet[4:6])
-	currentByte := uint16(6)
-	for currentByte < length {
-		hepChunk := packet[currentByte:]
-		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
-		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
-		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
-		chunkBody := hepChunk[6:chunkLength]
+	if int(length) == len(packet) {
+		currentByte := uint16(6)
+		for currentByte < length {
+			hepChunk := packet[currentByte:]
+			//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
+			chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
+			chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
+			chunkBody := hepChunk[6:chunkLength]
 
-		switch chunkType {
-		case Version:
-			h.Version = chunkBody[0]
-		case Protocol:
-			h.Protocol = chunkBody[0]
-		case IP4SrcIP:
-			h.SrcIP = chunkBody
-			h.SrcIPString = h.SrcIP.String()
-		case IP4DstIP:
-			h.DstIP = chunkBody
-			h.DstIPString = h.DstIP.String()
-		case IP6SrcIP:
-			h.SrcIP = chunkBody
-			h.SrcIPString = h.SrcIP.String()
-		case IP6DstIP:
-			h.DstIP = chunkBody
-			h.DstIPString = h.DstIP.String()
-		case SrcPort:
-			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
-		case DstPort:
-			h.DstPort = binary.BigEndian.Uint16(chunkBody)
-		case Tsec:
-			h.Tsec = binary.BigEndian.Uint32(chunkBody)
-		case Tmsec:
-			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
-		case ProtoType:
-			h.ProtoType = chunkBody[0]
-		case NodeID:
-			h.NodeID = binary.BigEndian.Uint32(chunkBody)
-		case KeepAliveTimer:
-			h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
-		case NodePW:
-			h.NodePW = string(chunkBody)
-		case Payload:
-			h.Payload = toString(chunkBody)
-			if !utf8.ValidString(h.Payload) {
-				v := make([]rune, 0, len(h.Payload))
-				for i, r := range h.Payload {
-					if r == utf8.RuneError {
-						_, size := utf8.DecodeRuneInString(h.Payload[i:])
-						if size == 1 {
-							continue
+			switch chunkType {
+			case Version:
+				h.Version = chunkBody[0]
+			case Protocol:
+				h.Protocol = chunkBody[0]
+			case IP4SrcIP:
+				h.SrcIP = chunkBody
+				h.SrcIPString = h.SrcIP.String()
+			case IP4DstIP:
+				h.DstIP = chunkBody
+				h.DstIPString = h.DstIP.String()
+			case IP6SrcIP:
+				h.SrcIP = chunkBody
+				h.SrcIPString = h.SrcIP.String()
+			case IP6DstIP:
+				h.DstIP = chunkBody
+				h.DstIPString = h.DstIP.String()
+			case SrcPort:
+				h.SrcPort = binary.BigEndian.Uint16(chunkBody)
+			case DstPort:
+				h.DstPort = binary.BigEndian.Uint16(chunkBody)
+			case Tsec:
+				h.Tsec = binary.BigEndian.Uint32(chunkBody)
+			case Tmsec:
+				h.Tmsec = binary.BigEndian.Uint32(chunkBody)
+			case ProtoType:
+				h.ProtoType = chunkBody[0]
+			case NodeID:
+				h.NodeID = binary.BigEndian.Uint32(chunkBody)
+			case KeepAliveTimer:
+				h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
+			case NodePW:
+				h.NodePW = string(chunkBody)
+			case Payload:
+				h.Payload = string(chunkBody)
+				if !utf8.ValidString(h.Payload) {
+					v := make([]rune, 0, len(h.Payload))
+					for i, r := range h.Payload {
+						if r == utf8.RuneError {
+							_, size := utf8.DecodeRuneInString(h.Payload[i:])
+							if size == 1 {
+								continue
+							}
 						}
+						v = append(v, r)
 					}
-					v = append(v, r)
+					h.Payload = string(v)
 				}
-				h.Payload = toStringRune(v)
+			case CompressedPayload:
+				h.CompressedPayload = string(chunkBody)
+			case CorrelationID:
+				h.CorrelationID = string(chunkBody)
+			case Vlan:
+				h.Vlan = binary.BigEndian.Uint16(chunkBody)
+			default:
 			}
-		case CompressedPayload:
-			h.CompressedPayload = string(chunkBody)
-		case CorrelationID:
-			h.CorrelationID = string(chunkBody)
-		case Vlan:
-			h.Vlan = binary.BigEndian.Uint16(chunkBody)
-		default:
+			currentByte += chunkLength
 		}
-		currentByte += chunkLength
+		return nil
 	}
-	return nil
+	return fmt.Errorf("HEP packet length is %d but should be %d", len(packet), length)
 }
 
 func (h *HEP) parseSIP() error {
@@ -433,23 +434,4 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 		w.Write(chunck16)
 	*/
 	return w.Bytes()
-}
-
-// toString needs no copy to change slice to string
-func toString(bs []byte) (s string) {
-	// return *(*string)(unsafe.Pointer(&bs))
-	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
-	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	pstring.Data = pbytes.Data
-	pstring.Len = pbytes.Len
-	return
-}
-
-func toStringRune(bs []rune) (s string) {
-	// return *(*string)(unsafe.Pointer(&bs))
-	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
-	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	pstring.Data = pbytes.Data
-	pstring.Len = pbytes.Len
-	return
 }

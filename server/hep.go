@@ -14,6 +14,7 @@ import (
 	"github.com/negbie/heplify-server/database"
 	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/heplify-server/metric"
+	"github.com/negbie/heplify-server/queue"
 )
 
 type HEPInput struct {
@@ -35,6 +36,7 @@ type HEPStats struct {
 var (
 	inCh = make(chan []byte, 10000)
 	dbCh = make(chan *decoder.HEP, 10000)
+	mqCh = make(chan []byte, 1000)
 	mCh  = make(chan *decoder.HEP, 10000)
 
 	hepBuffer = &sync.Pool{
@@ -76,11 +78,23 @@ func (h *HEPInput) Run() {
 
 	if config.Setting.DBAddr != "" {
 		go func() {
-			d := database.New("mysql")
+			d := database.New(config.Setting.DBDriver)
 			d.ErrCount = &h.stats.ErrCount
 			d.Chan = dbCh
 
 			if err := d.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+		}()
+	}
+
+	if config.Setting.MQAddr != "" && config.Setting.MQName != "" {
+		go func() {
+			q := queue.New(config.Setting.MQName)
+			q.ErrCount = &h.stats.ErrCount
+			q.Chan = mqCh
+
+			if err := q.Run(); err != nil {
 				logp.Err("%v", err)
 			}
 		}()
@@ -102,6 +116,9 @@ func (h *HEPInput) Run() {
 		conn.SetReadDeadline(time.Now().Add(1e9))
 		n, _, err := conn.ReadFrom(buf)
 		if err != nil {
+			continue
+		} else if n > 8192 {
+			logp.Warn("received to big packet with %d bytes", n)
 			continue
 		}
 		atomic.AddUint64(&h.stats.PktCount, 1)
@@ -151,7 +168,7 @@ GO:
 		}
 
 		hepPkt, err = decoder.DecodeHEP(msg)
-		if err != nil {
+		if err != nil || hepPkt == nil {
 			continue
 		}
 

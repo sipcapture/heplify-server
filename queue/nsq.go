@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
 	nsq "github.com/nsqio/go-nsq"
@@ -31,9 +30,9 @@ func (n *NSQ) setup() error {
 	return nil
 }
 
-func (n *NSQ) add(topic string, hCh chan *decoder.HEP, ec *uint64) {
+func (n *NSQ) add(topic string, qCh chan []byte, ec *uint64) {
 	var (
-		msg *decoder.HEP
+		msg []byte
 		err error
 		ok  bool
 	)
@@ -41,12 +40,12 @@ func (n *NSQ) add(topic string, hCh chan *decoder.HEP, ec *uint64) {
 	logp.Info("Run NSQ Output, server: %+v, topic: %s\n", config.Setting.MQAddr, topic)
 
 	for {
-		msg, ok = <-hCh
+		msg, ok = <-qCh
 		if !ok {
 			break
 		}
 
-		err = n.producer.Publish(topic, []byte(msg.Payload))
+		err = n.producer.Publish(topic, msg)
 		if err != nil {
 			logp.Err("%v", err)
 			*ec++
