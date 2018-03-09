@@ -27,17 +27,17 @@ type HEPInput struct {
 }
 
 type HEPStats struct {
-	PktCount uint64
-	HEPCount uint64
 	DupCount uint64
 	ErrCount uint64
+	HEPCount uint64
+	PktCount uint64
 }
 
 var (
-	inCh = make(chan []byte, 10000)
-	dbCh = make(chan *decoder.HEP, 10000)
+	inCh = make(chan []byte, 1000)
+	dbCh = make(chan *decoder.HEP, 2000)
 	mqCh = make(chan []byte, 1000)
-	mCh  = make(chan *decoder.HEP, 10000)
+	mCh  = make(chan *decoder.HEP, 2000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -174,20 +174,24 @@ GO:
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
-		if config.Setting.DBAddr != "" {
-			select {
-			case dbCh <- hepPkt:
-			default:
-				logp.Warn("overflowing db channel")
-			}
-		}
-
 		if config.Setting.PromAddr != "" {
 			select {
 			case mCh <- hepPkt:
 			default:
 				logp.Warn("overflowing metric channel")
 			}
+		}
+
+		if config.Setting.MQAddr != "" {
+			select {
+			case mqCh <- msg:
+			default:
+				logp.Warn("overflowing queue channel")
+			}
+		}
+
+		if config.Setting.DBAddr != "" {
+			dbCh <- hepPkt
 		}
 	}
 }

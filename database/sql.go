@@ -1,13 +1,13 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gocraft/dbr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -74,7 +74,9 @@ var (
 )
 
 type SQL struct {
-	dbc     *sql.DB
+	//dbc     *sql.DB
+	dbc     *dbr.Connection
+	dbs     *dbr.Session
 	sipBulk int
 	rtcBulk int
 }
@@ -89,11 +91,11 @@ func (s *SQL) setup() error {
 	}
 
 	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
 			return err
 		}
 	} else {
-		if s.dbc, err = sql.Open(config.Setting.DBDriver, "host="+addr[0]+"port="+addr[1]+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPass); err != nil {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "host="+addr[0]+"port="+addr[1]+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPass, nil); err != nil {
 			return err
 		}
 	}
@@ -105,6 +107,8 @@ func (s *SQL) setup() error {
 		s.dbc.Close()
 		return err
 	}
+
+	s.dbs = s.dbc.NewSession(nil)
 
 	s.sipBulk = config.Setting.DBBulk
 	s.rtcBulk = config.Setting.DBBulk / 10
@@ -341,10 +345,11 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 
 	logp.Debug("sql", "%s\n%#v", query, rows)
 
-	_, err := s.dbc.Exec(query, rows...)
+	_, err := s.dbs.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
 	}
+
 }
 
 func short(s string, i int) string {
