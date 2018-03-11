@@ -4,8 +4,8 @@ MQName          = ""
 MQAddr          = ""
 MQTopic         = ""
 PromAddr        = ""
-PromTargetIP     = ""
-PromTargetName   = ""
+PromTargetIP    = ""
+PromTargetName  = ""
 DBDriver        = "mysql"
 DBAddr          = "localhost:3306"
 DBBulk          = 100
@@ -19,8 +19,8 @@ LogStd          = false
 
 # Examples:
 # -------------------------------------
-# PromAddr        = "0.0.0.0:9999"
-# PromTargetIP     = "10.1.2.3,10.1.2.4"
-# PromTargetName   = "asterisk,sbc"
+# PromAddr        = "0.0.0.0:8899"
+# PromTargetIP    = "10.1.2.3,10.1.2.4,10.1.2.5,10.1.2.6,10.1.2.7"
+# PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
 # LogDbg          = "hep,sql"
 # LogLvl          = "warning"
