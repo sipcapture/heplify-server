@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 	"unicode/utf8"
 
+	raven "github.com/getsentry/raven-go"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
@@ -126,6 +128,10 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 	hep := &HEP{}
 	err := hep.parse(packet)
 	if err != nil {
+		logp.Warn("%v", err)
+		if config.Setting.SentryDSN != "" {
+			raven.CaptureError(err, nil)
+		}
 		return nil, err
 	}
 	return hep, nil
@@ -146,8 +152,7 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v", err)
-			logp.Warn("%v", h.SIP.Msg)
+			logp.Warn("%v", strconv.Quote(h.Payload))
 			return err
 		}
 		for _, v := range h.SIP.Headers {
