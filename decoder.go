@@ -118,7 +118,7 @@ type SIP struct {
 	Type            string
 	NodeID          string
 	CorrelationID   string
-	Raw             *sipparser.SipMsg
+	Msg             *sipparser.SipMsg
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -132,107 +132,111 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 }
 
 func (h *HEP) parse(packet []byte) error {
-	if packet[0] == 0x48 && packet[2] == 0x50 && packet[3] == 0x33 {
-		err := h.parseHEP(packet)
+	if packet[0] != 0x48 || packet[1] != 0x45 || packet[2] != 0x50 || packet[3] != 0x33 {
+		return errors.New("Not a valid HEP3 packet")
+	}
+
+	err := h.parseHEP(packet)
+	if err != nil {
+		return err
+	}
+
+	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
+
+	if h.ProtoType == 1 && len(h.Payload) > 64 {
+		err = h.parseSIP()
 		if err != nil {
+			logp.Warn("%v", err)
+			logp.Warn("%v", h.SIP.Msg)
 			return err
 		}
-
-		h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
-
-		if h.ProtoType == 1 && len(h.Payload) > 64 {
-			err = h.parseSIP()
-			if err != nil {
-				logp.Warn("%v", err)
-				logp.Warn("%v", h.SIP.Msg)
-				return err
-			}
-			for _, v := range h.SIP.Headers {
-				if v.Header == config.Setting.AlegID {
-					h.AlegID = v.Val
-				}
+		for _, v := range h.SIP.Headers {
+			if v.Header == config.Setting.AlegID {
+				h.AlegID = v.Val
 			}
 		}
-
-		logp.Debug("hep", "%#v", h)
-
-		return nil
 	}
-	return errors.New("Not a valid HEP3 packet")
+
+	logp.Debug("hep", "%#v", h)
+	return nil
 }
 
 func (h *HEP) parseHEP(packet []byte) error {
 	length := binary.BigEndian.Uint16(packet[4:6])
-	if int(length) == len(packet) {
-		currentByte := uint16(6)
-		for currentByte < length {
-			hepChunk := packet[currentByte:]
-			//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
-			chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
-			chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
-			chunkBody := hepChunk[6:chunkLength]
-
-			switch chunkType {
-			case Version:
-				h.Version = chunkBody[0]
-			case Protocol:
-				h.Protocol = chunkBody[0]
-			case IP4SrcIP:
-				h.SrcIP = chunkBody
-				h.SrcIPString = h.SrcIP.String()
-			case IP4DstIP:
-				h.DstIP = chunkBody
-				h.DstIPString = h.DstIP.String()
-			case IP6SrcIP:
-				h.SrcIP = chunkBody
-				h.SrcIPString = h.SrcIP.String()
-			case IP6DstIP:
-				h.DstIP = chunkBody
-				h.DstIPString = h.DstIP.String()
-			case SrcPort:
-				h.SrcPort = binary.BigEndian.Uint16(chunkBody)
-			case DstPort:
-				h.DstPort = binary.BigEndian.Uint16(chunkBody)
-			case Tsec:
-				h.Tsec = binary.BigEndian.Uint32(chunkBody)
-			case Tmsec:
-				h.Tmsec = binary.BigEndian.Uint32(chunkBody)
-			case ProtoType:
-				h.ProtoType = chunkBody[0]
-			case NodeID:
-				h.NodeID = binary.BigEndian.Uint32(chunkBody)
-			case KeepAliveTimer:
-				h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
-			case NodePW:
-				h.NodePW = string(chunkBody)
-			case Payload:
-				h.Payload = string(chunkBody)
-				if !utf8.ValidString(h.Payload) {
-					v := make([]rune, 0, len(h.Payload))
-					for i, r := range h.Payload {
-						if r == utf8.RuneError {
-							_, size := utf8.DecodeRuneInString(h.Payload[i:])
-							if size == 1 {
-								continue
-							}
-						}
-						v = append(v, r)
-					}
-					h.Payload = string(v)
-				}
-			case CompressedPayload:
-				h.CompressedPayload = string(chunkBody)
-			case CorrelationID:
-				h.CorrelationID = string(chunkBody)
-			case Vlan:
-				h.Vlan = binary.BigEndian.Uint16(chunkBody)
-			default:
-			}
-			currentByte += chunkLength
-		}
-		return nil
+	if int(length) != len(packet) {
+		return fmt.Errorf("HEP packet length is %d but should be %d", len(packet), length)
 	}
-	return fmt.Errorf("HEP packet length is %d but should be %d", len(packet), length)
+	currentByte := uint16(6)
+
+	for currentByte < length {
+		hepChunk := packet[currentByte:]
+		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
+		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
+		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
+		if len(hepChunk) < int(chunkLength) {
+			return fmt.Errorf("HEP chunk overflow %d > %d", chunkLength, len(hepChunk))
+		}
+		chunkBody := hepChunk[6:chunkLength]
+
+		switch chunkType {
+		case Version:
+			h.Version = chunkBody[0]
+		case Protocol:
+			h.Protocol = chunkBody[0]
+		case IP4SrcIP:
+			h.SrcIP = chunkBody
+			h.SrcIPString = h.SrcIP.String()
+		case IP4DstIP:
+			h.DstIP = chunkBody
+			h.DstIPString = h.DstIP.String()
+		case IP6SrcIP:
+			h.SrcIP = chunkBody
+			h.SrcIPString = h.SrcIP.String()
+		case IP6DstIP:
+			h.DstIP = chunkBody
+			h.DstIPString = h.DstIP.String()
+		case SrcPort:
+			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
+		case DstPort:
+			h.DstPort = binary.BigEndian.Uint16(chunkBody)
+		case Tsec:
+			h.Tsec = binary.BigEndian.Uint32(chunkBody)
+		case Tmsec:
+			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
+		case ProtoType:
+			h.ProtoType = chunkBody[0]
+		case NodeID:
+			h.NodeID = binary.BigEndian.Uint32(chunkBody)
+		case KeepAliveTimer:
+			h.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
+		case NodePW:
+			h.NodePW = string(chunkBody)
+		case Payload:
+			h.Payload = string(chunkBody)
+			if !utf8.ValidString(h.Payload) {
+				v := make([]rune, 0, len(h.Payload))
+				for i, r := range h.Payload {
+					if r == utf8.RuneError {
+						_, size := utf8.DecodeRuneInString(h.Payload[i:])
+						if size == 1 {
+							continue
+						}
+					}
+					v = append(v, r)
+				}
+				h.Payload = string(v)
+			}
+		case CompressedPayload:
+			h.CompressedPayload = string(chunkBody)
+		case CorrelationID:
+			h.CorrelationID = string(chunkBody)
+		case Vlan:
+			h.Vlan = binary.BigEndian.Uint16(chunkBody)
+		default:
+		}
+		currentByte += chunkLength
+	}
+	return nil
 }
 
 func (h *HEP) parseSIP() error {

@@ -9,8 +9,8 @@ type HeplifyServer struct {
 	MQAddr         string `default:""`
 	MQTopic        string `default:""`
 	PromAddr       string `default:""`
-	PromHunterIP   string `default:""`
-	PromHunterName string `default:""`
+	PromTargetIP   string `default:""`
+	PromTargetName string `default:""`
 	DBDriver       string `default:"mysql"`
 	DBAddr         string `default:"localhost:3306"`
 	DBBulk         int    `default:"100"`
@@ -31,8 +31,8 @@ func NewConfig() *HeplifyServer {
 		MQAddr:         "",
 		MQTopic:        "",
 		PromAddr:       "",
-		PromHunterIP:   "",
-		PromHunterName: "",
+		PromTargetIP:   "",
+		PromTargetName: "",
 		DBDriver:       "mysql",
 		DBAddr:         "localhost:3306",
 		DBBulk:         100,

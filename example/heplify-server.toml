@@ -4,8 +4,8 @@ MQName          = ""
 MQAddr          = ""
 MQTopic         = ""
 PromAddr        = ""
-PromHunterIP    = ""
-PromHunterName  = ""
+PromTargetIP     = ""
+PromTargetName   = ""
 DBDriver        = "mysql"
 DBAddr          = "localhost:3306"
 DBBulk          = 100
@@ -20,7 +20,7 @@ LogStd          = false
 # Examples:
 # -------------------------------------
 # PromAddr        = "0.0.0.0:9999"
-# PromHunterIP    = "10.1.2.3,10.1.2.4"
-# PromHunterName  = "lb1,lb2"
+# PromTargetIP     = "10.1.2.3,10.1.2.4"
+# PromTargetName   = "asterisk,sbc"
 # LogDbg          = "hep,sql"
 # LogLvl          = "warning"
