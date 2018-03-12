@@ -8,9 +8,11 @@ PromTargetIP    = ""
 PromTargetName  = ""
 DBDriver        = "mysql"
 DBAddr          = "localhost:3306"
-DBName          = "homer_data"
-DBUser          = "test"
-DBPass          = "test"
+DBData          = "homer_data"
+DBConf          = "homer_configuration"
+DBUser          = "root"
+DBPass          = ""
+DBPath          = ""
 DBBulk          = 100
 SentryDSN       = ""
 AlegID          = "x-cid"
@@ -20,9 +22,11 @@ LogStd          = false
 
 # Examples:
 # -------------------------------------
+# DBDriver        = "postgres"
+# DBPath          = "/var/lib/postgresql/data/homer"
 # PromAddr        = "0.0.0.0:8899"
-# PromTargetIP    = "10.1.2.3,10.1.2.4,10.1.2.5,10.1.2.6,10.1.2.7"
+# PromTargetIP    = "10.1.2.111,10.1.2.4,10.1.2.5,10.1.2.6,10.12.44.222"
 # PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
+# SentryDSN       = "https://<key>:<secret>@sentry.io/<project>"
 # LogDbg          = "hep,sql"
 # LogLvl          = "warning"
-# SentryDSN       = "https://<key>:<secret>@sentry.io/<project>"

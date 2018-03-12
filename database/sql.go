@@ -12,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/database/migrate"
 	"github.com/negbie/heplify-server/logp"
 )
 
@@ -91,24 +92,35 @@ func (s *SQL) setup() error {
 		return err
 	}
 
-	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBName+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
-			return err
-		}
-	} else {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "host="+addr[0]+"port="+addr[1]+"dbname="+config.Setting.DBName+"user="+config.Setting.DBUser+"password="+config.Setting.DBPass, nil); err != nil {
+	if config.Setting.DBUser == "root" {
+		if err = migrate.CreateDatabases(addr); err != nil {
 			return err
 		}
 	}
+	if err = migrate.CreateDataTables(addr); err != nil {
+		return err
+	}
+	if err = migrate.CreateConfTables(addr); err != nil {
+		return err
+	}
 
-	s.dbc.SetMaxOpenConns(40)
-	s.dbc.SetMaxIdleConns(20)
+	if config.Setting.DBDriver == "mysql" {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
+			return err
+		}
+	} else if config.Setting.DBDriver == "postgres" {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil); err != nil {
+			return err
+		}
+	}
 
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()
 		return err
 	}
 
+	s.dbc.SetMaxOpenConns(40)
+	s.dbc.SetMaxIdleConns(20)
 	s.dbs = s.dbc.NewSession(nil)
 
 	s.sipBulk = config.Setting.DBBulk

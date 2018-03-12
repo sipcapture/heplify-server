@@ -1,0 +1,20 @@
+version: '3.1'
+services :
+  db:
+    image: postgres:10-alpine
+    environment:
+      #POSTGRES_USER: root
+      POSTGRES_PASSWORD: toor
+      #POSTGRES_DB: homer_data
+    volumes:
+      - ./tablespace.sh:/docker-entrypoint-initdb.d/tablespace.sh
+    ports:
+      - "5432:5432"
+  admin:
+    image: adminer
+    depends_on: 
+      - db
+    ports:
+      - 8080:8080
+
+
