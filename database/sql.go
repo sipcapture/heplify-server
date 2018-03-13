@@ -8,6 +8,7 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
@@ -97,19 +98,22 @@ func (s *SQL) setup() error {
 			return err
 		}
 	}
-	if err = migrate.CreateDataTables(addr); err != nil {
+	box := packr.NewBox("./migrate/sql")
+	if err = migrate.CreateDataTables(addr, box); err != nil {
 		return err
 	}
-	if err = migrate.CreateConfTables(addr); err != nil {
+	if err = migrate.CreateConfTables(addr, box); err != nil {
 		return err
 	}
 
 	if config.Setting.DBDriver == "mysql" {
 		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
+			s.dbc.Close()
 			return err
 		}
 	} else if config.Setting.DBDriver == "postgres" {
 		if s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil); err != nil {
+			s.dbc.Close()
 			return err
 		}
 	}

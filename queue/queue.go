@@ -1,7 +1,10 @@
 package queue
 
 import (
+	"fmt"
 	"sync"
+
+	"github.com/negbie/heplify-server/config"
 )
 
 type Queue struct {
@@ -33,6 +36,10 @@ func (q *Queue) Run() error {
 		wg  sync.WaitGroup
 		err error
 	)
+
+	if config.Setting.MQName != "kafka" && config.Setting.MQName != "nsq" {
+		return fmt.Errorf("wrong queue name: %s, please use kafka or nsq", config.Setting.MQName)
+	}
 
 	err = q.QH.setup()
 	if err != nil {

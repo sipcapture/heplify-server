@@ -1,9 +1,11 @@
 package database
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/config"
 )
 
 type Database struct {
@@ -35,6 +37,10 @@ func (d *Database) Run() error {
 		//wg  sync.WaitGroup
 		err error
 	)
+
+	if config.Setting.DBDriver != "mysql" && config.Setting.DBDriver != "postgres" {
+		return fmt.Errorf("wrong database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
+	}
 
 	err = d.DBH.setup()
 	if err != nil {
