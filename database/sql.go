@@ -13,7 +13,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/database/migrate"
 	"github.com/negbie/heplify-server/logp"
 )
 
@@ -93,19 +92,22 @@ func (s *SQL) setup() error {
 		return err
 	}
 
-	box := packr.NewBox("./migrate/sql")
+	b := packr.NewBox("./files")
+	r := NewRotator(&b)
 
 	if config.Setting.DBUser == "root" {
-		if err = migrate.CreateDatabases(addr); err != nil {
+		if err = r.CreateDatabases(); err != nil {
 			return err
 		}
 	}
-	if err = migrate.CreateConfTables(addr, box); err != nil {
+	if err = r.CreateConfTables(); err != nil {
 		return err
 	}
-	if err = migrate.CreateDataTables(addr, box); err != nil {
+	if err = r.CreateDataTables(); err != nil {
 		return err
 	}
+
+	r.Rotate()
 
 	if config.Setting.DBDriver == "mysql" {
 		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
