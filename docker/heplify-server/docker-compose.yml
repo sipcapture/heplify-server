@@ -1,0 +1,10 @@
+version: '2'
+services:
+  horaclifix:
+    image: "negbie/heplify-server:latest"
+    command: "./heplify-server -hepaddr :9060"
+    expose:
+      - 9060
+    ports:
+      - 9060:9060/udp
+    container_name: "heplify-server"
