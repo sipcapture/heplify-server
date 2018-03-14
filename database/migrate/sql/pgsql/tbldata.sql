@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS logs_capture_all_20110111 (
+CREATE TABLE IF NOT EXISTS logs_capture_all_TableDate (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS logs_capture_all_20110111 (
 );
 
 -- name: create-report-table
-CREATE TABLE IF NOT EXISTS report_capture_all_20110111 (
+CREATE TABLE IF NOT EXISTS report_capture_all_TableDate (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS report_capture_all_20110111 (
 );
 
 -- name: create-rtcp-table
-CREATE TABLE IF NOT EXISTS rtcp_capture_all_20110111 (
+CREATE TABLE IF NOT EXISTS rtcp_capture_all_TableDate (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS rtcp_capture_all_20110111 (
 );
 
 -- name: create-call-table
-CREATE TABLE IF NOT EXISTS sip_capture_call_20110111 (
+CREATE TABLE IF NOT EXISTS sip_capture_call_TableDate (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS sip_capture_call_20110111 (
 );
 
 -- name: create-registration-table
-CREATE TABLE IF NOT EXISTS sip_capture_registration_20110111 (
+CREATE TABLE IF NOT EXISTS sip_capture_registration_TableDate (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',

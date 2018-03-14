@@ -34,10 +34,10 @@ type HEPStats struct {
 }
 
 var (
-	inCh = make(chan []byte, 1000)
-	dbCh = make(chan *decoder.HEP, 2000)
-	mqCh = make(chan []byte, 1000)
-	mCh  = make(chan *decoder.HEP, 2000)
+	inCh = make(chan []byte, 10000)
+	dbCh = make(chan *decoder.HEP, 10000)
+	mqCh = make(chan []byte, 10000)
+	mCh  = make(chan *decoder.HEP, 10000)
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -48,10 +48,10 @@ var (
 
 func NewHEP() *HEPInput {
 	return &HEPInput{
-		addr:     config.Setting.HEPAddr,
-		workers:  config.Setting.HEPWorkers,
-		pool:     make(chan chan struct{}, runtime.NumCPU()*1e4),
-		dupCache: freecache.NewCache(20 * 1024 * 1024),
+		addr:    config.Setting.HEPAddr,
+		workers: config.Setting.HEPWorkers,
+		pool:    make(chan chan struct{}, runtime.NumCPU()*1e4),
+		//dupCache: freecache.NewCache(20 * 1024 * 1024),
 	}
 }
 
@@ -73,8 +73,6 @@ func (h *HEPInput) Run() {
 			h.hepWorker(shut)
 		}()
 	}
-
-	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
 
 	if config.Setting.DBAddr != "" {
 		go func() {
@@ -110,6 +108,9 @@ func (h *HEPInput) Run() {
 			}
 		}()
 	}
+
+	time.Sleep(4 * time.Second)
+	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
 
 	for !h.stop {
 		buf := hepBuffer.Get().([]byte)
@@ -157,6 +158,7 @@ GO:
 			}
 		}
 
+		/* TODO: rethink deduplication
 		_, err = h.dupCache.Get(msg)
 		if err == nil {
 			atomic.AddUint64(&h.stats.DupCount, 1)
@@ -166,6 +168,7 @@ GO:
 		if err != nil {
 			logp.Warn("%v", err)
 		}
+		*/
 
 		hepPkt, err = decoder.DecodeHEP(msg)
 		if err != nil || hepPkt == nil {
@@ -173,6 +176,14 @@ GO:
 		}
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
+
+		if config.Setting.DBAddr != "" {
+			select {
+			case dbCh <- hepPkt:
+			default:
+				logp.Warn("overflowing db channel")
+			}
+		}
 
 		if config.Setting.PromAddr != "" {
 			select {
@@ -188,10 +199,6 @@ GO:
 			default:
 				logp.Warn("overflowing queue channel")
 			}
-		}
-
-		if config.Setting.DBAddr != "" {
-			dbCh <- hepPkt
 		}
 	}
 }

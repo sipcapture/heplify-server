@@ -93,16 +93,17 @@ func (s *SQL) setup() error {
 		return err
 	}
 
+	box := packr.NewBox("./migrate/sql")
+
 	if config.Setting.DBUser == "root" {
 		if err = migrate.CreateDatabases(addr); err != nil {
 			return err
 		}
 	}
-	box := packr.NewBox("./migrate/sql")
-	if err = migrate.CreateDataTables(addr, box); err != nil {
+	if err = migrate.CreateConfTables(addr, box); err != nil {
 		return err
 	}
-	if err = migrate.CreateConfTables(addr, box); err != nil {
+	if err = migrate.CreateDataTables(addr, box); err != nil {
 		return err
 	}
 
