@@ -6,7 +6,7 @@ RUN go get -u -d -v github.com/negbie/heplify-server/
 WORKDIR /go/src/github.com/negbie/heplify-server/cmd/heplify-server/
 RUN set -x && go get -u -d -v .
 
-RUN go get -u -d -v github.com/gobuffalo/packr/...
+RUN go get -u -v github.com/gobuffalo/packr/...
 WORKDIR /go/bin/
 RUN ./packr -i /go/src/github.com/negbie/heplify-server/database
 
