@@ -92,9 +92,11 @@ func (s *SQL) setup() error {
 		return err
 	}
 
-	b := packr.NewBox("./files")
-	r := NewRotator(&b)
-	r.Rotate()
+	if config.Setting.DBRotate {
+		b := packr.NewBox("./files")
+		r := NewRotator(&b)
+		r.Rotate()
+	}
 
 	if config.Setting.DBDriver == "mysql" {
 		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {

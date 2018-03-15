@@ -46,9 +46,9 @@ var twoDay = strings.NewReplacer(
 )
 
 var dropDay = strings.NewReplacer(
-	"TableDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("20060102"),
-	"PartitionName", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("20060102"),
-	"PartitionDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("2006-01-02"),
+	"TableDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("20060102"),
+	"PartitionName", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("20060102"),
+	"PartitionDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("2006-01-02"),
 )
 
 func (r *Rotator) CreateDatabases() (err error) {
@@ -204,7 +204,7 @@ func (r *Rotator) Rotate() (err error) {
 	createJob.Start()
 
 	dropJob := cron.New()
-	if config.Setting.DBDrop > 0 {
+	if config.Setting.DBDropDays > 0 {
 		logp.Info("Start daily drop data table job at 03:45:00\n")
 		dropJob.AddFunc("0 45 03 * * *", func() {
 			if err := r.DropTables(dropDay); err != nil {

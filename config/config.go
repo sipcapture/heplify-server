@@ -19,7 +19,8 @@ type HeplifyServer struct {
 	DBPass         string `default:""`
 	DBPath         string `default:""`
 	DBBulk         int    `default:"100"`
-	DBDrop         int    `default:"0"`
+	DBRotate       bool   `default:"true"`
+	DBDropDays     int    `default:"0"`
 	SentryDSN      string `default:""`
 	AlegID         string `default:"x-cid"`
 	LogDbg         string `default:""`
@@ -45,7 +46,8 @@ func NewConfig() *HeplifyServer {
 		DBPass:         "",
 		DBPath:         "",
 		DBBulk:         100,
-		DBDrop:         0,
+		DBRotate:       true,
+		DBDropDays:     0,
 		SentryDSN:      "",
 		AlegID:         "x-cid",
 		LogDbg:         "",
