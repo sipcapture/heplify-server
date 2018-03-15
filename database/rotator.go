@@ -1,10 +1,12 @@
 package database
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
+	raven "github.com/getsentry/raven-go"
 	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
 	"github.com/negbie/dotsql"
@@ -94,7 +96,7 @@ func (r *Rotator) CreateConfTables() (err error) {
 	if config.Setting.DBDriver == "mysql" {
 		r.dbm, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConf+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
-			logp.Info("%v", err)
+			return err
 		}
 		defer r.dbm.Close()
 		r.dbExecFile(r.box.String("mysql/tblconf.sql"))
@@ -102,7 +104,7 @@ func (r *Rotator) CreateConfTables() (err error) {
 	} else if config.Setting.DBDriver == "postgres" {
 		r.dbm, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConf+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
-			logp.Info("%v", err)
+			return err
 		}
 		defer r.dbm.Close()
 		r.dbExecFile(r.box.String("pgsql/tblconf.sql"))
@@ -135,14 +137,17 @@ func (r *Rotator) DropTables() (err error) {
 func (r *Rotator) dbExecFile(file string) {
 	dot, err := dotsql.LoadFromString(r.pattern.Replace(file))
 	if err != nil {
-		logp.Err("%v", err)
+		logp.Debug("rotator", "dbExecFile:\n%s\n\n", err)
 	}
 
 	for k, v := range dot.QueryMap() {
-		logp.Debug("rotator", "%s\n\n", v)
+		logp.Debug("rotator", "queryMap:\n%s\n\n", v)
+		if config.Setting.SentryDSN != "" {
+			raven.CaptureError(fmt.Errorf("%v", v), nil)
+		}
 		_, err = dot.Exec(r.dbm, k)
 		if err != nil {
-			logp.Err("%v", err)
+			logp.Debug("rotator", "dotExec:\n%s\n\n", err)
 		}
 	}
 }
@@ -150,26 +155,30 @@ func (r *Rotator) dbExecFile(file string) {
 func (r *Rotator) dbExec(query string) {
 	_, err := r.dbm.Exec(query)
 	if err != nil {
-		logp.Err("%v", err)
+		logp.Debug("rotator", "dbmExec:\n%s\n\n", err)
 	}
 }
 
 func (r *Rotator) Rotate() (err error) {
 	retention := time.Hour * 24 * time.Duration(config.Setting.DBDrop)
+	retry := 0
 
-	r.pattern = strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
-	)
+	initJob := cron.New()
+	initJob.AddFunc("@every 30s", func() {
+		retry++
 
-	if err := r.CreateDataTables(); err != nil {
-		logp.Err("%v", err)
-	}
+		if config.Setting.DBUser == "root" {
+			if err = r.CreateDatabases(); err != nil {
+				logp.Err("%v", err)
+			}
+		}
+		if err = r.CreateConfTables(); err != nil {
+			logp.Err("%v", err)
+		}
+		if err = r.CreateDataTables(); err != nil {
+			logp.Err("%v", err)
+		}
 
-	c := cron.New()
-	logp.Info("Start daily create data table job at 03:15:00\n\n")
-	c.AddFunc("0 15 03 * * *", func() {
 		r.pattern = strings.NewReplacer(
 			"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
 			"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
@@ -179,12 +188,34 @@ func (r *Rotator) Rotate() (err error) {
 		if err := r.CreateDataTables(); err != nil {
 			logp.Err("%v", err)
 		}
-		logp.Info("Finished create data table job next will run at %v\n\n", time.Now().Add(time.Hour*24+1))
-	})
 
+		if retry == 3 {
+			initJob.Stop()
+		}
+
+	})
+	initJob.Start()
+
+	createJob := cron.New()
+	logp.Info("Start daily create data table job at 03:15:00\n")
+	createJob.AddFunc("0 15 03 * * *", func() {
+		r.pattern = strings.NewReplacer(
+			"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
+			"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
+			"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
+		)
+
+		if err := r.CreateDataTables(); err != nil {
+			logp.Err("%v", err)
+		}
+		logp.Info("Finished create data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
+	})
+	createJob.Start()
+
+	dropJob := cron.New()
 	if config.Setting.DBDrop > 0 {
-		logp.Info("Start daily drop data table job at 03:45:00\n\n")
-		c.AddFunc("0 45 03 * * *", func() {
+		logp.Info("Start daily drop data table job at 03:45:00\n")
+		dropJob.AddFunc("0 45 03 * * *", func() {
 			r.pattern = strings.NewReplacer(
 				"TableDate", time.Now().Add(retention*-1).Format("20060102"),
 				"PartitionName", time.Now().Add(retention*-1).Format("20060102"),
@@ -194,9 +225,9 @@ func (r *Rotator) Rotate() (err error) {
 			if err := r.DropTables(); err != nil {
 				logp.Err("%v", err)
 			}
-			logp.Info("Finished drop data table job next will run at %v\n\n", time.Now().Add(time.Hour*24+1))
+			logp.Info("Finished drop data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
 		})
 	}
-	c.Start()
+	dropJob.Start()
 	return nil
 }

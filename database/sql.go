@@ -94,19 +94,6 @@ func (s *SQL) setup() error {
 
 	b := packr.NewBox("./files")
 	r := NewRotator(&b)
-
-	if config.Setting.DBUser == "root" {
-		if err = r.CreateDatabases(); err != nil {
-			return err
-		}
-	}
-	if err = r.CreateConfTables(); err != nil {
-		return err
-	}
-	if err = r.CreateDataTables(); err != nil {
-		return err
-	}
-
 	r.Rotate()
 
 	if config.Setting.DBDriver == "mysql" {

@@ -34,10 +34,13 @@ type HEPStats struct {
 }
 
 var (
-	inCh = make(chan []byte, 10000)
-	dbCh = make(chan *decoder.HEP, 10000)
-	mqCh = make(chan []byte, 10000)
-	mCh  = make(chan *decoder.HEP, 10000)
+	inCh  = make(chan []byte, 10000)
+	dbCh  = make(chan *decoder.HEP, 10000)
+	mqCh  = make(chan []byte, 10000)
+	mCh   = make(chan *decoder.HEP, 10000)
+	dbCnt int
+	mqCnt int
+	mCnt  int
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -181,7 +184,11 @@ GO:
 			select {
 			case dbCh <- hepPkt:
 			default:
-				logp.Warn("overflowing db channel")
+				dbCnt++
+				if dbCnt%128 == 0 {
+					dbCnt = 0
+					logp.Warn("overflowing db channel")
+				}
 			}
 		}
 
@@ -189,7 +196,11 @@ GO:
 			select {
 			case mCh <- hepPkt:
 			default:
-				logp.Warn("overflowing metric channel")
+				mCnt++
+				if mCnt%128 == 0 {
+					mCnt = 0
+					logp.Warn("overflowing metric channel")
+				}
 			}
 		}
 
@@ -197,7 +208,11 @@ GO:
 			select {
 			case mqCh <- msg:
 			default:
-				logp.Warn("overflowing queue channel")
+				mqCnt++
+				if mqCnt%128 == 0 {
+					mqCnt = 0
+					logp.Warn("overflowing queue channel")
+				}
 			}
 		}
 	}
