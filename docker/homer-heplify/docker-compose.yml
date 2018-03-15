@@ -1,0 +1,51 @@
+version: '2.2'
+services:
+  heplify:
+    container_name: heplify
+    image: "qxip/heplify-server:latest"
+    command: "./heplify-server"
+    ports:
+      - 9060:9060/udp
+    container_name: "heplify-server"
+    environment:
+      - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_HEPWORKERS=100"
+      - "HEPLIFYSERVER_DBDRIVER=mysql"
+      - "HEPLIFYSERVER_DBADDR=dbmysql:3306"
+      - "HEPLIFYSERVER_DBUSER=homer_user"
+      - "HEPLIFYSERVER_DBPASS=homer_password"
+      - "HEPLIFYSERVER_LOGLVL=debug"
+      - "HEPLIFYSERVER_LOGSTD=true"
+    restart: unless-stopped
+    depends_on:
+      - dbmysql
+      
+  dbmysql:
+    container_name: dbmysql
+    image: mysql:5.7
+    volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    environment:
+      - "MYSQL_ROOT_PASSWORD=homer_password"
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+      - "MYSQL_ROOT_HOST=%"
+    expose:
+      - 3306
+    ports:
+      - 3306:3306
+    restart: unless-stopped
+
+  homer-webapp:
+    container_name: homer-webapp
+    image: sipcapture/homer-webapp
+    environment:
+      - "DB_HOST=dbmysql"
+      - "DB_USER=homer_user"
+      - "DB_PASS=homer_password"
+    ports:
+      - "9080:80"
+    volumes:
+      - ./docker-compose.yml:/homer-semaphore/.bootstrapped
+    depends_on:
+      - dbmysql
+    restart: unless-stopped
