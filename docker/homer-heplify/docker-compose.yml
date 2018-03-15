@@ -2,7 +2,7 @@ version: '2.2'
 services:
   heplify:
     container_name: heplify
-    image: "qxip/heplify-server:latest"
+    image: "qxip/heplify-server:master"
     command: "./heplify-server"
     ports:
       - 9060:9060/udp
