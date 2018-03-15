@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS logs_capture_all_TableDate (
+CREATE TABLE IF NOT EXISTS logs_capture (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',

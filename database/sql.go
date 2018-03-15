@@ -349,7 +349,7 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 	case "dns":
 		query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
 	case "log":
-		query = "INSERT INTO log_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		query = "INSERT INTO logs_capture" + rtcQuery
 	}
 
 	logp.Debug("sql", "%s\n%#v", query, rows)

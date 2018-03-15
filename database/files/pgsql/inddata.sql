@@ -1,7 +1,7 @@
 -- name: index-logs-date
-CREATE INDEX logs_capture_all_TableDate_date ON "logs_capture_all_TableDate" (date);
+CREATE INDEX logs_capture_date ON "logs_capture" (date);
 -- name: index-logs-correlation
-CREATE INDEX logs_capture_all_TableDate_correlation ON "logs_capture_all_TableDate" (correlation_id);
+CREATE INDEX logs_capture_correlation ON "logs_capture" (correlation_id);
 
 -- name: index-report-date
 CREATE INDEX report_capture_all_TableDate_date ON "report_capture_all_TableDate" (date);

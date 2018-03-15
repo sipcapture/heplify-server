@@ -1,5 +1,5 @@
 -- name: drop-logs-table
-DROP TABLE logs_capture_all_TableDate;
+DROP TABLE logs_capture;
 
 -- name: drop-report-table
 DROP TABLE report_capture_all_TableDate;

@@ -1,5 +1,5 @@
 -- name: drop-logs-table-partition
-DROP TABLE logs_capture_all_TableDate_pPartitionName00;
+DROP TABLE logs_capture_pPartitionName00;
 
 -- name: drop-report-table-partition
 DROP TABLE report_capture_all_TableDate_pPartitionName00;
