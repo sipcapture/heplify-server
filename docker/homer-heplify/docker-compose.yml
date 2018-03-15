@@ -16,10 +16,12 @@ services:
       - "HEPLIFYSERVER_DBPASS=homer_password"
       - "HEPLIFYSERVER_LOGLVL=debug"
       - "HEPLIFYSERVER_LOGSTD=true"
+      - "HEPLIFYSERVER_DBBULK=1"
     restart: unless-stopped
     depends_on:
-      - dbmysql
-      
+      dbmysql:
+         condition: service_healthy
+
   dbmysql:
     container_name: dbmysql
     image: mysql:5.7
@@ -34,6 +36,10 @@ services:
     ports:
       - 3306:3306
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "homer_user", "-p", "homer_password"]
+      timeout: 10s
+      retries: 10
 
   homer-webapp:
     container_name: homer-webapp
@@ -46,6 +52,7 @@ services:
       - "9080:80"
     volumes:
       - ./docker-compose.yml:/homer-semaphore/.bootstrapped
-    depends_on:
-      - dbmysql
     restart: unless-stopped
+    depends_on:
+      dbmysql:
+         condition: service_healthy
