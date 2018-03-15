@@ -16,31 +16,43 @@ import (
 )
 
 type Rotator struct {
-	addr    []string
-	box     *packr.Box
-	dbm     *dbr.Connection
-	pattern *strings.Replacer
+	addr []string
+	box  *packr.Box
+	db   *dbr.Connection
 }
 
 func NewRotator(b *packr.Box) *Rotator {
 	return &Rotator{
 		addr: strings.Split(config.Setting.DBAddr, ":"),
 		box:  b,
-		pattern: strings.NewReplacer(
-			"TableDate", time.Now().Format("20060102"),
-			"PartitionName", time.Now().Format("20060102"),
-			"PartitionDate", time.Now().Format("2006-01-02"),
-		),
 	}
 }
 
+var curDay = strings.NewReplacer(
+	"TableDate", time.Now().Format("20060102"),
+	"PartitionName", time.Now().Format("20060102"),
+	"PartitionDate", time.Now().Format("2006-01-02"),
+)
+
+var nextDay = strings.NewReplacer(
+	"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
+	"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
+	"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
+)
+
+var dropDay = strings.NewReplacer(
+	"TableDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("20060102"),
+	"PartitionName", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("20060102"),
+	"PartitionDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDrop))*-1).Format("2006-01-02"),
+)
+
 func (r *Rotator) CreateDatabases() (err error) {
 	if config.Setting.DBDriver == "mysql" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
+		defer db.Close()
 		r.dbExec("CREATE DATABASE IF NOT EXISTS " + config.Setting.DBData + ` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
 		r.dbExec("CREATE DATABASE IF NOT EXISTS " + config.Setting.DBConf + ` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
 		r.dbExec(`CREATE USER IF NOT EXISTS 'homer_user'@'localhost' IDENTIFIED BY 'homer_password';`)
@@ -51,11 +63,11 @@ func (r *Rotator) CreateDatabases() (err error) {
 		r.dbExec("GRANT ALL ON " + config.Setting.DBConf + `.* TO 'homer_user'@'192.168.0.0/255.255.0.0';`)
 
 	} else if config.Setting.DBDriver == "postgres" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
+		defer db.Close()
 		r.dbExec("CREATE DATABASE " + config.Setting.DBData)
 		r.dbExec("CREATE DATABASE " + config.Setting.DBConf)
 		r.dbExec(`CREATE USER homer_user WITH PASSWORD 'homer_password';`)
@@ -70,72 +82,72 @@ func (r *Rotator) CreateDatabases() (err error) {
 	return nil
 }
 
-func (r *Rotator) CreateDataTables() (err error) {
+func (r *Rotator) CreateDataTables(pattern *strings.Replacer) (err error) {
 	if config.Setting.DBDriver == "mysql" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("mysql/tbldata.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("mysql/tbldata.sql"), pattern)
 	} else if config.Setting.DBDriver == "postgres" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("pgsql/tbldata.sql"))
-		r.dbExecFile(r.box.String("pgsql/pardata.sql"))
-		r.dbExecFile(r.box.String("pgsql/altdata.sql"))
-		r.dbExecFile(r.box.String("pgsql/inddata.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("pgsql/tbldata.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/pardata.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/altdata.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/inddata.sql"), pattern)
 	}
 	return nil
 }
 
-func (r *Rotator) CreateConfTables() (err error) {
+func (r *Rotator) CreateConfTables(pattern *strings.Replacer) (err error) {
 	if config.Setting.DBDriver == "mysql" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConf+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConf+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("mysql/tblconf.sql"))
-		r.dbExecFile(r.box.String("mysql/insconf.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("mysql/tblconf.sql"), pattern)
+		r.dbExecFile(r.box.String("mysql/insconf.sql"), pattern)
 	} else if config.Setting.DBDriver == "postgres" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConf+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConf+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("pgsql/tblconf.sql"))
-		r.dbExecFile(r.box.String("pgsql/indconf.sql"))
-		r.dbExecFile(r.box.String("pgsql/insconf.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("pgsql/tblconf.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/indconf.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/insconf.sql"), pattern)
 	}
 	return nil
 }
 
-func (r *Rotator) DropTables() (err error) {
+func (r *Rotator) DropTables(pattern *strings.Replacer) (err error) {
 	if config.Setting.DBDriver == "mysql" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBData+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("mysql/droptbl.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("mysql/droptbl.sql"), pattern)
 	} else if config.Setting.DBDriver == "postgres" {
-		r.dbm, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+		r.db, err = dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBData+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
-		defer r.dbm.Close()
-		r.dbExecFile(r.box.String("pgsql/droppar.sql"))
-		r.dbExecFile(r.box.String("pgsql/droptbl.sql"))
+		defer r.db.Close()
+		r.dbExecFile(r.box.String("pgsql/droppar.sql"), pattern)
+		r.dbExecFile(r.box.String("pgsql/droptbl.sql"), pattern)
 	}
 	return nil
 }
 
-func (r *Rotator) dbExecFile(file string) {
-	dot, err := dotsql.LoadFromString(r.pattern.Replace(file))
+func (r *Rotator) dbExecFile(file string, pattern *strings.Replacer) {
+	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Debug("rotator", "dbExecFile:\n%s\n\n", err)
 	}
@@ -145,7 +157,7 @@ func (r *Rotator) dbExecFile(file string) {
 		if config.Setting.SentryDSN != "" {
 			raven.CaptureError(fmt.Errorf("%v", v), nil)
 		}
-		_, err = dot.Exec(r.dbm, k)
+		_, err = dot.Exec(r.db, k)
 		if err != nil {
 			logp.Debug("rotator", "dotExec:\n%s\n\n", err)
 		}
@@ -153,43 +165,20 @@ func (r *Rotator) dbExecFile(file string) {
 }
 
 func (r *Rotator) dbExec(query string) {
-	_, err := r.dbm.Exec(query)
+	_, err := r.db.Exec(query)
 	if err != nil {
 		logp.Debug("rotator", "dbmExec:\n%s\n\n", err)
 	}
 }
 
 func (r *Rotator) Rotate() (err error) {
-	retention := time.Hour * 24 * time.Duration(config.Setting.DBDrop)
-	retry := 0
-
+	r.initTables()
+	initRetry := 0
 	initJob := cron.New()
 	initJob.AddFunc("@every 30s", func() {
-		retry++
-
-		if config.Setting.DBUser == "root" {
-			if err = r.CreateDatabases(); err != nil {
-				logp.Err("%v", err)
-			}
-		}
-		if err = r.CreateConfTables(); err != nil {
-			logp.Err("%v", err)
-		}
-		if err = r.CreateDataTables(); err != nil {
-			logp.Err("%v", err)
-		}
-
-		r.pattern = strings.NewReplacer(
-			"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
-			"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
-			"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
-		)
-
-		if err := r.CreateDataTables(); err != nil {
-			logp.Err("%v", err)
-		}
-
-		if retry == 3 {
+		initRetry++
+		r.initTables()
+		if initRetry == 2 {
 			initJob.Stop()
 		}
 
@@ -199,13 +188,7 @@ func (r *Rotator) Rotate() (err error) {
 	createJob := cron.New()
 	logp.Info("Start daily create data table job at 03:15:00\n")
 	createJob.AddFunc("0 15 03 * * *", func() {
-		r.pattern = strings.NewReplacer(
-			"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
-			"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
-			"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
-		)
-
-		if err := r.CreateDataTables(); err != nil {
+		if err := r.CreateDataTables(nextDay); err != nil {
 			logp.Err("%v", err)
 		}
 		logp.Info("Finished create data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
@@ -216,13 +199,7 @@ func (r *Rotator) Rotate() (err error) {
 	if config.Setting.DBDrop > 0 {
 		logp.Info("Start daily drop data table job at 03:45:00\n")
 		dropJob.AddFunc("0 45 03 * * *", func() {
-			r.pattern = strings.NewReplacer(
-				"TableDate", time.Now().Add(retention*-1).Format("20060102"),
-				"PartitionName", time.Now().Add(retention*-1).Format("20060102"),
-				"PartitionDate", time.Now().Add(retention*-1).Format("2006-01-02"),
-			)
-
-			if err := r.DropTables(); err != nil {
+			if err := r.DropTables(dropDay); err != nil {
 				logp.Err("%v", err)
 			}
 			logp.Info("Finished drop data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
@@ -230,4 +207,21 @@ func (r *Rotator) Rotate() (err error) {
 	}
 	dropJob.Start()
 	return nil
+}
+
+func (r *Rotator) initTables() {
+	if config.Setting.DBUser == "root" {
+		if err := r.CreateDatabases(); err != nil {
+			logp.Err("%v", err)
+		}
+	}
+	if err := r.CreateConfTables(curDay); err != nil {
+		logp.Err("%v", err)
+	}
+	if err := r.CreateDataTables(curDay); err != nil {
+		logp.Err("%v", err)
+	}
+	if err := r.CreateDataTables(nextDay); err != nil {
+		logp.Err("%v", err)
+	}
 }
