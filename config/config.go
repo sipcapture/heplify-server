@@ -13,10 +13,10 @@ type HeplifyServer struct {
 	PromTargetName string `default:""`
 	DBDriver       string `default:"mysql"`
 	DBAddr         string `default:"localhost:3306"`
-	DBData         string `default:"homer_data"`
-	DBConf         string `default:"homer_configuration"`
 	DBUser         string `default:"root"`
 	DBPass         string `default:""`
+	DBDataTable    string `default:"homer_data"`
+	DBConfTable    string `default:"homer_configuration"`
 	DBPath         string `default:""`
 	DBBulk         int    `default:"100"`
 	DBRotate       bool   `default:"true"`
@@ -40,10 +40,10 @@ func NewConfig() *HeplifyServer {
 		PromTargetName: "",
 		DBDriver:       "mysql",
 		DBAddr:         "localhost:3306",
-		DBData:         "homer_data",
-		DBConf:         "homer_configuration",
 		DBUser:         "root",
 		DBPass:         "",
+		DBDataTable:    "homer_data",
+		DBConfTable:    "homer_configuration",
 		DBPath:         "",
 		DBBulk:         100,
 		DBRotate:       true,
