@@ -249,7 +249,8 @@ CREATE TABLE IF NOT EXISTS `stats_method` (
   KEY `method` (`method`),
   KEY `completed` (`cseq`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
-
+/*!50100 PARTITION BY RANGE ( UNIX_TIMESTAMP(`from_date`))
+(PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */ ;
 
 USE mysql;
 INSERT INTO `user` VALUES ('localhost','homer_user','*D0F60D1E3C6C124FEEB76527E00A9380C37643EE','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','','','','',0,0,0,0,'mysql_native_password','','N');
