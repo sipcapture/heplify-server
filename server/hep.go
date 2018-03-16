@@ -187,7 +187,7 @@ GO:
 				dbCnt++
 				if dbCnt%128 == 0 {
 					dbCnt = 0
-					logp.Warn("overflowing db channel")
+					logp.Warn("overflowing db channel by 128 packets")
 				}
 			}
 		}
@@ -199,7 +199,7 @@ GO:
 				mCnt++
 				if mCnt%128 == 0 {
 					mCnt = 0
-					logp.Warn("overflowing metric channel")
+					logp.Warn("overflowing metric channel by 128 packets")
 				}
 			}
 		}
@@ -211,7 +211,7 @@ GO:
 				mqCnt++
 				if mqCnt%128 == 0 {
 					mqCnt = 0
-					logp.Warn("overflowing queue channel")
+					logp.Warn("overflowing queue channel by 128 packets")
 				}
 			}
 		}

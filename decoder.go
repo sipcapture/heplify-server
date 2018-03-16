@@ -152,7 +152,7 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v", strconv.Quote(h.Payload))
+			logp.Warn("%s", strconv.Quote(h.Payload))
 			return err
 		}
 		for _, v := range h.SIP.Headers {
@@ -162,7 +162,7 @@ func (h *HEP) parse(packet []byte) error {
 		}
 	}
 
-	logp.Debug("hep", "%#v", h)
+	logp.Debug("hep", "%+v\n\n", h)
 	return nil
 }
 

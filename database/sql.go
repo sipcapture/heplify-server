@@ -131,12 +131,20 @@ func (s *SQL) setup() error {
 	}
 
 	for i := 0; i < s.sipBulk; i++ {
-		sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+		if config.Setting.DBDriver == "mysql" {
+			sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+		} else if config.Setting.DBDriver == "postgres" {
+			sipQuery += `($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39),`
+		}
 	}
 	sipQuery = sipQuery[:len(sipQuery)-1]
 
 	for i := 0; i < s.rtcBulk; i++ {
-		rtcQuery += `(?,?,?,?,?,?,?,?,?,?,?,?),`
+		if config.Setting.DBDriver == "mysql" {
+			rtcQuery += `(?,?,?,?,?,?,?,?,?,?,?,?),`
+		} else if config.Setting.DBDriver == "postgres" {
+			rtcQuery += `($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12),`
+		}
 	}
 	rtcQuery = rtcQuery[:len(rtcQuery)-1]
 
@@ -352,7 +360,7 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 		query = "INSERT INTO logs_capture" + rtcQuery
 	}
 
-	logp.Debug("sql", "%s\n%#v", query, rows)
+	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 
 	_, err := s.dbs.Exec(query, rows...)
 	if err != nil {

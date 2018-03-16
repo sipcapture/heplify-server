@@ -18,45 +18,35 @@ import (
 type Prometheus struct {
 	TargetIP          []string
 	TargetName        []string
+	TargetEmpty       bool
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
 }
 
-func (p *Prometheus) setup() error {
-	var err error
-
+func (p *Prometheus) setup() (err error) {
 	promTargetIP := cutSpace(config.Setting.PromTargetIP)
 	promTargetName := cutSpace(config.Setting.PromTargetName)
 
 	p.TargetIP = strings.Split(promTargetIP, ",")
 	p.TargetName = strings.Split(promTargetName, ",")
 
-	dup := make(map[string]bool)
-
-	uniqueNames := []string{}
-	for _, tn := range p.TargetName {
-		if _, ok := dup[tn]; !ok {
-			dup[tn] = true
-			uniqueNames = append(uniqueNames, tn)
-		} else {
-			return fmt.Errorf("please give every prometheus Target a unique name")
-		}
-		if len(tn) < 2 {
-			return fmt.Errorf("please give every prometheus Target name at least 2 characters")
-		}
-	}
+	dedupIP := make(map[string]bool)
+	dedupName := make(map[string]bool)
 
 	uniqueIP := []string{}
 	for _, ti := range p.TargetIP {
-		if _, ok := dup[ti]; !ok {
-			dup[ti] = true
+		if _, ok := dedupIP[ti]; !ok {
+			dedupIP[ti] = true
 			uniqueIP = append(uniqueIP, ti)
-		} else {
-			return fmt.Errorf("please give every prometheus Target a unique IP")
 		}
-		if len(ti) < 7 {
-			return fmt.Errorf("please give every prometheus Target IP at least 7 characters")
+	}
+
+	uniqueNames := []string{}
+	for _, tn := range p.TargetName {
+		if _, ok := dedupName[tn]; !ok {
+			dedupName[tn] = true
+			uniqueNames = append(uniqueNames, tn)
 		}
 	}
 
@@ -64,7 +54,12 @@ func (p *Prometheus) setup() error {
 	p.TargetName = uniqueNames
 
 	if len(p.TargetIP) != len(p.TargetName) {
-		return fmt.Errorf("please give every prometheus Target a IP address and a unique name")
+		return fmt.Errorf("please give every prometheus Target a unique IP address and a unique name")
+	}
+
+	if p.TargetIP[0] == "" && p.TargetName[0] == "" {
+		logp.Info("Start prometheus with no targets")
+		p.TargetEmpty = true
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
@@ -146,20 +141,26 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 		}
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
-			for k, tn := range p.TargetName {
-				if pkt.SrcIPString == p.TargetIP[k] || pkt.DstIPString == p.TargetIP[k] {
-					p.CounterVecMetrics["heplify_method_response"].WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
+			if !p.TargetEmpty {
+				for k, tn := range p.TargetName {
+					if pkt.SrcIPString == p.TargetIP[k] || pkt.DstIPString == p.TargetIP[k] {
+						p.CounterVecMetrics["heplify_method_response"].WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
 
-					if pkt.SIP.RTPStatVal != "" {
-						p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
+						if pkt.SIP.RTPStatVal != "" {
+							p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
+						}
 					}
 				}
+			} else {
+				p.CounterVecMetrics["heplify_method_response"].WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
 
+				if pkt.SIP.RTPStatVal != "" {
+					p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
+				}
 			}
 		} else if pkt.ProtoType == 5 {
 			p.dissectRTCPStats([]byte(pkt.Payload))
 		}
-
 	}
 }
 
