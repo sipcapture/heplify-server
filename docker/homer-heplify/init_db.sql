@@ -214,6 +214,42 @@ CREATE TABLE IF NOT EXISTS `api_auth_key` (
   UNIQUE KEY `authkey` (`authkey`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
+--
+-- Table structure for statistics
+--
+
+CREATE TABLE IF NOT EXISTS `stats_data` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `from_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `to_date` timestamp NOT NULL DEFAULT '1971-01-01 00:00:01',
+  `type` varchar(50) NOT NULL DEFAULT '',
+  `total` int(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`,`from_date`),
+  UNIQUE KEY `datemethod` (`from_date`,`to_date`,`type`),
+  KEY `from_date` (`from_date`),
+  KEY `to_date` (`to_date`),
+  KEY `method` (`type`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+/*!50100 PARTITION BY RANGE ( UNIX_TIMESTAMP(`from_date`))
+(PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */ ;
+
+CREATE TABLE IF NOT EXISTS `stats_method` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `from_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `to_date` timestamp NOT NULL DEFAULT '1971-01-01 00:00:01',
+  `method` varchar(50) NOT NULL DEFAULT '',
+  `auth` tinyint(1) NOT NULL DEFAULT '0',
+  `cseq` varchar(100) NOT NULL DEFAULT '',
+  `totag` tinyint(1) NOT NULL DEFAULT 0,
+  `total` int(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`,`from_date`),
+  UNIQUE KEY `datemethod` (`from_date`,`to_date`,`method`,`auth`,`totag`,`cseq`),
+  KEY `from_date` (`from_date`),
+  KEY `to_date` (`to_date`),
+  KEY `method` (`method`),
+  KEY `completed` (`cseq`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+
 
 USE mysql;
 INSERT INTO `user` VALUES ('localhost','homer_user','*D0F60D1E3C6C124FEEB76527E00A9380C37643EE','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','','','','',0,0,0,0,'mysql_native_password','','N');
