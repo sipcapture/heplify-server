@@ -14,9 +14,12 @@ services:
       - "HEPLIFYSERVER_DBADDR=dbmysql:3306"
       - "HEPLIFYSERVER_DBUSER=homer_user"
       - "HEPLIFYSERVER_DBPASS=homer_password"
-      - "HEPLIFYSERVER_LOGLVL=debug"
+      - "HEPLIFYSERVER_LOGLVL=info"
       - "HEPLIFYSERVER_LOGSTD=true"
       - "HEPLIFYSERVER_DBBULK=1"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
+      - "HEPLIFYSERVER_PROMTARGETIP=127.0.0.1"
+      - "HEPLIFYSERVER_PROMTARGETNAME=localhost"
     restart: unless-stopped
     depends_on:
       dbmysql:
@@ -58,11 +61,28 @@ services:
          condition: service_healthy
 
   telegraf:
-    image: telegraf:0.12
-    restart: unless-stopped
+    image: telegraf
+#    restart: unless-stopped
     volumes:
-      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf
     ports:
       - "8092:8092/udp"
-      - "8094:8094"
       - "8125:8125/udp"
+    depends_on:
+      dbmysql:
+         condition: service_healthy
+
+  telestats:
+    image: hepic/telestats
+    command: nodejs index.js -c /config.js
+    restart: unless-stopped
+    volumes:
+      - ./telestats.conf:/config.js
+    expose:
+      - 8094
+    ports:
+      - "8094:8094/udp"
+    depends_on:
+      dbmysql:
+         condition: service_healthy
+    
