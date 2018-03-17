@@ -29,4 +29,4 @@ cd hepgen.js && npm install
 nodejs hepgen.js -s 9060 -c ./config/b2bcall_rtcp.js
 ```
 
-![image](https://user-images.githubusercontent.com/1423657/37555890-f9038d1e-29ee-11e8-9dc8-ab661681a8e3.png)
+![ezgif com-optimize 45](https://user-images.githubusercontent.com/1423657/37555986-4b64efb6-29f0-11e8-8de3-68428da0bbb4.gif)
