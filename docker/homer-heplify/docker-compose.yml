@@ -18,8 +18,8 @@ services:
       - "HEPLIFYSERVER_LOGSTD=true"
       - "HEPLIFYSERVER_DBBULK=1"
       - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
-      - "HEPLIFYSERVER_PROMTARGETIP=127.0.0.1"
-      - "HEPLIFYSERVER_PROMTARGETNAME=localhost"
+      - "HEPLIFYSERVER_PROMTARGETIP="
+      - "HEPLIFYSERVER_PROMTARGETNAME="
     restart: unless-stopped
     depends_on:
       dbmysql:
@@ -31,7 +31,7 @@ services:
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     environment:
-      - "MYSQL_ROOT_PASSWORD=homer_password"
+      - "MYSQL_ROOT_PASSWORD="
       - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
       - "MYSQL_ROOT_HOST=%"
     expose:
@@ -40,7 +40,7 @@ services:
       - 3306:3306
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: mysqlshow | grep homer_data
       timeout: 10s
       retries: 10
 
