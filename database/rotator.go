@@ -103,7 +103,6 @@ func (r *Rotator) CreateDataTables(pattern *strings.Replacer) (err error) {
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/pardata.sql"), pattern)
-		r.dbExecFile(db, r.box.String("pgsql/altdata.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/inddata.sql"), pattern)
 	}
 	return nil
