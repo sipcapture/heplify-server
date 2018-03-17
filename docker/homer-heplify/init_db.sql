@@ -2,6 +2,7 @@ CREATE USER 'homer_user'@'%' IDENTIFIED BY 'homer_password';
 GRANT ALL ON homer_configuration.* TO 'homer_user'@'%';
 GRANT ALL ON homer_statistic.* TO 'homer_user'@'%';
 GRANT ALL ON homer_data.* TO 'homer_user'@'%';
+GRANT ALL ON homer_data.* TO 'homer_user'@'%';
 
 
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
@@ -218,6 +219,8 @@ CREATE TABLE IF NOT EXISTS `api_auth_key` (
 -- Table structure for statistics
 --
 
+USE homer_statistic;
+
 CREATE TABLE IF NOT EXISTS `stats_data` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `from_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -256,3 +259,4 @@ USE mysql;
 INSERT INTO `user` VALUES ('localhost','homer_user','*D0F60D1E3C6C124FEEB76527E00A9380C37643EE','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','','','','',0,0,0,0,'mysql_native_password','','N');
 INSERT INTO `db` VALUES ('localhost','homer_configuration','homer_user','Y','Y','Y','Y','Y','Y','N','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'),('localhost','homer_statistic','homer_user','Y','Y','Y','Y','Y','Y','N','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'),('localhost','homer_data','homer_user','Y','Y','Y','Y','Y','Y','N','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
 
+SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION';
