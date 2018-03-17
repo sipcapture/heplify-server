@@ -8,15 +8,15 @@
 ### Status 
 #### v1
 * Homer 5 compatible
-* Alpha Development - not ready for production
-* Testers and Reporters welcome
+* Alpha Development - **NOT READY FOR PRODUCTION**
+* Testers and Reporters [welcome](https://github.com/sipcapture/heplify-server/issues)
 ##### v2
 * Homer 7 compatible
 * Coming Soon
 
 ### Installation
 * Download a [release](https://github.com/negbie/heplify-server/releases)
-* Complie from [sources](https://github.com/negbie/heplify-server/blob/master/docker/heplify-server/Dockerfile)
+* Compile from [sources](https://github.com/negbie/heplify-server/blob/master/docker/heplify-server/Dockerfile)
 
 ### Configuration
 heplify-server can be configured using command-line options, or by defining a local [configuration file](https://github.com/lmangani/heplify-server/blob/master/example/heplify-server.toml)
