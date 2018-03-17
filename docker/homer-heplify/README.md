@@ -3,13 +3,22 @@
 ## Docker Bundle
 This docker compose bundle provides:
 * heplify-server
-  - HEP capture service
+  - HEP capture services
+    - 9060: HEP socket
+    - 9999: stats socket
 * homer UI
   - HEP Search and Visualization
+    - 80: HOMER UI
 * mysql 5.7
   - HEP storage and indexing
+    - 3306: MySQL socket
 * telegraf
-  - HEP stats aggregation to MySQL
+  - Statistics Aggregation
+    - 8092: UDP Socket
+* telestats
+  - HEP stats aggregation Telegraf -> MySQL
+    - 9999: UDP JSON socket
+
 
 ### Usage
 Spin up a full stack for development
