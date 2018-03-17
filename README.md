@@ -2,16 +2,16 @@
 
 **heplify-server** is a stand-alone **HOMER** *v5 Capture Server* developed in GO, optimized for speed and simplicity. Distributed as a single binary ready to capture TCP/UDP **HEP** encapsulated packets, index them to database using H5 table format, produce basic usage timeseries metrics and providing users with simple, basic options for correlation and tagging inline. 
 
-*TLDR; It's a stand-alone, minimal HOMER without Kamailio or OpenSIPS dependency/options.*
+*TLDR; stand-alone, minimal HOMER without Kamailio or OpenSIPS dependency/options.*
 
-## Notice
+### Notice
 **heplify-server** only offers a reduced set of options and is *not* designed for everyone, but should result ideal for those willing to have an *all-in-one* simple capture deployment with minimal complexity and no need for special customization.
 
 ### Status 
 #### v1
 * Homer 5 compatible
-* Alpha Development - **NOT READY FOR PRODUCTION**
-* Testers and Reporters [welcome](https://github.com/sipcapture/heplify-server/issues)
+* Beta Stage - **NOT READY FOR PRODUCTION**
+* Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 ##### v2
 * Homer 7 compatible
 * Coming Soon
