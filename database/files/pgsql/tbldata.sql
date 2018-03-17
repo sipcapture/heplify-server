@@ -12,12 +12,11 @@ CREATE TABLE IF NOT EXISTS logs_capture (
   family smallint DEFAULT NULL,
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(1500) NOT NULL DEFAULT '',
-  PRIMARY KEY (id,date)
-);
+  msg varchar(1500) NOT NULL DEFAULT ''
+) PARTITION BY RANGE (date);
 
 -- name: create-report-table
-CREATE TABLE IF NOT EXISTS report_capture_all_TableDate (
+CREATE TABLE IF NOT EXISTS report_capture (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -30,12 +29,11 @@ CREATE TABLE IF NOT EXISTS report_capture_all_TableDate (
   family smallint DEFAULT NULL,
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(1500) NOT NULL DEFAULT '',
-  PRIMARY KEY (id,date)
-);
+  msg varchar(1500) NOT NULL DEFAULT ''
+) PARTITION BY RANGE (date);
 
 -- name: create-rtcp-table
-CREATE TABLE IF NOT EXISTS rtcp_capture_all_TableDate (
+CREATE TABLE IF NOT EXISTS rtcp_capture (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -48,12 +46,11 @@ CREATE TABLE IF NOT EXISTS rtcp_capture_all_TableDate (
   family smallint DEFAULT NULL,
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(1500) NOT NULL DEFAULT '',
-  PRIMARY KEY (id,date)
-);
+  msg varchar(1500) NOT NULL DEFAULT ''
+) PARTITION BY RANGE (date);
 
 -- name: create-call-table
-CREATE TABLE IF NOT EXISTS sip_capture_call_TableDate (
+CREATE TABLE IF NOT EXISTS sip_capture_call (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -98,12 +95,11 @@ CREATE TABLE IF NOT EXISTS sip_capture_call_TableDate (
   rtp_stat varchar(256) NOT NULL DEFAULT '',
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(3000) NOT NULL DEFAULT '',
-  PRIMARY KEY (id,date)
-);
+  msg varchar(3000) NOT NULL DEFAULT ''
+) PARTITION BY RANGE (date);
 
 -- name: create-registration-table
-CREATE TABLE IF NOT EXISTS sip_capture_registration_TableDate (
+CREATE TABLE IF NOT EXISTS sip_capture_registration (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -148,6 +144,5 @@ CREATE TABLE IF NOT EXISTS sip_capture_registration_TableDate (
   rtp_stat varchar(256) NOT NULL DEFAULT '',
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(3000) NOT NULL DEFAULT '',
-  PRIMARY KEY (id,date)
-);
+  msg varchar(3000) NOT NULL DEFAULT ''
+) PARTITION BY RANGE (date);
