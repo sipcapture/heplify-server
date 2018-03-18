@@ -21,6 +21,7 @@ AlegID          = "x-cid"
 LogDbg          = ""
 LogLvl          = "info"
 LogStd          = false
+Config          = "./heplify-server.toml"
 
 # Examples:
 # -------------------------------------

@@ -26,6 +26,7 @@ type HeplifyServer struct {
 	LogDbg         string `default:""`
 	LogLvl         string `default:"info"`
 	LogStd         bool   `default:"false"`
+	Config         string `default:"./heplify-server.toml"`
 }
 
 func NewConfig() *HeplifyServer {
@@ -53,6 +54,7 @@ func NewConfig() *HeplifyServer {
 		LogDbg:         "",
 		LogLvl:         "info",
 		LogStd:         false,
+		Config:         "./heplify-server.toml",
 	}
 }
 
