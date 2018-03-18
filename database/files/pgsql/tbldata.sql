@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS logs_capture (
+CREATE TABLE IF NOT EXISTS logs_capture_all (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS logs_capture (
 ) PARTITION BY RANGE (date);
 
 -- name: create-report-table
-CREATE TABLE IF NOT EXISTS report_capture (
+CREATE TABLE IF NOT EXISTS report_capture_all (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS report_capture (
 ) PARTITION BY RANGE (date);
 
 -- name: create-rtcp-table
-CREATE TABLE IF NOT EXISTS rtcp_capture (
+CREATE TABLE IF NOT EXISTS rtcp_capture_all (
   id BIGSERIAL NOT NULL,
   date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   micro_ts bigint NOT NULL DEFAULT '0',

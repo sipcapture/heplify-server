@@ -145,7 +145,6 @@ func (r *Rotator) DropTables(pattern *strings.Replacer) (err error) {
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("pgsql/droppar.sql"), pattern)
-		r.dbExecFile(db, r.box.String("pgsql/droptbl.sql"), pattern)
 	}
 	return nil
 }

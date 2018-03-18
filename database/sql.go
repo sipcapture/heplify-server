@@ -135,7 +135,8 @@ func (s *SQL) setup() error {
 			sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 		} else if config.Setting.DBDriver == "postgres" {
 			sipQuery += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
-				i*39+1, i*39+2, i*39+3, i*39+4, i*39+5, i*39+6, i*39+7, i*39+8, i*39+9, i*39+10, i*39+11, i*39+12, i*39+13, i*39+14, i*39+15, i*39+16, i*39+17, i*39+18, i*39+19, i*39+20, i*39+21, i*39+22, i*39+23, i*39+24, i*39+25, i*39+26, i*39+27, i*39+28, i*39+29, i*39+30, i*39+31, i*39+32, i*39+33, i*39+34, i*39+35, i*39+36, i*39+37, i*39+38, i*39+39)
+				i*39+1, i*39+2, i*39+3, i*39+4, i*39+5, i*39+6, i*39+7, i*39+8, i*39+9, i*39+10, i*39+11, i*39+12, i*39+13, i*39+14, i*39+15, i*39+16, i*39+17, i*39+18, i*39+19, i*39+20, i*39+21,
+				i*39+22, i*39+23, i*39+24, i*39+25, i*39+26, i*39+27, i*39+28, i*39+29, i*39+30, i*39+31, i*39+32, i*39+33, i*39+34, i*39+35, i*39+36, i*39+37, i*39+38, i*39+39)
 		}
 	}
 	sipQuery = sipQuery[:len(sipQuery)-1]
@@ -359,7 +360,11 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 	case "dns":
 		query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
 	case "log":
-		query = "INSERT INTO logs_capture" + rtcQuery
+		if config.Setting.DBDriver == "mysql" {
+			query = "INSERT INTO logs_capture" + rtcQuery
+		} else if config.Setting.DBDriver == "postgres" {
+			query = "INSERT INTO logs_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		}
 	}
 
 	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
