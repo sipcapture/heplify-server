@@ -1,11 +1,11 @@
 -- name: drop-logs-table-partition
-DROP TABLE logs_capture_PartitionName;
+DROP TABLE logs_capture_all_PartitionName;
 
 -- name: drop-report-table-partition
-DROP TABLE report_capture_PartitionName;
+DROP TABLE report_capture_all_PartitionName;
 
 -- name: drop-rtcp-table-partition
-DROP TABLE rtcp_capture_PartitionName;
+DROP TABLE rtcp_capture_all_PartitionName;
 
 -- name: drop-call-table-partition
 DROP TABLE sip_capture_call_PartitionName;
