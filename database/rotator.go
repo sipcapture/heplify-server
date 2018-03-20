@@ -110,6 +110,7 @@ func (r *Rotator) CreateConfTables(pattern strings.Replacer) (err error) {
 			return err
 		}
 		defer db.Close()
+		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
 		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), pattern)
