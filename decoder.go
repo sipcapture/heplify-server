@@ -82,47 +82,6 @@ type HEP struct {
 	SIP               *sipparser.SipMsg
 }
 
-// SIP represents a parsed SIP packet
-type SIP struct {
-	Method          string
-	ReplyReason     string
-	Ruri            string
-	RuriUser        string
-	RuriDomain      string
-	FromUser        string
-	FromDomain      string
-	FromTag         string
-	ToUser          string
-	ToDomain        string
-	ToTag           string
-	PidUser         string
-	ContactUser     string
-	AuthUser        string
-	CallID          string
-	CallIDAleg      string
-	Via1            string
-	Via1Branch      string
-	Cseq            string
-	Diversion       string
-	Reason          string
-	ContentType     string
-	Auth            string
-	UserAgent       string
-	SourceIP        string
-	SourcePort      string
-	DestinationIP   string
-	DestinationPort string
-	ContactIP       string
-	ContactPort     string
-	Proto           string
-	Family          string
-	RTPStat         string
-	Type            string
-	NodeID          string
-	CorrelationID   string
-	Msg             *sipparser.SipMsg
-}
-
 // DecodeHEP returns a parsed HEP message
 func DecodeHEP(packet []byte) (*HEP, error) {
 	hep := &HEP{}
@@ -288,7 +247,16 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.Reason == nil {
 		h.SIP.Reason = new(sipparser.Reason)
 	}
+	/*
+		h.Payload = fmt.Sprintf("{\"method\":\"%s\",\"reply_reason\":\"%s\",\"ruri\":\"%s\",\"ruri_user\":\"%s\",\"ruri_domain\":\"%s\",\"from_user\":\"%s\",\"from_domain\":\"%s\",\"from_tag\":\"%s\",\"to_user\":\"%s\",\"to_domain\":\"%s\",\"to_tag\":\"%s\",\"pid_user\":\"%s\","+
+			"\"contact_user\":\"%s\",\"auth_user\":\"%s\",\"callid\":\"%s\",\"callid_aleg\":\"%s\",\"via_1\":\"%s\",\"via_1_branch\":\"%s\",\"cseq\":\"%s\",\"diversion\":\"%s\",\"reason\":\"%s\",\"content_type\":\"%s\",\"auth\":\"%s\",\"user_agent\":\"%s\",\"contact_ip\":\"%s\"}",
 
+			h.SIP.StartLine.Method, h.SIP.StartLine.RespText, h.SIP.StartLine.URI.Raw, h.SIP.StartLine.URI.User, h.SIP.StartLine.URI.Host,
+			h.SIP.From.URI.User, h.SIP.From.URI.Host, h.SIP.From.Tag, h.SIP.To.URI.User, h.SIP.To.URI.Host, h.SIP.To.Tag, h.SIP.PAssertedIdVal,
+			h.SIP.Contact.URI.User, h.SIP.Authorization.Username, h.SIP.CallId, h.AlegID, h.SIP.Via[0].Via, h.SIP.Via[0].Branch, h.SIP.Cseq.Val,
+			h.SIP.DiversionVal, h.SIP.Reason.Cause, h.SIP.ContentType, h.SIP.Authorization.Val, h.SIP.UserAgent, h.SIP.Contact.URI.Host,
+		)
+	*/
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.Cseq.Method) < 3 {
