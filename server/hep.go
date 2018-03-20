@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
@@ -18,12 +17,12 @@ import (
 )
 
 type HEPInput struct {
-	addr     string
-	pool     chan chan struct{}
-	stats    HEPStats
-	stop     bool
-	workers  int
-	dupCache *freecache.Cache
+	addr    string
+	pool    chan chan struct{}
+	stats   HEPStats
+	stop    bool
+	workers int
+	//dupCache *freecache.Cache
 }
 
 type HEPStats struct {

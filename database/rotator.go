@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	raven "github.com/getsentry/raven-go"
 	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
 	"github.com/negbie/dotsql"
@@ -18,13 +17,25 @@ import (
 type Rotator struct {
 	addr []string
 	box  *packr.Box
+	step int
 }
 
 func NewRotator(b *packr.Box) *Rotator {
-	return &Rotator{
-		addr: strings.Split(config.Setting.DBAddr, ":"),
-		box:  b,
+	r := &Rotator{}
+	r.addr = strings.Split(config.Setting.DBAddr, ":")
+	r.box = b
+
+	switch config.Setting.DBPartition {
+	case "15m":
+		r.step = 15
+	case "30m":
+		r.step = 30
+	case "1h":
+		r.step = 60
+	default:
+		r.step = 1440
 	}
+	return r
 }
 
 var curDay = strings.NewReplacer(
@@ -49,6 +60,11 @@ var dropDay = strings.NewReplacer(
 	"TableDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("20060102"),
 	"PartitionName", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("20060102"),
 	"PartitionDate", time.Now().Add((time.Hour*24*time.Duration(config.Setting.DBDropDays))*-1).Format("2006-01-02"),
+)
+
+var partDay = strings.NewReplacer(
+	"StartTime", "00:00",
+	"EndTime", "23:59",
 )
 
 func (r *Rotator) CreateDatabases() (err error) {
@@ -155,14 +171,21 @@ func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern *strings.R
 		logp.Debug("rotator", "dbExecFile:\n%s\n\n", err)
 	}
 
-	for k, v := range dot.QueryMap() {
-		logp.Debug("rotator", "queryMap:\n%s\n\n", v)
-		if config.Setting.SentryDSN != "" {
-			raven.CaptureError(fmt.Errorf("%v", v), nil)
-		}
-		_, err = dot.Exec(db, k)
-		if err != nil {
-			logp.Debug("rotator", "dotExec:\n%s\n\n", err)
+	for _, query := range dot.QueryMap() {
+		if config.Setting.DBDriver == "mysql" {
+			logp.Debug("rotator", "queryMap:\n%s\n\n", query)
+			_, err := db.Exec(query)
+			if err != nil {
+				logp.Debug("rotator", "dbExec:\n%s\n\n", err)
+			}
+		} else if config.Setting.DBDriver == "postgres" && r.step == 1440 {
+			logp.Debug("rotator", "queryMap:\n%s\n\n", query)
+			_, err := db.Exec(partDay.Replace(query))
+			if err != nil {
+				logp.Debug("rotator", "dbExec:\n%s\n\n", err)
+			}
+		} else if config.Setting.DBDriver == "postgres" && r.step != 1440 {
+			r.rotatePartitions(db, query)
 		}
 	}
 }
@@ -229,5 +252,34 @@ func (r *Rotator) initTables() {
 	}
 	if err := r.CreateDataTables(nextDay); err != nil {
 		logp.Err("%v", err)
+	}
+}
+
+func (r *Rotator) rotatePartitions(db *dbr.Connection, query string) {
+	startTime := new(time.Time)
+	oldStart := "StartTime"
+	newStart := startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(0)).Format("15:04")
+
+	endTime := new(time.Time)
+	oldEnd := "EndTime"
+	newEnd := endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(r.step) - 1).Format("15:04")
+
+	for i := 0; i < 1440/r.step; i++ {
+		if i > 0 {
+			newStart = startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step)).Format("15:04")
+			newEnd = endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step+r.step) - 1).Format("15:04")
+		}
+		query = strings.Replace(query, oldStart, newStart, -1)
+		oldStart = newStart
+
+		query = strings.Replace(query, oldEnd, newEnd, -1)
+		oldEnd = newEnd
+
+		fmt.Println(query)
+		logp.Debug("rotator", "queryMap:\n%s\n\n", query)
+		_, err := db.Exec(partDay.Replace(query))
+		if err != nil {
+			logp.Debug("rotator", "dbExec:\n%s\n\n", err)
+		}
 	}
 }

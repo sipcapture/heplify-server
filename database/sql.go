@@ -227,7 +227,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.ProtoType,
 					pkt.NodeID,
 					short(pkt.SIP.CallId, 120),
-					short(pkt.SIP.Msg, 3000)}...)
+					short(pkt.Payload, 3000)}...)
 
 				regCnt++
 				if regCnt == s.sipBulk {
@@ -275,7 +275,7 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 					pkt.ProtoType,
 					pkt.NodeID,
 					short(pkt.SIP.CallId, 120),
-					short(pkt.SIP.Msg, 3000)}...)
+					short(pkt.Payload, 3000)}...)
 
 				callCnt++
 				if callCnt == s.sipBulk {
@@ -348,22 +348,35 @@ func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
 }
 
 func (s *SQL) bulkInsert(query string, rows []interface{}) {
-	switch query {
-	case "call":
-		query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + sipQuery
-	case "register":
-		query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + sipQuery
-	case "rtcp":
-		query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "report":
-		query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "dns":
-		query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "log":
-		if config.Setting.DBDriver == "mysql" {
+	if config.Setting.DBDriver == "mysql" {
+		switch query {
+		case "call":
+			query = "INSERT INTO sip_capture_call" + time.Now().Format("20060102") + sipQuery
+		case "register":
+			query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + sipQuery
+		case "rtcp":
+			query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		case "report":
+			query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		case "dns":
+			query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		case "log":
 			query = "INSERT INTO logs_capture" + rtcQuery
-		} else if config.Setting.DBDriver == "postgres" {
-			query = "INSERT INTO logs_capture_all_" + time.Now().Format("20060102") + rtcQuery
+		}
+	} else if config.Setting.DBDriver == "postgres" {
+		switch query {
+		case "call":
+			query = "INSERT INTO sip_capture_call" + sipQuery
+		case "register":
+			query = "INSERT INTO sip_capture_registration" + sipQuery
+		case "rtcp":
+			query = "INSERT INTO rtcp_capture_all" + rtcQuery
+		case "report":
+			query = "INSERT INTO report_capture_all" + rtcQuery
+		case "dns":
+			query = "INSERT INTO dns_capture_all" + rtcQuery
+		case "log":
+			query = "INSERT INTO logs_capture_all" + rtcQuery
 		}
 	}
 
@@ -376,7 +389,6 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 			raven.CaptureError(err, nil)
 		}
 	}
-
 }
 
 func short(s string, i int) string {

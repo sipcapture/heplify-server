@@ -15,6 +15,7 @@ DBConfTable     = "homer_configuration"
 DBPath          = ""
 DBBulk          = 100
 DBRotate        = true
+DBPartition     = "1d"
 DBDropDays      = 0
 SentryDSN       = ""
 AlegID          = "x-cid"

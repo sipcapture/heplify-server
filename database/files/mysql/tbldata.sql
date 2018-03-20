@@ -196,7 +196,9 @@ CREATE TABLE IF NOT EXISTS `sip_capture_call_TableDate` (
   KEY `callid_aleg` (`callid_aleg`),
   KEY `date` (`date`),
   KEY `callid` (`callid`),
-  KEY `method` (`method`)
+  KEY `method` (`method`),
+  KEY `source_ip` (`source_ip`),
+  KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
@@ -282,7 +284,10 @@ CREATE TABLE IF NOT EXISTS `sip_capture_registration_TableDate` (
   KEY `auth_user` (`auth_user`),
   KEY `callid_aleg` (`callid_aleg`),
   KEY `date` (`date`),
-  KEY `callid` (`callid`)
+  KEY `callid` (`callid`),
+  KEY `method` (`method`),
+  KEY `source_ip` (`source_ip`),
+  KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
