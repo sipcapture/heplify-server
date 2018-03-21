@@ -26,6 +26,10 @@ func NewRotator(b *packr.Box) *Rotator {
 	r.box = b
 
 	switch config.Setting.DBPartition {
+	case "5m":
+		r.step = 5
+	case "10m":
+		r.step = 10
 	case "15m":
 		r.step = 15
 	case "30m":
@@ -110,6 +114,7 @@ func (r *Rotator) CreateConfTables(pattern strings.Replacer) (err error) {
 			return err
 		}
 		defer db.Close()
+		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
 		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), pattern)
 		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), pattern)
