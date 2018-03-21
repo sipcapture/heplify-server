@@ -156,7 +156,7 @@ func (s *SQL) setup() error {
 	return nil
 }
 
-func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
+func (s *SQL) insert(hCh chan *decoder.HEP) {
 	var (
 		pkt        *decoder.HEP
 		ts         string

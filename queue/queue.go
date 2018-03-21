@@ -8,16 +8,14 @@ import (
 )
 
 type Queue struct {
-	QH       QueueHandler
-	ErrCount *uint64
-
+	QH    QueueHandler
 	Topic string
 	Chan  chan []byte
 }
 
 type QueueHandler interface {
 	setup() error
-	add(string, chan []byte, *uint64)
+	add(string, chan []byte)
 }
 
 func New(name string) *Queue {
@@ -50,7 +48,7 @@ func (q *Queue) Run() error {
 	go func() {
 		defer wg.Done()
 		topic := q.Topic
-		q.QH.add(topic, q.Chan, q.ErrCount)
+		q.QH.add(topic, q.Chan)
 	}()
 
 	wg.Wait()

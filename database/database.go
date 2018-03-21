@@ -9,16 +9,13 @@ import (
 )
 
 type Database struct {
-	DBH      DBHandler
-	ErrCount *uint64
-
-	Topic string
-	Chan  chan *decoder.HEP
+	DBH  DBHandler
+	Chan chan *decoder.HEP
 }
 
 type DBHandler interface {
 	setup() error
-	insert(string, chan *decoder.HEP, *uint64)
+	insert(chan *decoder.HEP)
 }
 
 func New(name string) *Database {
@@ -49,8 +46,7 @@ func (d *Database) Run() error {
 
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
-			topic := d.Topic
-			d.DBH.insert(topic, d.Chan, d.ErrCount)
+			d.DBH.insert(d.Chan)
 		}()
 	}
 

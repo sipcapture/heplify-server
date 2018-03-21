@@ -61,7 +61,7 @@ func (k *Kafka) setup() error {
 	return nil
 }
 
-func (k *Kafka) add(topic string, qCh chan []byte, ec *uint64) {
+func (k *Kafka) add(topic string, qCh chan []byte) {
 	var (
 		msg []byte
 		ok  bool
@@ -80,7 +80,6 @@ func (k *Kafka) add(topic string, qCh chan []byte, ec *uint64) {
 		}:
 		case err := <-k.producer.Errors():
 			logp.Err("%v", err)
-			*ec++
 		}
 	}
 
