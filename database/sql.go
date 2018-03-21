@@ -115,8 +115,8 @@ func (s *SQL) setup() error {
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(40)
-	s.dbc.SetMaxIdleConns(20)
+	s.dbc.SetMaxOpenConns(80)
+	s.dbc.SetMaxIdleConns(40)
 	s.dbs = s.dbc.NewSession(nil)
 
 	s.sipBulk = config.Setting.DBBulk

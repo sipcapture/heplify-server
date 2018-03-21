@@ -224,7 +224,7 @@ func (h *HEPInput) logStats() {
 	for {
 		select {
 		case <-ticker.C:
-			logp.Info("Stats since last minute Packets: %d, HEP-Packets: %d, Duplicate: %d, Error: %d",
+			logp.Info("Packet stats since last minute Total: %d, HEP: %d, Duplicate: %d, Error: %d",
 				atomic.LoadUint64(&h.stats.PktCount),
 				atomic.LoadUint64(&h.stats.HEPCount),
 				atomic.LoadUint64(&h.stats.DupCount),
@@ -234,6 +234,12 @@ func (h *HEPInput) logStats() {
 			atomic.StoreUint64(&h.stats.HEPCount, 0)
 			atomic.StoreUint64(&h.stats.DupCount, 0)
 			atomic.StoreUint64(&h.stats.ErrCount, 0)
+
+			logp.Info("Current channel queue length Input: %d, Database: %d, Metric: %d",
+				len(inCh),
+				len(dbCh),
+				len(mCh),
+			)
 		}
 	}
 }
