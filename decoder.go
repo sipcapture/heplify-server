@@ -204,7 +204,6 @@ func (h *HEP) parseHEP(packet []byte) error {
 }
 
 func (h *HEP) parseSIP() error {
-
 	h.SIP = sipparser.ParseMsg(h.Payload)
 
 	if h.SIP.StartLine == nil {
@@ -216,37 +215,11 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.StartLine.URI == nil {
 		h.SIP.StartLine.URI = new(sipparser.URI)
 	}
-	if h.SIP.From == nil {
-		h.SIP.From = new(sipparser.From)
-	}
-	if h.SIP.From.URI == nil {
-		h.SIP.From.URI = new(sipparser.URI)
-	}
-	if h.SIP.To == nil {
-		h.SIP.To = new(sipparser.From)
-	}
-	if h.SIP.To.URI == nil {
-		h.SIP.To.URI = new(sipparser.URI)
-	}
-	if h.SIP.Contact == nil {
-		h.SIP.Contact = new(sipparser.From)
-	}
-	if h.SIP.Contact.URI == nil {
-		h.SIP.Contact.URI = new(sipparser.URI)
-	}
-	if h.SIP.Authorization == nil {
-		h.SIP.Authorization = new(sipparser.Authorization)
-	}
 	if h.SIP.Via == nil {
 		h.SIP.Via = make([]*sipparser.Via, 1)
 		h.SIP.Via[0] = new(sipparser.Via)
 	}
-	if h.SIP.Cseq == nil {
-		h.SIP.Cseq = new(sipparser.Cseq)
-	}
-	if h.SIP.Reason == nil {
-		h.SIP.Reason = new(sipparser.Reason)
-	}
+
 	/*
 		h.Payload = fmt.Sprintf("{\"method\":\"%s\",\"reply_reason\":\"%s\",\"ruri\":\"%s\",\"ruri_user\":\"%s\",\"ruri_domain\":\"%s\",\"from_user\":\"%s\",\"from_domain\":\"%s\",\"from_tag\":\"%s\",\"to_user\":\"%s\",\"to_domain\":\"%s\",\"to_tag\":\"%s\",\"pid_user\":\"%s\","+
 			"\"contact_user\":\"%s\",\"auth_user\":\"%s\",\"callid\":\"%s\",\"callid_aleg\":\"%s\",\"via_1\":\"%s\",\"via_1_branch\":\"%s\",\"cseq\":\"%s\",\"diversion\":\"%s\",\"reason\":\"%s\",\"content_type\":\"%s\",\"auth\":\"%s\",\"user_agent\":\"%s\",\"contact_ip\":\"%s\"}",
@@ -257,6 +230,7 @@ func (h *HEP) parseSIP() error {
 			h.SIP.DiversionVal, h.SIP.Reason.Cause, h.SIP.ContentType, h.SIP.Authorization.Val, h.SIP.UserAgent, h.SIP.Contact.URI.Host,
 		)
 	*/
+
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.Cseq.Method) < 3 {

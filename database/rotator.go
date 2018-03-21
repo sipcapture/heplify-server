@@ -26,6 +26,10 @@ func NewRotator(b *packr.Box) *Rotator {
 	r.box = b
 
 	switch config.Setting.DBPartition {
+	case "5m":
+		r.step = 5
+	case "10m":
+		r.step = 10
 	case "15m":
 		r.step = 15
 	case "30m":
