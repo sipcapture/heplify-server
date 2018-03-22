@@ -78,36 +78,39 @@ func (r *Rotator) CreateDatabases() (err error) {
 	return nil
 }
 
-func (r *Rotator) CreateDataTables(pattern strings.Replacer) (err error) {
+func (r *Rotator) CreateDataTables(duration int) (err error) {
+	day := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), pattern)
+		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), day)
+		r.dbExecPartitionFile(db, r.box.String("mysql/pardata.sql"), day, duration)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), pattern)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), pattern)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), pattern)
+		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), day)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), day, duration)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), day, duration)
 	}
 	return nil
 }
 
-func (r *Rotator) CreateConfTables(pattern strings.Replacer) (err error) {
+func (r *Rotator) CreateConfTables(duration int) (err error) {
+	day := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), pattern)
-		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), pattern)
+		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), day)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
@@ -115,28 +118,29 @@ func (r *Rotator) CreateConfTables(pattern strings.Replacer) (err error) {
 		}
 		defer db.Close()
 		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
-		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), pattern)
-		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), pattern)
-		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), pattern)
+		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), day)
+		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), day)
+		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), day)
 	}
 	return nil
 }
 
-func (r *Rotator) DropTables(pattern strings.Replacer) (err error) {
+func (r *Rotator) DropTables(duration int) (err error) {
+	day := replaceDropDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), pattern)
+		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), day)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), pattern)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), day, duration)
 	}
 	return nil
 }
@@ -156,22 +160,14 @@ func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Re
 	}
 }
 
-func (r *Rotator) dbExecPartitionFile(db *dbr.Connection, file string, pattern strings.Replacer) {
+func (r *Rotator) dbExecPartitionFile(db *dbr.Connection, file string, pattern strings.Replacer, duration int) {
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Err("%s\n\n", err)
 	}
 
 	for _, query := range dot.QueryMap() {
-		if r.step == 1440 {
-			logp.Debug("rotator", "db query:\n%s\n\n", query)
-			_, err := db.Exec(partDay.Replace(query))
-			if err != nil {
-				logp.Warn("%s\n\n", err)
-			}
-		} else if r.step != 1440 {
-			r.rotatePartitions(db, query)
-		}
+		r.rotatePartitions(db, query, duration)
 	}
 }
 
@@ -198,10 +194,10 @@ func (r *Rotator) Rotate() (err error) {
 	createJob := cron.New()
 	logp.Info("Start daily create data table job at 03:15:00\n")
 	createJob.AddFunc("0 15 03 * * *", func() {
-		if err := r.CreateDataTables(replaceNextDay()); err != nil {
+		if err := r.CreateDataTables(1); err != nil {
 			logp.Err("%v", err)
 		}
-		if err := r.CreateDataTables(replaceTwoDay()); err != nil {
+		if err := r.CreateDataTables(2); err != nil {
 			logp.Err("%v", err)
 		}
 		logp.Info("Finished create data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
@@ -212,7 +208,7 @@ func (r *Rotator) Rotate() (err error) {
 		dropJob := cron.New()
 		logp.Info("Start daily drop data table job at 03:45:00\n")
 		dropJob.AddFunc("0 45 03 * * *", func() {
-			if err := r.DropTables(replaceDropDay()); err != nil {
+			if err := r.DropTables(config.Setting.DBDropDays); err != nil {
 				logp.Err("%v", err)
 			}
 			logp.Info("Finished drop data table job next will run at %v\n", time.Now().Add(time.Hour*24+1))
@@ -228,33 +224,35 @@ func (r *Rotator) createTables() {
 			logp.Err("%v", err)
 		}
 	}
-	if err := r.CreateConfTables(replaceCurDay()); err != nil {
+	if err := r.CreateConfTables(0); err != nil {
 		logp.Err("%v", err)
 	}
-	if err := r.CreateDataTables(replaceCurDay()); err != nil {
+	if err := r.CreateDataTables(0); err != nil {
 		logp.Err("%v", err)
 	}
-	if err := r.CreateDataTables(replaceNextDay()); err != nil {
+	if err := r.CreateDataTables(1); err != nil {
 		logp.Err("%v", err)
 	}
 }
 
-func (r *Rotator) rotatePartitions(db *dbr.Connection, query string) {
+func (r *Rotator) rotatePartitions(db *dbr.Connection, query string, d int) {
+	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	oldName := "pnr0000"
 	newName := "pnr0"
-	startTime := new(time.Time)
-	oldStart := "StartTime"
-	newStart := startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(0)).Format("15:04")
 
-	endTime := new(time.Time)
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	oldStart := "StartTime"
+	newStart := startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(0)).Format("2006-01-02 15:04:05")
+
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldEnd := "EndTime"
-	newEnd := endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(r.step) - 1).Format("15:04")
+	newEnd := endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(r.step)).Format("2006-01-02 15:04:05")
 
 	for i := 0; i < 1440/r.step; i++ {
 		if i > 0 {
 			newName = "pnr" + strconv.Itoa(i)
-			newStart = startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step)).Format("15:04")
-			newEnd = endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step+r.step) - 1).Format("15:04")
+			newStart = startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step)).Format("2006-01-02 15:04:05")
+			newEnd = endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step+r.step)).Format("2006-01-02 15:04:05")
 		}
 		query = strings.Replace(query, oldName, newName, -1)
 		oldName = newName
@@ -262,7 +260,7 @@ func (r *Rotator) rotatePartitions(db *dbr.Connection, query string) {
 		query = strings.Replace(query, oldStart, newStart, -1)
 		oldStart = newStart
 
-		query = strings.Replace(query, oldEnd, newEnd, -1)
+		query = strings.Replace(query, oldEnd+"');", newEnd+"');", -1)
 		oldEnd = newEnd
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
@@ -273,36 +271,18 @@ func (r *Rotator) rotatePartitions(db *dbr.Connection, query string) {
 	}
 }
 
-func replaceCurDay() strings.Replacer {
+func replaceCreateDay(d int) strings.Replacer {
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Format("20060102"),
-		"PartitionName", time.Now().Format("20060102"),
-		"PartitionDate", time.Now().Format("2006-01-02"),
+		"TableDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
+		"PartitionName", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
+		"PartitionDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("2006-01-02"),
 	)
 }
 
-func replaceNextDay() strings.Replacer {
+func replaceDropDay(d int) strings.Replacer {
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*24+1).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*24+1).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*24+1).Format("2006-01-02"),
+		"TableDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
+		"PartitionName", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
+		"PartitionDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("2006-01-02"),
 	)
 }
-
-func replaceTwoDay() strings.Replacer {
-	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*24+2).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*24+2).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*24+2).Format("2006-01-02"),
-	)
-}
-
-func replaceDropDay() strings.Replacer {
-	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*24*time.Duration(config.Setting.DBDropDays*-1)).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*24*time.Duration(config.Setting.DBDropDays*-1)).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*24*time.Duration(config.Setting.DBDropDays*-1)).Format("2006-01-02"),
-	)
-}
-
-var partDay = strings.NewReplacer("StartTime", "00:00", "EndTime", "23:59")

@@ -1,14 +1,14 @@
--- name: create-logs-table-partition
-CREATE TABLE IF NOT EXISTS logs_capture_all_PartitionName_pnr0000 PARTITION OF logs_capture_all FOR VALUES FROM ('PartitionDate StartTime:00') TO ('PartitionDate EndTime:59');
+-- name: create-partition-logs_capture
+CREATE TABLE IF NOT EXISTS logs_capture_PartitionName_pnr0000 PARTITION OF logs_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-report-table-partition
-CREATE TABLE IF NOT EXISTS report_capture_all_PartitionName_pnr0000 PARTITION OF report_capture_all FOR VALUES FROM ('PartitionDate StartTime:00') TO ('PartitionDate EndTime:59');
+-- name: create-partition-report_capture
+CREATE TABLE IF NOT EXISTS report_capture_PartitionName_pnr0000 PARTITION OF report_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-rtcp-table-partition
-CREATE TABLE IF NOT EXISTS rtcp_capture_all_PartitionName_pnr0000 PARTITION OF rtcp_capture_all FOR VALUES FROM ('PartitionDate StartTime:00') TO ('PartitionDate EndTime:59');
+-- name: create-partition-rtcp_capture
+CREATE TABLE IF NOT EXISTS rtcp_capture_PartitionName_pnr0000 PARTITION OF rtcp_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-call-table-partition
-CREATE TABLE IF NOT EXISTS sip_capture_call_PartitionName_pnr0000 PARTITION OF sip_capture_call FOR VALUES FROM ('PartitionDate StartTime:00') TO ('PartitionDate EndTime:59');
+-- name: create-partition-sip_capture_call
+CREATE TABLE IF NOT EXISTS sip_capture_call_PartitionName_pnr0000 PARTITION OF sip_capture_call FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-registration-table-partition
-CREATE TABLE IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000 PARTITION OF sip_capture_registration FOR VALUES FROM ('PartitionDate StartTime:00') TO ('PartitionDate EndTime:59');
+-- name: create-partition-sip_capture_registration
+CREATE TABLE IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000 PARTITION OF sip_capture_registration FOR VALUES FROM ('StartTime') TO ('EndTime');

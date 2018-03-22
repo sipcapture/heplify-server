@@ -1,16 +1,13 @@
 -- name: insert-alias-table
 INSERT INTO `alias` (`id`, `gid`, `ip`, `port`, `capture_id`, `alias`, `status`, `created`) VALUES
-(1, 10, '192.168.0.30', 0, 'homer01', 'proxy01', 1, '2014-06-12 20:36:50'),
-(2, 10, '192.168.0.4', 0, 'homer01', 'acme-234', 1, '2014-06-12 20:37:01'),
-(22, 10, '127.0.0.1:5060', 0, 'homer01', 'sip.local.net', 1, '2014-06-12 20:37:01');
+(1, 10, '192.168.0.30', 0, 'homer01', 'proxy01', 1, '2014-06-12 20:36:50');
 
 -- name: insert-group-table
 INSERT INTO `group` (`gid`, `name`) VALUES (10, 'Administrator');
 
 -- name: insert-node-table
 INSERT INTO `node` (`id`, `host`, `dbname`, `dbport`, `dbusername`, `dbpassword`, `dbtables`, `name`, `status`) VALUES
-(1, '127.0.0.1', 'homer_data', '3306', 'homer_user', 'mysql_password', 'sip_capture', 'homer01', 1),
-(21, '10.1.0.7', 'homer_data', '3306', 'homer_user', 'mysql_password', 'sip_capture', 'external', 1);
+(1, '127.0.0.1', 'homer_data', '3306', 'homer_user', 'homer_password', 'sip_capture', 'homer01', 1);
 
 -- name: insert-setting-table
 INSERT INTO `setting` (`id`, `uid`, `param_name`, `param_value`, `valid_param_from`, `valid_param_to`, `param_prio`, `active`) VALUES
@@ -24,5 +21,4 @@ INSERT INTO `user` (`uid`, `gid`, `grp`, `username`, `password`, `firstname`, `l
 -- name: insert-user_menu-table
 INSERT INTO `user_menu` (`id`, `name`, `alias`, `icon`, `weight`, `active`) VALUES
 ('_1426001444630', 'SIP Search', 'search', 'fa-search', 10, 1),
-('_1427728371642', 'Home', 'home', 'fa-home', 1, 1),
-('_1431721484444', 'Alarms', 'alarms', 'fa-warning', 20, 1);
+('_1427728371642', 'Home', 'home', 'fa-home', 1, 1);

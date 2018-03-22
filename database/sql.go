@@ -361,7 +361,7 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 		case "dns":
 			query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
 		case "log":
-			query = "INSERT INTO logs_capture" + rtcQuery
+			query = "INSERT INTO logs_capture_all_" + time.Now().Format("20060102") + rtcQuery
 		}
 	} else if config.Setting.DBDriver == "postgres" {
 		switch query {
@@ -370,13 +370,13 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 		case "register":
 			query = "INSERT INTO sip_capture_registration" + sipQuery
 		case "rtcp":
-			query = "INSERT INTO rtcp_capture_all" + rtcQuery
+			query = "INSERT INTO rtcp_capture" + rtcQuery
 		case "report":
-			query = "INSERT INTO report_capture_all" + rtcQuery
+			query = "INSERT INTO report_capture" + rtcQuery
 		case "dns":
-			query = "INSERT INTO dns_capture_all" + rtcQuery
+			query = "INSERT INTO dns_capture" + rtcQuery
 		case "log":
-			query = "INSERT INTO logs_capture_all" + rtcQuery
+			query = "INSERT INTO logs_capture" + rtcQuery
 		}
 	}
 
