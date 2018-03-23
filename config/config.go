@@ -20,7 +20,9 @@ type HeplifyServer struct {
 	DBPath         string `default:""`
 	DBBulk         int    `default:"100"`
 	DBRotate       bool   `default:"true"`
-	DBPartition    string `default:"1d"`
+	DBRotateLog    string `default:"1h"`
+	DBRotateSip    string `default:"1h"`
+	DBRotateQos    string `default:"1d"`
 	DBDropDays     int    `default:"0"`
 	SentryDSN      string `default:""`
 	AlegID         string `default:"x-cid"`
@@ -49,7 +51,9 @@ func NewConfig() *HeplifyServer {
 		DBPath:         "",
 		DBBulk:         100,
 		DBRotate:       true,
-		DBPartition:    "1d",
+		DBRotateLog:    "1h",
+		DBRotateSip:    "1h",
+		DBRotateQos:    "1d",
 		DBDropDays:     0,
 		SentryDSN:      "",
 		AlegID:         "x-cid",

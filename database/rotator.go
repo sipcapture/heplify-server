@@ -15,9 +15,11 @@ import (
 )
 
 type Rotator struct {
-	addr []string
-	box  *packr.Box
-	step int
+	addr    []string
+	box     *packr.Box
+	logStep int
+	qosStep int
+	sipStep int
 }
 
 func NewRotator(b *packr.Box) *Rotator {
@@ -25,19 +27,41 @@ func NewRotator(b *packr.Box) *Rotator {
 	r.addr = strings.Split(config.Setting.DBAddr, ":")
 	r.box = b
 
-	switch config.Setting.DBPartition {
+	switch config.Setting.DBRotateLog {
 	case "5m":
-		r.step = 5
-	case "10m":
-		r.step = 10
+		r.logStep = 5
 	case "15m":
-		r.step = 15
+		r.logStep = 15
 	case "30m":
-		r.step = 30
+		r.logStep = 30
 	case "1h":
-		r.step = 60
+		r.logStep = 60
 	default:
-		r.step = 1440
+		r.logStep = 1440
+	}
+	switch config.Setting.DBRotateQos {
+	case "5m":
+		r.qosStep = 5
+	case "15m":
+		r.qosStep = 15
+	case "30m":
+		r.qosStep = 30
+	case "1h":
+		r.qosStep = 60
+	default:
+		r.qosStep = 1440
+	}
+	switch config.Setting.DBRotateSip {
+	case "5m":
+		r.sipStep = 5
+	case "15m":
+		r.sipStep = 15
+	case "30m":
+		r.sipStep = 30
+	case "1h":
+		r.sipStep = 60
+	default:
+		r.sipStep = 1440
 	}
 	return r
 }
@@ -87,7 +111,9 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("mysql/pardata.sql"), day, duration)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), day, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), day, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), day, duration, r.sipStep)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
@@ -95,8 +121,8 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), day, duration)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), day, duration)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), day, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), day, duration, r.sipStep)
 	}
 	return nil
 }
@@ -140,7 +166,7 @@ func (r *Rotator) DropTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
-		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), day, duration)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), day, duration, r.sipStep)
 	}
 	return nil
 }
@@ -160,14 +186,14 @@ func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Re
 	}
 }
 
-func (r *Rotator) dbExecPartitionFile(db *dbr.Connection, file string, pattern strings.Replacer, duration int) {
+func (r *Rotator) dbExecPartitionFile(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Err("%s\n\n", err)
 	}
 
-	for _, query := range dot.QueryMap() {
-		r.rotatePartitions(db, query, duration)
+	for _, q := range dot.QueryMap() {
+		rotatePartitions(db, q, d, p)
 	}
 }
 
@@ -180,18 +206,8 @@ func (r *Rotator) dbExec(db *dbr.Connection, query string) {
 
 func (r *Rotator) Rotate() (err error) {
 	r.createTables()
-	initRetry := 0
-	initJob := cron.New()
-	initJob.AddFunc("@every 30s", func() {
-		initRetry++
-		r.createTables()
-		if initRetry == 2 {
-			initJob.Stop()
-		}
-	})
-	initJob.Start()
-
 	createJob := cron.New()
+
 	logp.Info("Start daily create data table job at 03:15:00\n")
 	createJob.AddFunc("0 15 03 * * *", func() {
 		if err := r.CreateDataTables(1); err != nil {
@@ -235,24 +251,24 @@ func (r *Rotator) createTables() {
 	}
 }
 
-func (r *Rotator) rotatePartitions(db *dbr.Connection, query string, d int) {
+func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	oldName := "pnr0000"
 	newName := "pnr0"
 
 	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldStart := "StartTime"
-	newStart := startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(0)).Format("2006-01-02 15:04:05")
+	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
 
 	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldEnd := "EndTime"
-	newEnd := endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(r.step)).Format("2006-01-02 15:04:05")
+	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
-	for i := 0; i < 1440/r.step; i++ {
+	for i := 0; i < 1440/p; i++ {
 		if i > 0 {
 			newName = "pnr" + strconv.Itoa(i)
-			newStart = startTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step)).Format("2006-01-02 15:04:05")
-			newEnd = endTime.Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(i*r.step+r.step)).Format("2006-01-02 15:04:05")
+			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
+			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
 		}
 		query = strings.Replace(query, oldName, newName, -1)
 		oldName = newName

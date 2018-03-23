@@ -92,27 +92,29 @@ func (s *SQL) setup() error {
 		return err
 	}
 
+	for {
+		if config.Setting.DBDriver == "mysql" {
+			s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		} else if config.Setting.DBDriver == "postgres" {
+			s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+		}
+		if err != nil {
+			s.dbc.Close()
+			logp.Err("%v", err)
+			time.Sleep(5 * time.Second)
+		} else if err = s.dbc.Ping(); err != nil {
+			s.dbc.Close()
+			logp.Err("%v", err)
+			time.Sleep(5 * time.Second)
+		} else {
+			break
+		}
+	}
+
 	if config.Setting.DBRotate {
 		b := packr.NewBox("./files")
 		r := NewRotator(&b)
 		r.Rotate()
-	}
-
-	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
-			s.dbc.Close()
-			return err
-		}
-	} else if config.Setting.DBDriver == "postgres" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil); err != nil {
-			s.dbc.Close()
-			return err
-		}
-	}
-
-	if err = s.dbc.Ping(); err != nil {
-		s.dbc.Close()
-		return err
 	}
 
 	s.dbc.SetMaxOpenConns(80)
