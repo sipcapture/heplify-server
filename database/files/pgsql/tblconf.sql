@@ -1,4 +1,4 @@
--- name: create-alias-table
+-- name: create-alias
 CREATE TABLE IF NOT EXISTS alias (
   id SERIAL NOT NULL,
   gid INTEGER NOT NULL DEFAULT 0,
@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS alias (
   PRIMARY KEY (id)
 );
 
--- name: create-group-table
+-- name: create-group
 CREATE TABLE IF NOT EXISTS "group" (
   gid INTEGER NOT NULL DEFAULT 0,
   name varchar(100) NOT NULL DEFAULT ''
 );
 
--- name: create-link_share-table
+-- name: create-link_share
 CREATE TABLE IF NOT EXISTS link_share (
   id SERIAL NOT NULL,
   uid INTEGER NOT NULL DEFAULT 0,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS link_share (
   PRIMARY KEY (id)
 );
 
--- name: create-node-table
+-- name: create-node
 CREATE TABLE IF NOT EXISTS node (
   id SERIAL NOT NULL,
   host varchar(80) NOT NULL DEFAULT '',
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS node (
   PRIMARY KEY (id)
 );
 
--- name: create-setting-table
+-- name: create-setting
 CREATE TABLE IF NOT EXISTS setting (
   id SERIAL NOT NULL,
   uid INTEGER NOT NULL DEFAULT '0',
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS setting (
   PRIMARY KEY (id)
 );
 
--- name: create-user-table
+-- name: create-user
 CREATE TABLE IF NOT EXISTS "user" (
   uid SERIAL NOT NULL,
   gid INTEGER NOT NULL DEFAULT '10',
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   PRIMARY KEY (uid)
 );
 
--- name: create-user_menu-table
+-- name: create-user_menu
 CREATE TABLE IF NOT EXISTS user_menu (
   id varchar(125) NOT NULL DEFAULT '',
   name varchar(100) NOT NULL DEFAULT '',
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS user_menu (
   active INTEGER NOT NULL DEFAULT '1'
 );
 
--- name: create-api_auth_key-table
+-- name: create-api_auth_key
 CREATE TABLE IF NOT EXISTS api_auth_key (
   id SERIAL NOT NULL,
   authkey varchar(200) NOT NULL DEFAULT '',
