@@ -19,6 +19,7 @@ type HeplifyServer struct {
 	DBConfTable    string `default:"homer_configuration"`
 	DBPath         string `default:""`
 	DBBulk         int    `default:"100"`
+	DBTimer        int    `default:"2"`
 	DBRotate       bool   `default:"true"`
 	DBRotateLog    string `default:"6h"`
 	DBRotateSip    string `default:"2h"`
@@ -50,6 +51,7 @@ func NewConfig() *HeplifyServer {
 		DBConfTable:    "homer_configuration",
 		DBPath:         "",
 		DBBulk:         100,
+		DBTimer:        2,
 		DBRotate:       true,
 		DBRotateLog:    "1h",
 		DBRotateSip:    "1h",

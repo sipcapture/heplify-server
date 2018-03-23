@@ -14,6 +14,7 @@ DBDataTable     = "homer_data"
 DBConfTable     = "homer_configuration"
 DBPath          = ""
 DBBulk          = 100
+DBTimer         = 2
 DBRotate        = true
 DBRotateLog     = "6h",
 DBRotateSip     = "2h",
