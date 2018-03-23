@@ -349,6 +349,30 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 				callRows = []interface{}{}
 				callCnt = 0
 			}
+			if rtcpCnt > 1 {
+				l := len(rtcpRows)
+				s.bulkInsert("rtcp", rtcpRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				rtcpRows = []interface{}{}
+				rtcpCnt = 0
+			}
+			if reportCnt > 1 {
+				l := len(reportRows)
+				s.bulkInsert("report", reportRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				reportRows = []interface{}{}
+				reportCnt = 0
+			}
+			if dnsCnt > 1 {
+				l := len(dnsRows)
+				s.bulkInsert("dns", dnsRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				dnsRows = []interface{}{}
+				dnsCnt = 0
+			}
+			if logCnt > 1 {
+				l := len(logRows)
+				s.bulkInsert("log", logRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				logRows = []interface{}{}
+				logCnt = 0
+			}
 		}
 	}
 }
