@@ -110,7 +110,6 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	time.Sleep(4 * time.Second)
 	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
 	go h.logStats()
 

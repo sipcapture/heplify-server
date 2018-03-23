@@ -20,9 +20,9 @@ type HeplifyServer struct {
 	DBPath         string `default:""`
 	DBBulk         int    `default:"100"`
 	DBRotate       bool   `default:"true"`
-	DBRotateLog    string `default:"1h"`
-	DBRotateSip    string `default:"1h"`
-	DBRotateQos    string `default:"1d"`
+	DBRotateLog    string `default:"6h"`
+	DBRotateSip    string `default:"2h"`
+	DBRotateQos    string `default:"12h"`
 	DBDropDays     int    `default:"0"`
 	SentryDSN      string `default:""`
 	AlegID         string `default:"x-cid"`

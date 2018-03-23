@@ -26,43 +26,9 @@ func NewRotator(b *packr.Box) *Rotator {
 	r := &Rotator{}
 	r.addr = strings.Split(config.Setting.DBAddr, ":")
 	r.box = b
-
-	switch config.Setting.DBRotateLog {
-	case "5m":
-		r.logStep = 5
-	case "15m":
-		r.logStep = 15
-	case "30m":
-		r.logStep = 30
-	case "1h":
-		r.logStep = 60
-	default:
-		r.logStep = 1440
-	}
-	switch config.Setting.DBRotateQos {
-	case "5m":
-		r.qosStep = 5
-	case "15m":
-		r.qosStep = 15
-	case "30m":
-		r.qosStep = 30
-	case "1h":
-		r.qosStep = 60
-	default:
-		r.qosStep = 1440
-	}
-	switch config.Setting.DBRotateSip {
-	case "5m":
-		r.sipStep = 5
-	case "15m":
-		r.sipStep = 15
-	case "30m":
-		r.sipStep = 30
-	case "1h":
-		r.sipStep = 60
-	default:
-		r.sipStep = 1440
-	}
+	r.logStep = setStep(config.Setting.DBRotateLog)
+	r.qosStep = setStep(config.Setting.DBRotateQos)
+	r.sipStep = setStep(config.Setting.DBRotateSip)
 	return r
 }
 
@@ -301,4 +267,29 @@ func replaceDropDay(d int) strings.Replacer {
 		"PartitionName", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
 		"PartitionDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("2006-01-02"),
 	)
+}
+
+func setStep(name string) (step int) {
+	switch name {
+	case "5m":
+		step = 5
+	case "15m":
+		step = 15
+	case "30m":
+		step = 30
+	case "1h":
+		step = 60
+	case "2h":
+		step = 120
+	case "6h":
+		step = 360
+	case "12h":
+		step = 720
+	case "1d":
+		step = 1440
+	default:
+		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 15m, 5m]", name)
+		step = 1440
+	}
+	return
 }
