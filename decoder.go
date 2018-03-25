@@ -78,7 +78,6 @@ type HEP struct {
 	CompressedPayload string
 	CorrelationID     string
 	Vlan              uint16
-	AlegID            string
 	SIP               *sipparser.SipMsg
 }
 
@@ -113,11 +112,6 @@ func (h *HEP) parse(packet []byte) error {
 		if err != nil {
 			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
 			return err
-		}
-		for _, v := range h.SIP.Headers {
-			if v.Header == config.Setting.AlegID {
-				h.AlegID = v.Val
-			}
 		}
 	}
 
@@ -209,15 +203,11 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.StartLine == nil {
 		h.SIP.StartLine = new(sipparser.StartLine)
 	}
-	if h.SIP.StartLine.Method == "" {
-		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
-	}
 	if h.SIP.StartLine.URI == nil {
 		h.SIP.StartLine.URI = new(sipparser.URI)
 	}
-	if h.SIP.Via == nil {
-		h.SIP.Via = make([]*sipparser.Via, 1)
-		h.SIP.Via[0] = new(sipparser.Via)
+	if h.SIP.StartLine.Method == "" {
+		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
 
 	/*
@@ -235,7 +225,7 @@ func (h *HEP) parseSIP() error {
 		return h.SIP.Error
 	} else if len(h.SIP.Cseq.Method) < 3 {
 		return errors.New("Could not find a valid CSeq in packet")
-	} else if len(h.SIP.CallId) < 3 {
+	} else if len(h.SIP.CallID) < 3 {
 		return errors.New("Could not find a valid Call-ID in packet")
 	}
 

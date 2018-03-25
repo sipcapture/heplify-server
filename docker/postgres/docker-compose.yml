@@ -3,9 +3,7 @@ services :
   db:
     image: postgres:10-alpine
     environment:
-      #POSTGRES_USER: root
-      POSTGRES_PASSWORD: toor
-      #POSTGRES_DB: homer_data
+      POSTGRES_PASSWORD: root
     volumes:
       - ./tablespace.sh:/docker-entrypoint-initdb.d/tablespace.sh
     ports:
