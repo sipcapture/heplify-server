@@ -78,7 +78,6 @@ type HEP struct {
 	CompressedPayload string
 	CorrelationID     string
 	Vlan              uint16
-	AlegID            string
 	SIP               *sipparser.SipMsg
 }
 
@@ -113,11 +112,6 @@ func (h *HEP) parse(packet []byte) error {
 		if err != nil {
 			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
 			return err
-		}
-		for _, v := range h.SIP.Headers {
-			if v.Header == config.Setting.AlegID {
-				h.AlegID = v.Val
-			}
 		}
 	}
 
@@ -209,55 +203,22 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.StartLine == nil {
 		h.SIP.StartLine = new(sipparser.StartLine)
 	}
-	if h.SIP.StartLine.Method == "" {
-		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
-	}
 	if h.SIP.StartLine.URI == nil {
 		h.SIP.StartLine.URI = new(sipparser.URI)
 	}
-	if h.SIP.Via == nil {
-		h.SIP.Via = make([]*sipparser.Via, 1)
-		h.SIP.Via[0] = new(sipparser.Via)
+	if h.SIP.StartLine.Method == "" {
+		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
-
-	/*
-		h.Payload = fmt.Sprintf("{\"method\":\"%s\",\"reply_reason\":\"%s\",\"ruri\":\"%s\",\"ruri_user\":\"%s\",\"ruri_domain\":\"%s\",\"from_user\":\"%s\",\"from_domain\":\"%s\",\"from_tag\":\"%s\",\"to_user\":\"%s\",\"to_domain\":\"%s\",\"to_tag\":\"%s\",\"pid_user\":\"%s\","+
-			"\"contact_user\":\"%s\",\"auth_user\":\"%s\",\"callid\":\"%s\",\"callid_aleg\":\"%s\",\"via_1\":\"%s\",\"via_1_branch\":\"%s\",\"cseq\":\"%s\",\"diversion\":\"%s\",\"reason\":\"%s\",\"content_type\":\"%s\",\"auth\":\"%s\",\"user_agent\":\"%s\",\"contact_ip\":\"%s\"}",
-
-			h.SIP.StartLine.Method, h.SIP.StartLine.RespText, h.SIP.StartLine.URI.Raw, h.SIP.StartLine.URI.User, h.SIP.StartLine.URI.Host,
-			h.SIP.From.URI.User, h.SIP.From.URI.Host, h.SIP.From.Tag, h.SIP.To.URI.User, h.SIP.To.URI.Host, h.SIP.To.Tag, h.SIP.PAssertedIdVal,
-			h.SIP.Contact.URI.User, h.SIP.Authorization.Username, h.SIP.CallId, h.AlegID, h.SIP.Via[0].Via, h.SIP.Via[0].Branch, h.SIP.Cseq.Val,
-			h.SIP.DiversionVal, h.SIP.Reason.Cause, h.SIP.ContentType, h.SIP.Authorization.Val, h.SIP.UserAgent, h.SIP.Contact.URI.Host,
-		)
-	*/
 
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.Cseq.Method) < 3 {
 		return errors.New("Could not find a valid CSeq in packet")
-	} else if len(h.SIP.CallId) < 3 {
+	} else if len(h.SIP.CallID) < 3 {
 		return errors.New("Could not find a valid Call-ID in packet")
 	}
 
 	return nil
-}
-
-func (h *HEP) String() {
-	fmt.Printf("Version: \t %d \n", h.Version)
-	fmt.Printf("Protocol: \t %d \n", h.Protocol)
-	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
-	fmt.Printf("SrcIP: \t\t %s \n", h.SrcIP)
-	fmt.Printf("DstIP: \t\t %s \n", h.DstIP)
-	fmt.Printf("SrcPort: \t %d \n", h.SrcPort)
-	fmt.Printf("DstPort: \t %d \n", h.DstPort)
-	fmt.Printf("Tsec: \t\t %d \n", h.Tsec)
-	fmt.Printf("Tmsec: \t\t %d \n", h.Tmsec)
-	fmt.Printf("Vlan: \t\t %d \n", h.Vlan)
-	fmt.Printf("NodeID: \t %d \n", h.NodeID)
-	fmt.Printf("NodePW: \t %s \n", string(h.NodePW))
-	fmt.Printf("KeepAliveTimer:  %d \n", h.KeepAliveTimer)
-	fmt.Printf("CorrelationID:   %s \n", string(h.CorrelationID))
-	fmt.Printf("Payload: \n%s\n", string(h.Payload))
 }
 
 // EncodeHEP creates the HEP Packet which

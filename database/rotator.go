@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
 	"github.com/negbie/dotsql"
@@ -33,76 +34,86 @@ func NewRotator(b *packr.Box) *Rotator {
 }
 
 func (r *Rotator) CreateDatabases() (err error) {
-	if config.Setting.DBDriver == "mysql" {
-		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
-		if err != nil {
-			return err
+	for {
+		if config.Setting.DBDriver == "mysql" {
+			db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+			if err = db.Ping(); err != nil {
+				db.Close()
+				logp.Err("%v", err)
+				time.Sleep(5 * time.Second)
+			} else {
+				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBDataTable+` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
+				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBConfTable+` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
+				r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'localhost' IDENTIFIED BY 'homer_password';`)
+				r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'192.168.0.0/255.255.0.0' IDENTIFIED BY 'homer_password';`)
+				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBDataTable+`.* TO 'homer_user'@'localhost';`)
+				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBConfTable+`.* TO 'homer_user'@'localhost';`)
+				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBDataTable+`.* TO 'homer_user'@'192.168.0.0/255.255.0.0';`)
+				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBConfTable+`.* TO 'homer_user'@'192.168.0.0/255.255.0.0';`)
+				db.Close()
+				break
+			}
+		} else if config.Setting.DBDriver == "postgres" {
+			db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
+			if err = db.Ping(); err != nil {
+				db.Close()
+				logp.Err("%v", err)
+				time.Sleep(5 * time.Second)
+			} else {
+				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBDataTable)
+				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBConfTable)
+				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
+				r.dbExec(db, "GRANT postgres to homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
+				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBPath+"';")
+				r.dbExec(db, "GRANT ALL ON TABLESPACE homer TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
+				db.Close()
+				break
+			}
 		}
-		defer db.Close()
-		r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBDataTable+` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
-		r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBConfTable+` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`)
-		r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'localhost' IDENTIFIED BY 'homer_password';`)
-		r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'192.168.0.0/255.255.0.0' IDENTIFIED BY 'homer_password';`)
-		r.dbExec(db, "GRANT ALL ON "+config.Setting.DBDataTable+`.* TO 'homer_user'@'localhost';`)
-		r.dbExec(db, "GRANT ALL ON "+config.Setting.DBConfTable+`.* TO 'homer_user'@'localhost';`)
-		r.dbExec(db, "GRANT ALL ON "+config.Setting.DBDataTable+`.* TO 'homer_user'@'192.168.0.0/255.255.0.0';`)
-		r.dbExec(db, "GRANT ALL ON "+config.Setting.DBConfTable+`.* TO 'homer_user'@'192.168.0.0/255.255.0.0';`)
-
-	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-		r.dbExec(db, "CREATE DATABASE "+config.Setting.DBDataTable)
-		r.dbExec(db, "CREATE DATABASE "+config.Setting.DBConfTable)
-		r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
-		r.dbExec(db, "GRANT postgres to homer_user;")
-		r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
-		r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
-		r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBPath+"';")
-		r.dbExec(db, "GRANT ALL ON TABLESPACE homer TO homer_user;")
-		r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
-		r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
 	}
 	return nil
 }
 
 func (r *Rotator) CreateDataTables(duration int) (err error) {
-	day := replaceCreateDay(duration)
+	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), day, duration, r.logStep)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), day, duration, r.qosStep)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), day, duration, r.sipStep)
+		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), suffix)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), suffix, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), suffix, duration, r.sipStep)
+		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), day, duration, r.sipStep)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), day, duration, r.sipStep)
+		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), suffix)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), suffix, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
-	day := replaceCreateDay(duration)
+	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), day)
-		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
@@ -110,29 +121,29 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		}
 		defer db.Close()
 		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
-		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), day)
-		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), day)
-		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), day)
+		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix)
 	}
 	return nil
 }
 
 func (r *Rotator) DropTables(duration int) (err error) {
-	day := replaceDropDay(duration)
+	suffix := replaceDropDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), day, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
@@ -146,9 +157,7 @@ func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Re
 	for _, query := range dot.QueryMap() {
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
-		if err != nil {
-			logp.Warn("%s\n\n", err)
-		}
+		checkDBErr(err)
 	}
 }
 
@@ -165,9 +174,7 @@ func (r *Rotator) dbExecPartitionFile(db *dbr.Connection, file string, pattern s
 
 func (r *Rotator) dbExec(db *dbr.Connection, query string) {
 	_, err := db.Exec(query)
-	if err != nil {
-		logp.Warn("%s\n\n", err)
-	}
+	checkDBErr(err)
 }
 
 func (r *Rotator) Rotate() (err error) {
@@ -201,7 +208,7 @@ func (r *Rotator) Rotate() (err error) {
 }
 
 func (r *Rotator) createTables() {
-	if config.Setting.DBUser == "root" || config.Setting.DBUser == "postgres" {
+	if config.Setting.DBUser == "root" || config.Setting.DBUser == "admin" || config.Setting.DBUser == "postgres" {
 		if err := r.CreateDatabases(); err != nil {
 			logp.Err("%v", err)
 		}
@@ -247,9 +254,7 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
-		if err != nil {
-			logp.Warn("%s\n\n", err)
-		}
+		checkDBErr(err)
 	}
 }
 
@@ -292,4 +297,16 @@ func setStep(name string) (step int) {
 		step = 1440
 	}
 	return
+}
+
+func checkDBErr(err error) {
+	if err != nil {
+		if config.Setting.DBDriver == "mysql" {
+			if mErr, ok := err.(*mysql.MySQLError); ok && mErr.Number != 1062 && mErr.Number != 1481 && mErr.Number != 1517 {
+				logp.Warn("%s\n\n", err)
+			}
+		} else if config.Setting.DBDriver == "postgres" {
+			logp.Warn("%s\n\n", err)
+		}
+	}
 }

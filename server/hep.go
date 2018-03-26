@@ -22,7 +22,6 @@ type HEPInput struct {
 	stats   HEPStats
 	stop    bool
 	workers int
-	//dupCache *freecache.Cache
 }
 
 type HEPStats struct {
@@ -53,7 +52,6 @@ func NewHEP() *HEPInput {
 		addr:    config.Setting.HEPAddr,
 		workers: config.Setting.HEPWorkers,
 		pool:    make(chan chan struct{}, runtime.NumCPU()*1e4),
-		//dupCache: freecache.NewCache(20 * 1024 * 1024),
 	}
 }
 
@@ -159,18 +157,6 @@ GO:
 				break GO
 			}
 		}
-
-		/* TODO: rethink deduplication
-		_, err = h.dupCache.Get(msg)
-		if err == nil {
-			atomic.AddUint64(&h.stats.DupCount, 1)
-			continue
-		}
-		err = h.dupCache.Set(msg, nil, 4)
-		if err != nil {
-			logp.Warn("%v", err)
-		}
-		*/
 
 		hepPkt, err = decoder.DecodeHEP(msg)
 		if err != nil || hepPkt == nil {
