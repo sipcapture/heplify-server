@@ -79,41 +79,41 @@ func (r *Rotator) CreateDatabases() (err error) {
 }
 
 func (r *Rotator) CreateDataTables(duration int) (err error) {
-	day := replaceCreateDay(duration)
+	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), day, duration, r.logStep)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), day, duration, r.qosStep)
-		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), day, duration, r.sipStep)
-		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), suffix)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), suffix, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), suffix, duration, r.sipStep)
+		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), day)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), day, duration, r.sipStep)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), day, duration, r.sipStep)
+		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), suffix)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), suffix, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
-	day := replaceCreateDay(duration)
+	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), day)
-		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
@@ -121,29 +121,29 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		}
 		defer db.Close()
 		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
-		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), day)
-		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), day)
-		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), day)
+		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix)
 	}
 	return nil
 }
 
 func (r *Rotator) DropTables(duration int) (err error) {
-	day := replaceDropDay(duration)
+	suffix := replaceDropDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), day)
+		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := dbr.Open(config.Setting.DBDriver, " host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), day, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
@@ -208,7 +208,7 @@ func (r *Rotator) Rotate() (err error) {
 }
 
 func (r *Rotator) createTables() {
-	if config.Setting.DBUser == "root" || config.Setting.DBUser == "postgres" {
+	if config.Setting.DBUser == "root" || config.Setting.DBUser == "admin" || config.Setting.DBUser == "postgres" {
 		if err := r.CreateDatabases(); err != nil {
 			logp.Err("%v", err)
 		}
