@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	sipQuery = `(
+	sipVal = `(
 			date, 
 			micro_ts,
 			method, 
@@ -58,8 +58,9 @@ var (
 			correlation_id,
 			msg
 			) VALUES `
+	sipValCnt = 39
 
-	rtcQuery = `(
+	rtcVal = `(
 			date,
 			micro_ts,
 			correlation_id,
@@ -73,14 +74,17 @@ var (
 			node,
 			msg
 			) VALUES `
+	rtcValCnt = 12
 )
 
 type SQL struct {
 	//dbc     *sql.DB
-	dbc     *dbr.Connection
-	dbs     *dbr.Session
-	sipBulk int
-	rtcBulk int
+	dbc        *dbr.Connection
+	dbs        *dbr.Session
+	sipBulkCnt int
+	rtcBulkCnt int
+	sipBulkVal string
+	rtcBulkVal string
 }
 
 func (s *SQL) setup() error {
@@ -109,255 +113,298 @@ func (s *SQL) setup() error {
 			return err
 		}
 	}
-
 	if err = s.dbc.Ping(); err != nil {
 		s.dbc.Close()
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(40)
-	s.dbc.SetMaxIdleConns(20)
+	s.dbc.SetMaxOpenConns(80)
+	s.dbc.SetMaxIdleConns(40)
 	s.dbs = s.dbc.NewSession(nil)
 
-	s.sipBulk = config.Setting.DBBulk
-	s.rtcBulk = config.Setting.DBBulk / 10
+	s.sipBulkCnt = config.Setting.DBBulk
+	s.rtcBulkCnt = config.Setting.DBBulk / 10
 
-	if s.sipBulk < 1 {
-		s.sipBulk = 1
+	if s.sipBulkCnt < 1 {
+		s.sipBulkCnt = 1
+	}
+	if s.rtcBulkCnt < 1 {
+		s.rtcBulkCnt = 1
 	}
 
-	if s.rtcBulk < 1 {
-		s.rtcBulk = 1
-	}
-
-	for i := 0; i < s.sipBulk; i++ {
-		if config.Setting.DBDriver == "mysql" {
-			sipQuery += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
-		} else if config.Setting.DBDriver == "postgres" {
-			sipQuery += `($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39),`
-		}
-	}
-	sipQuery = sipQuery[:len(sipQuery)-1]
-
-	for i := 0; i < s.rtcBulk; i++ {
-		if config.Setting.DBDriver == "mysql" {
-			rtcQuery += `(?,?,?,?,?,?,?,?,?,?,?,?),`
-		} else if config.Setting.DBDriver == "postgres" {
-			rtcQuery += `($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12),`
-		}
-	}
-	rtcQuery = rtcQuery[:len(rtcQuery)-1]
+	s.sipBulkVal = createSipQueryValues(s.sipBulkCnt, sipVal)
+	s.rtcBulkVal = createRtcQueryValues(s.rtcBulkCnt, rtcVal)
 
 	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
-
 	return nil
 }
 
-func (s *SQL) insert(topic string, hCh chan *decoder.HEP, ec *uint64) {
+func (s *SQL) insert(hCh chan *decoder.HEP) {
 	var (
+		regCnt, callCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
+
 		pkt        *decoder.HEP
 		ts         string
 		tsNano     int64
 		ok         bool
-		regCnt     int
-		callCnt    int
-		dnsCnt     int
-		logCnt     int
-		rtcpCnt    int
-		reportCnt  int
-		regRows    = make([]interface{}, 0, s.sipBulk)
-		callRows   = make([]interface{}, 0, s.sipBulk)
-		dnsRows    = make([]interface{}, 0, s.rtcBulk)
-		logRows    = make([]interface{}, 0, s.rtcBulk)
-		rtcpRows   = make([]interface{}, 0, s.rtcBulk)
-		reportRows = make([]interface{}, 0, s.rtcBulk)
+		regRows    = make([]interface{}, 0, s.sipBulkCnt)
+		callRows   = make([]interface{}, 0, s.sipBulkCnt)
+		dnsRows    = make([]interface{}, 0, s.rtcBulkCnt)
+		logRows    = make([]interface{}, 0, s.rtcBulkCnt)
+		rtcpRows   = make([]interface{}, 0, s.rtcBulkCnt)
+		reportRows = make([]interface{}, 0, s.rtcBulkCnt)
+		timer      = config.Setting.DBTimer
 	)
 
+	if timer < 0 {
+		timer = 0
+	}
+	ticker := time.NewTicker(time.Duration(timer+1) * time.Second)
+	if timer == 0 {
+		ticker.Stop()
+	}
+
 	for {
-		pkt, ok = <-hCh
-		if !ok {
-			break
-		}
+		select {
+		case pkt, ok = <-hCh:
+			if !ok {
+				break
+			}
 
-		ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
-		tsNano = pkt.Timestamp.UnixNano() / 1000
+			ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
+			tsNano = pkt.Timestamp.UnixNano() / 1000
 
-		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 
-			if pkt.SIP.Cseq.Method == "REGISTER" {
-				regRows = append(regRows, []interface{}{
-					ts,
-					tsNano,
-					short(pkt.SIP.StartLine.Method, 50),
-					short(pkt.SIP.StartLine.RespText, 100),
-					short(pkt.SIP.StartLine.URI.Raw, 200),
-					short(pkt.SIP.StartLine.URI.User, 100),
-					short(pkt.SIP.StartLine.URI.Host, 150),
-					short(pkt.SIP.From.URI.User, 100),
-					short(pkt.SIP.From.URI.Host, 150),
-					short(pkt.SIP.From.Tag, 64),
-					short(pkt.SIP.To.URI.User, 100),
-					short(pkt.SIP.To.URI.Host, 150),
-					short(pkt.SIP.To.Tag, 64),
-					short(pkt.SIP.PAssertedIdVal, 100),
-					short(pkt.SIP.Contact.URI.User, 120),
-					short(pkt.SIP.Authorization.Username, 120),
-					short(pkt.SIP.CallId, 120),
-					pkt.AlegID,
-					short(pkt.SIP.Via[0].Via, 256),
-					short(pkt.SIP.Via[0].Branch, 80),
-					short(pkt.SIP.Cseq.Val, 25),
-					short(pkt.SIP.DiversionVal, 256),
-					pkt.SIP.Reason.Cause,
-					short(pkt.SIP.ContentType, 256),
-					short(pkt.SIP.Authorization.Val, 256),
-					short(pkt.SIP.UserAgent, 256),
-					pkt.SrcIPString,
-					pkt.SrcPort,
-					pkt.DstIPString,
-					pkt.DstPort,
-					pkt.SIP.Contact.URI.Host,
-					pkt.SIP.Contact.URI.PortInt,
-					pkt.Protocol,
-					pkt.Version,
-					short(pkt.SIP.RTPStatVal, 256),
-					pkt.ProtoType,
-					pkt.NodeID,
-					short(pkt.SIP.CallId, 120),
-					short(pkt.SIP.Msg, 3000)}...)
+				if pkt.SIP.CseqMethod == "REGISTER" {
+					regRows = append(regRows, []interface{}{
+						ts,
+						tsNano,
+						short(pkt.SIP.StartLine.Method, 50),
+						short(pkt.SIP.StartLine.RespText, 100),
+						short(pkt.SIP.StartLine.URI.Raw, 200),
+						short(pkt.SIP.StartLine.URI.User, 100),
+						short(pkt.SIP.StartLine.URI.Host, 150),
+						short(pkt.SIP.FromUser, 100),
+						short(pkt.SIP.FromHost, 150),
+						short(pkt.SIP.FromTag, 64),
+						short(pkt.SIP.ToUser, 100),
+						short(pkt.SIP.ToHost, 150),
+						short(pkt.SIP.ToTag, 64),
+						short(pkt.SIP.PaiUser, 100),
+						short(pkt.SIP.ContactUser, 120),
+						short(pkt.SIP.AuthUser, 120),
+						short(pkt.SIP.CallID, 120),
+						short(pkt.SIP.XCallID, 120),
+						short(pkt.SIP.ViaOne, 256),
+						short(pkt.SIP.ViaOneBranch, 80),
+						short(pkt.SIP.CseqVal, 25),
+						short(pkt.SIP.DiversionVal, 256),
+						pkt.SIP.ReasonVal,
+						short(pkt.SIP.ContentType, 256),
+						short(pkt.SIP.AuthVal, 256),
+						short(pkt.SIP.UserAgent, 256),
+						pkt.SrcIPString,
+						pkt.SrcPort,
+						pkt.DstIPString,
+						pkt.DstPort,
+						pkt.SIP.ContactHost,
+						pkt.SIP.ContactPort,
+						pkt.Protocol,
+						pkt.Version,
+						short(pkt.SIP.RTPStatVal, 256),
+						pkt.ProtoType,
+						pkt.NodeID,
+						short(pkt.SIP.CallID, 120),
+						short(pkt.Payload, 3000)}...)
 
-				regCnt++
-				if regCnt == s.sipBulk {
-					s.bulkInsert("register", regRows)
-					regRows = []interface{}{}
-					regCnt = 0
+					regCnt++
+					if regCnt == s.sipBulkCnt {
+						s.bulkInsert("register", regRows, s.sipBulkVal)
+						regRows = []interface{}{}
+						regCnt = 0
+					}
+				} else {
+					callRows = append(callRows, []interface{}{
+						ts,
+						tsNano,
+						short(pkt.SIP.StartLine.Method, 50),
+						short(pkt.SIP.StartLine.RespText, 100),
+						short(pkt.SIP.StartLine.URI.Raw, 200),
+						short(pkt.SIP.StartLine.URI.User, 100),
+						short(pkt.SIP.StartLine.URI.Host, 150),
+						short(pkt.SIP.FromUser, 100),
+						short(pkt.SIP.FromHost, 150),
+						short(pkt.SIP.FromTag, 64),
+						short(pkt.SIP.ToUser, 100),
+						short(pkt.SIP.ToHost, 150),
+						short(pkt.SIP.ToTag, 64),
+						short(pkt.SIP.PaiUser, 100),
+						short(pkt.SIP.ContactUser, 120),
+						short(pkt.SIP.AuthUser, 120),
+						short(pkt.SIP.CallID, 120),
+						short(pkt.SIP.XCallID, 120),
+						short(pkt.SIP.ViaOne, 256),
+						short(pkt.SIP.ViaOneBranch, 80),
+						short(pkt.SIP.CseqVal, 25),
+						short(pkt.SIP.DiversionVal, 256),
+						pkt.SIP.ReasonVal,
+						short(pkt.SIP.ContentType, 256),
+						short(pkt.SIP.AuthVal, 256),
+						short(pkt.SIP.UserAgent, 256),
+						pkt.SrcIPString,
+						pkt.SrcPort,
+						pkt.DstIPString,
+						pkt.DstPort,
+						pkt.SIP.ContactHost,
+						pkt.SIP.ContactPort,
+						pkt.Protocol,
+						pkt.Version,
+						short(pkt.SIP.RTPStatVal, 256),
+						pkt.ProtoType,
+						pkt.NodeID,
+						short(pkt.SIP.CallID, 120),
+						short(pkt.Payload, 3000)}...)
+
+					callCnt++
+					if callCnt == s.sipBulkCnt {
+						s.bulkInsert("call", callRows, s.sipBulkVal)
+						callRows = []interface{}{}
+						callCnt = 0
+					}
 				}
-			} else {
-				callRows = append(callRows, []interface{}{
-					ts,
-					tsNano,
-					short(pkt.SIP.StartLine.Method, 50),
-					short(pkt.SIP.StartLine.RespText, 100),
-					short(pkt.SIP.StartLine.URI.Raw, 200),
-					short(pkt.SIP.StartLine.URI.User, 100),
-					short(pkt.SIP.StartLine.URI.Host, 150),
-					short(pkt.SIP.From.URI.User, 100),
-					short(pkt.SIP.From.URI.Host, 150),
-					short(pkt.SIP.From.Tag, 64),
-					short(pkt.SIP.To.URI.User, 100),
-					short(pkt.SIP.To.URI.Host, 150),
-					short(pkt.SIP.To.Tag, 64),
-					short(pkt.SIP.PAssertedIdVal, 100),
-					short(pkt.SIP.Contact.URI.User, 120),
-					short(pkt.SIP.Authorization.Username, 120),
-					short(pkt.SIP.CallId, 120),
-					pkt.AlegID,
-					short(pkt.SIP.Via[0].Via, 256),
-					short(pkt.SIP.Via[0].Branch, 80),
-					short(pkt.SIP.Cseq.Val, 25),
-					short(pkt.SIP.DiversionVal, 256),
-					pkt.SIP.Reason.Cause,
-					short(pkt.SIP.ContentType, 256),
-					short(pkt.SIP.Authorization.Val, 256),
-					short(pkt.SIP.UserAgent, 256),
-					pkt.SrcIPString,
-					pkt.SrcPort,
-					pkt.DstIPString,
-					pkt.DstPort,
-					pkt.SIP.Contact.URI.Host,
-					pkt.SIP.Contact.URI.PortInt,
-					pkt.Protocol,
-					pkt.Version,
-					short(pkt.SIP.RTPStatVal, 256),
-					pkt.ProtoType,
-					pkt.NodeID,
-					short(pkt.SIP.CallId, 120),
-					short(pkt.SIP.Msg, 3000)}...)
+			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
+				switch pkt.ProtoType {
+				case 5:
+					rtcpRows = append(rtcpRows, []interface{}{
+						ts,
+						tsNano,
+						pkt.CorrelationID,
+						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
-				callCnt++
-				if callCnt == s.sipBulk {
-					s.bulkInsert("call", callRows)
-					callRows = []interface{}{}
-					callCnt = 0
+					rtcpCnt++
+					if rtcpCnt == s.rtcBulkCnt {
+						s.bulkInsert("rtcp", rtcpRows, s.rtcBulkVal)
+						rtcpRows = []interface{}{}
+						rtcpCnt = 0
+					}
+				case 38:
+					reportRows = append(reportRows, []interface{}{
+						ts,
+						tsNano,
+						pkt.CorrelationID,
+						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+
+					reportCnt++
+					if reportCnt == s.rtcBulkCnt {
+						s.bulkInsert("report", reportRows, s.rtcBulkVal)
+						reportRows = []interface{}{}
+						reportCnt = 0
+					}
+				case 53:
+					dnsRows = append(dnsRows, []interface{}{
+						ts,
+						tsNano,
+						pkt.CorrelationID,
+						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+
+					dnsCnt++
+					if dnsCnt == s.rtcBulkCnt {
+						s.bulkInsert("dns", dnsRows, s.rtcBulkVal)
+						dnsRows = []interface{}{}
+						dnsCnt = 0
+					}
+				case 100:
+					logRows = append(logRows, []interface{}{
+						ts,
+						tsNano,
+						pkt.CorrelationID,
+						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+
+					logCnt++
+					if logCnt == s.rtcBulkCnt {
+						s.bulkInsert("log", logRows, s.rtcBulkVal)
+						logRows = []interface{}{}
+						logCnt = 0
+					}
 				}
 			}
-		} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
-			switch pkt.ProtoType {
-			case 5:
-				rtcpRows = append(rtcpRows, []interface{}{
-					ts,
-					tsNano,
-					pkt.CorrelationID,
-					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
-				rtcpCnt++
-				if rtcpCnt == s.rtcBulk {
-					s.bulkInsert("rtcp", rtcpRows)
-					rtcpRows = []interface{}{}
-					rtcpCnt = 0
-				}
-			case 38:
-				reportRows = append(reportRows, []interface{}{
-					ts,
-					tsNano,
-					pkt.CorrelationID,
-					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
-				reportCnt++
-				if reportCnt == s.rtcBulk {
-					s.bulkInsert("report", reportRows)
-					reportRows = []interface{}{}
-					reportCnt = 0
-				}
-			case 53:
-				dnsRows = append(dnsRows, []interface{}{
-					ts,
-					tsNano,
-					pkt.CorrelationID,
-					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
-				dnsCnt++
-				if dnsCnt == s.rtcBulk {
-					s.bulkInsert("dns", dnsRows)
-					dnsRows = []interface{}{}
-					dnsCnt = 0
-				}
-			case 100:
-				logRows = append(logRows, []interface{}{
-					ts,
-					tsNano,
-					pkt.CorrelationID,
-					pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-					pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
-				logCnt++
-				if logCnt == s.rtcBulk {
-					s.bulkInsert("log", logRows)
-					logRows = []interface{}{}
-					logCnt = 0
-				}
+		case <-ticker.C:
+			if regCnt > 1 {
+				l := len(regRows)
+				s.bulkInsert("register", regRows[:l], createSipQueryValues(l/sipValCnt, sipVal))
+				regRows = []interface{}{}
+				regCnt = 0
+			}
+			if callCnt > 1 {
+				l := len(callRows)
+				s.bulkInsert("call", callRows[:l], createSipQueryValues(l/sipValCnt, sipVal))
+				callRows = []interface{}{}
+				callCnt = 0
+			}
+			if rtcpCnt > 1 {
+				l := len(rtcpRows)
+				s.bulkInsert("rtcp", rtcpRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				rtcpRows = []interface{}{}
+				rtcpCnt = 0
+			}
+			if reportCnt > 1 {
+				l := len(reportRows)
+				s.bulkInsert("report", reportRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				reportRows = []interface{}{}
+				reportCnt = 0
+			}
+			if dnsCnt > 1 {
+				l := len(dnsRows)
+				s.bulkInsert("dns", dnsRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				dnsRows = []interface{}{}
+				dnsCnt = 0
+			}
+			if logCnt > 1 {
+				l := len(logRows)
+				s.bulkInsert("log", logRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				logRows = []interface{}{}
+				logCnt = 0
 			}
 		}
 	}
 }
 
-func (s *SQL) bulkInsert(query string, rows []interface{}) {
-	switch query {
-	case "call":
-		query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + sipQuery
-	case "register":
-		query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + sipQuery
-	case "rtcp":
-		query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "report":
-		query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "dns":
-		query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + rtcQuery
-	case "log":
-		query = "INSERT INTO logs_capture" + rtcQuery
+func (s *SQL) bulkInsert(query string, rows []interface{}, values string) {
+	if config.Setting.DBDriver == "mysql" {
+		switch query {
+		case "call":
+			query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + values
+		case "register":
+			query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + values
+		case "rtcp":
+			query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + values
+		case "report":
+			query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + values
+		case "dns":
+			query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + values
+		case "log":
+			query = "INSERT INTO logs_capture_all_" + time.Now().Format("20060102") + values
+		}
+	} else if config.Setting.DBDriver == "postgres" {
+		switch query {
+		case "call":
+			query = "INSERT INTO sip_capture_call" + values
+		case "register":
+			query = "INSERT INTO sip_capture_registration" + values
+		case "rtcp":
+			query = "INSERT INTO rtcp_capture" + values
+		case "report":
+			query = "INSERT INTO report_capture" + values
+		case "dns":
+			query = "INSERT INTO dns_capture" + values
+		case "log":
+			query = "INSERT INTO logs_capture" + values
+		}
 	}
 
 	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
@@ -369,7 +416,6 @@ func (s *SQL) bulkInsert(query string, rows []interface{}) {
 			raven.CaptureError(err, nil)
 		}
 	}
-
 }
 
 func short(s string, i int) string {
@@ -379,12 +425,32 @@ func short(s string, i int) string {
 	return s
 }
 
-/*
-func short(s string, i int) string {
-	runes := []rune(s)
-	if len(runes) > i {
-		return string(runes[:i])
+func createSipQueryValues(count int, values string) string {
+	for i := 0; i < count; i++ {
+		if config.Setting.DBDriver == "mysql" {
+			values += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+		} else if config.Setting.DBDriver == "postgres" {
+			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
+				i*sipValCnt+1, i*sipValCnt+2, i*sipValCnt+3, i*sipValCnt+4, i*sipValCnt+5, i*sipValCnt+6, i*sipValCnt+7, i*sipValCnt+8, i*sipValCnt+9, i*sipValCnt+10, i*sipValCnt+11, i*sipValCnt+12,
+				i*sipValCnt+13, i*sipValCnt+14, i*sipValCnt+15, i*sipValCnt+16, i*sipValCnt+17, i*sipValCnt+18, i*sipValCnt+19, i*sipValCnt+20, i*sipValCnt+21,
+				i*sipValCnt+22, i*sipValCnt+23, i*sipValCnt+24, i*sipValCnt+25, i*sipValCnt+26, i*sipValCnt+27, i*sipValCnt+28, i*sipValCnt+29, i*sipValCnt+30,
+				i*sipValCnt+31, i*sipValCnt+32, i*sipValCnt+33, i*sipValCnt+34, i*sipValCnt+35, i*sipValCnt+36, i*sipValCnt+37, i*sipValCnt+38, i*sipValCnt+39)
+		}
 	}
-	return s
+	values = values[:len(values)-1]
+	return values
 }
-*/
+
+func createRtcQueryValues(count int, values string) string {
+	for i := 0; i < count; i++ {
+		if config.Setting.DBDriver == "mysql" {
+			values += `(?,?,?,?,?,?,?,?,?,?,?,?),`
+		} else if config.Setting.DBDriver == "postgres" {
+			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
+				i*rtcValCnt+1, i*rtcValCnt+2, i*rtcValCnt+3, i*rtcValCnt+4, i*rtcValCnt+5, i*rtcValCnt+6,
+				i*rtcValCnt+7, i*rtcValCnt+8, i*rtcValCnt+9, i*rtcValCnt+10, i*rtcValCnt+11, i*rtcValCnt+12)
+		}
+	}
+	values = values[:len(values)-1]
+	return values
+}

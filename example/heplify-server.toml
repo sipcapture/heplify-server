@@ -13,14 +13,19 @@ DBPass          = ""
 DBDataTable     = "homer_data"
 DBConfTable     = "homer_configuration"
 DBPath          = ""
-DBBulk          = 100
+DBBulk          = 200
+DBTimer         = 2
 DBRotate        = true
+DBRotateLog     = "6h",
+DBRotateSip     = "2h",
+DBRotateQos     = "12h",
 DBDropDays      = 0
 SentryDSN       = ""
 AlegID          = "x-cid"
 LogDbg          = ""
 LogLvl          = "info"
 LogStd          = false
+Config          = "./heplify-server.toml"
 
 # Examples:
 # -------------------------------------

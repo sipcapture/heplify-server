@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
@@ -18,12 +17,11 @@ import (
 )
 
 type HEPInput struct {
-	addr     string
-	pool     chan chan struct{}
-	stats    HEPStats
-	stop     bool
-	workers  int
-	dupCache *freecache.Cache
+	addr    string
+	pool    chan chan struct{}
+	stats   HEPStats
+	stop    bool
+	workers int
 }
 
 type HEPStats struct {
@@ -54,7 +52,6 @@ func NewHEP() *HEPInput {
 		addr:    config.Setting.HEPAddr,
 		workers: config.Setting.HEPWorkers,
 		pool:    make(chan chan struct{}, runtime.NumCPU()*1e4),
-		//dupCache: freecache.NewCache(20 * 1024 * 1024),
 	}
 }
 
@@ -80,7 +77,6 @@ func (h *HEPInput) Run() {
 	if config.Setting.DBAddr != "" {
 		go func() {
 			d := database.New(config.Setting.DBDriver)
-			d.ErrCount = &h.stats.ErrCount
 			d.Chan = dbCh
 
 			if err := d.Run(); err != nil {
@@ -92,7 +88,7 @@ func (h *HEPInput) Run() {
 	if config.Setting.MQAddr != "" && config.Setting.MQName != "" {
 		go func() {
 			q := queue.New(config.Setting.MQName)
-			q.ErrCount = &h.stats.ErrCount
+			q.Topic = config.Setting.MQTopic
 			q.Chan = mqCh
 
 			if err := q.Run(); err != nil {
@@ -112,8 +108,8 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	time.Sleep(4 * time.Second)
 	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
+	go h.logStats()
 
 	for !h.stop {
 		buf := hepBuffer.Get().([]byte)
@@ -123,6 +119,7 @@ func (h *HEPInput) Run() {
 			continue
 		} else if n > 8192 {
 			logp.Warn("received to big packet with %d bytes", n)
+			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
 		atomic.AddUint64(&h.stats.PktCount, 1)
@@ -161,20 +158,9 @@ GO:
 			}
 		}
 
-		/* TODO: rethink deduplication
-		_, err = h.dupCache.Get(msg)
-		if err == nil {
-			atomic.AddUint64(&h.stats.DupCount, 1)
-			continue
-		}
-		err = h.dupCache.Set(msg, nil, 4)
-		if err != nil {
-			logp.Warn("%v", err)
-		}
-		*/
-
 		hepPkt, err = decoder.DecodeHEP(msg)
 		if err != nil || hepPkt == nil {
+			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
 
@@ -214,6 +200,31 @@ GO:
 					logp.Warn("overflowing queue channel by 128 packets")
 				}
 			}
+		}
+	}
+}
+
+func (h *HEPInput) logStats() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			logp.Info("Packet stats since last minute Total: %d, HEP: %d, Duplicate: %d, Error: %d",
+				atomic.LoadUint64(&h.stats.PktCount),
+				atomic.LoadUint64(&h.stats.HEPCount),
+				atomic.LoadUint64(&h.stats.DupCount),
+				atomic.LoadUint64(&h.stats.ErrCount),
+			)
+			atomic.StoreUint64(&h.stats.PktCount, 0)
+			atomic.StoreUint64(&h.stats.HEPCount, 0)
+			atomic.StoreUint64(&h.stats.DupCount, 0)
+			atomic.StoreUint64(&h.stats.ErrCount, 0)
+
+			logp.Info("Current channel queue length Input: %d, Database: %d, Metric: %d",
+				len(inCh),
+				len(dbCh),
+				len(mCh),
+			)
 		}
 	}
 }

@@ -2,7 +2,7 @@ version: '2.2'
 services:
   heplify:
     container_name: heplify
-    image: "qxip/heplify-server:master"
+    image: qxip/heplify-server:master
     command: "./heplify-server"
     ports:
       - 9060:9060/udp
@@ -14,9 +14,12 @@ services:
       - "HEPLIFYSERVER_DBADDR=dbmysql:3306"
       - "HEPLIFYSERVER_DBUSER=homer_user"
       - "HEPLIFYSERVER_DBPASS=homer_password"
-      - "HEPLIFYSERVER_LOGLVL=debug"
+      - "HEPLIFYSERVER_LOGLVL=info"
       - "HEPLIFYSERVER_LOGSTD=true"
       - "HEPLIFYSERVER_DBBULK=1"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
+      - "HEPLIFYSERVER_PROMTARGETIP="
+      - "HEPLIFYSERVER_PROMTARGETNAME="
     restart: unless-stopped
     depends_on:
       dbmysql:
@@ -28,7 +31,7 @@ services:
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     environment:
-      - "MYSQL_ROOT_PASSWORD=homer_password"
+      - "MYSQL_ROOT_PASSWORD="
       - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
       - "MYSQL_ROOT_HOST=%"
     expose:
@@ -37,7 +40,7 @@ services:
       - 3306:3306
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: mysqlshow | grep homer_data
       timeout: 10s
       retries: 10
 
@@ -49,7 +52,7 @@ services:
       - "DB_USER=homer_user"
       - "DB_PASS=homer_password"
     ports:
-      - "9080:80"
+      - "80:80"
     volumes:
       - ./docker-compose.yml:/homer-semaphore/.bootstrapped
     restart: unless-stopped
@@ -58,11 +61,28 @@ services:
          condition: service_healthy
 
   telegraf:
-    image: telegraf:0.12
-    restart: unless-stopped
+    image: telegraf
+#    restart: unless-stopped
     volumes:
-      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf
     ports:
       - "8092:8092/udp"
-      - "8094:8094"
       - "8125:8125/udp"
+    depends_on:
+      dbmysql:
+         condition: service_healthy
+
+  telestats:
+    image: qxip/telestats:master
+    command: nodejs index.js -c /config.js
+    restart: unless-stopped
+    volumes:
+      - ./telestats.conf:/config.js
+    expose:
+      - 8094
+    ports:
+      - "8094:8094/udp"
+    depends_on:
+      dbmysql:
+         condition: service_healthy
+    

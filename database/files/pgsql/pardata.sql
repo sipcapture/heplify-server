@@ -1,14 +1,14 @@
--- name: create-logs-table-partition
-CREATE TABLE logs_capture_pPartitionName00() INHERITS (logs_capture);
+-- name: create-partition-logs_capture
+CREATE TABLE IF NOT EXISTS logs_capture_PartitionName_pnr0000 PARTITION OF logs_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-report-table-partition
-CREATE TABLE report_capture_all_TableDate_pPartitionName00() INHERITS (report_capture_all_TableDate);
+-- name: create-partition-report_capture
+CREATE TABLE IF NOT EXISTS report_capture_PartitionName_pnr0000 PARTITION OF report_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-rtcp-table-partition
-CREATE TABLE rtcp_capture_all_TableDate_pPartitionName00() INHERITS (rtcp_capture_all_TableDate);
+-- name: create-partition-rtcp_capture
+CREATE TABLE IF NOT EXISTS rtcp_capture_PartitionName_pnr0000 PARTITION OF rtcp_capture FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-call-table-partition
-CREATE TABLE sip_capture_call_TableDate_pPartitionName00() INHERITS (sip_capture_call_TableDate);
+-- name: create-partition-sip_capture_call
+CREATE TABLE IF NOT EXISTS sip_capture_call_PartitionName_pnr0000 PARTITION OF sip_capture_call FOR VALUES FROM ('StartTime') TO ('EndTime');
 
--- name: create-registration-table-partition
-CREATE TABLE sip_capture_registration_TableDate_pPartitionName00() INHERITS (sip_capture_registration_TableDate);
+-- name: create-partition-sip_capture_registration
+CREATE TABLE IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000 PARTITION OF sip_capture_registration FOR VALUES FROM ('StartTime') TO ('EndTime');

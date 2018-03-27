@@ -78,49 +78,7 @@ type HEP struct {
 	CompressedPayload string
 	CorrelationID     string
 	Vlan              uint16
-	AlegID            string
 	SIP               *sipparser.SipMsg
-}
-
-// SIP represents a parsed SIP packet
-type SIP struct {
-	Method          string
-	ReplyReason     string
-	Ruri            string
-	RuriUser        string
-	RuriDomain      string
-	FromUser        string
-	FromDomain      string
-	FromTag         string
-	ToUser          string
-	ToDomain        string
-	ToTag           string
-	PidUser         string
-	ContactUser     string
-	AuthUser        string
-	CallID          string
-	CallIDAleg      string
-	Via1            string
-	Via1Branch      string
-	Cseq            string
-	Diversion       string
-	Reason          string
-	ContentType     string
-	Auth            string
-	UserAgent       string
-	SourceIP        string
-	SourcePort      string
-	DestinationIP   string
-	DestinationPort string
-	ContactIP       string
-	ContactPort     string
-	Proto           string
-	Family          string
-	RTPStat         string
-	Type            string
-	NodeID          string
-	CorrelationID   string
-	Msg             *sipparser.SipMsg
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -128,10 +86,6 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 	hep := &HEP{}
 	err := hep.parse(packet)
 	if err != nil {
-		logp.Warn("%v", err)
-		if config.Setting.SentryDSN != "" {
-			raven.CaptureError(err, nil)
-		}
 		return nil, err
 	}
 	return hep, nil
@@ -144,6 +98,10 @@ func (h *HEP) parse(packet []byte) error {
 
 	err := h.parseHEP(packet)
 	if err != nil {
+		logp.Warn("%v", err)
+		if config.Setting.SentryDSN != "" {
+			raven.CaptureError(err, nil)
+		}
 		return err
 	}
 
@@ -152,13 +110,8 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%s", strconv.Quote(h.Payload))
+			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
 			return err
-		}
-		for _, v := range h.SIP.Headers {
-			if v.Header == config.Setting.AlegID {
-				h.AlegID = v.Val
-			}
 		}
 	}
 
@@ -245,77 +198,27 @@ func (h *HEP) parseHEP(packet []byte) error {
 }
 
 func (h *HEP) parseSIP() error {
-
 	h.SIP = sipparser.ParseMsg(h.Payload)
 
 	if h.SIP.StartLine == nil {
 		h.SIP.StartLine = new(sipparser.StartLine)
 	}
-	if h.SIP.StartLine.Method == "" {
-		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
-	}
 	if h.SIP.StartLine.URI == nil {
 		h.SIP.StartLine.URI = new(sipparser.URI)
 	}
-	if h.SIP.From == nil {
-		h.SIP.From = new(sipparser.From)
-	}
-	if h.SIP.From.URI == nil {
-		h.SIP.From.URI = new(sipparser.URI)
-	}
-	if h.SIP.To == nil {
-		h.SIP.To = new(sipparser.From)
-	}
-	if h.SIP.To.URI == nil {
-		h.SIP.To.URI = new(sipparser.URI)
-	}
-	if h.SIP.Contact == nil {
-		h.SIP.Contact = new(sipparser.From)
-	}
-	if h.SIP.Contact.URI == nil {
-		h.SIP.Contact.URI = new(sipparser.URI)
-	}
-	if h.SIP.Authorization == nil {
-		h.SIP.Authorization = new(sipparser.Authorization)
-	}
-	if h.SIP.Via == nil {
-		h.SIP.Via = make([]*sipparser.Via, 1)
-		h.SIP.Via[0] = new(sipparser.Via)
-	}
-	if h.SIP.Cseq == nil {
-		h.SIP.Cseq = new(sipparser.Cseq)
-	}
-	if h.SIP.Reason == nil {
-		h.SIP.Reason = new(sipparser.Reason)
+	if h.SIP.StartLine.Method == "" {
+		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
 
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.Cseq.Method) < 3 {
 		return errors.New("Could not find a valid CSeq in packet")
-	} else if len(h.SIP.CallId) < 3 {
+	} else if len(h.SIP.CallID) < 3 {
 		return errors.New("Could not find a valid Call-ID in packet")
 	}
 
 	return nil
-}
-
-func (h *HEP) String() {
-	fmt.Printf("Version: \t %d \n", h.Version)
-	fmt.Printf("Protocol: \t %d \n", h.Protocol)
-	fmt.Printf("ProtoType: \t %d \n", h.ProtoType)
-	fmt.Printf("SrcIP: \t\t %s \n", h.SrcIP)
-	fmt.Printf("DstIP: \t\t %s \n", h.DstIP)
-	fmt.Printf("SrcPort: \t %d \n", h.SrcPort)
-	fmt.Printf("DstPort: \t %d \n", h.DstPort)
-	fmt.Printf("Tsec: \t\t %d \n", h.Tsec)
-	fmt.Printf("Tmsec: \t\t %d \n", h.Tmsec)
-	fmt.Printf("Vlan: \t\t %d \n", h.Vlan)
-	fmt.Printf("NodeID: \t %d \n", h.NodeID)
-	fmt.Printf("NodePW: \t %s \n", string(h.NodePW))
-	fmt.Printf("KeepAliveTimer:  %d \n", h.KeepAliveTimer)
-	fmt.Printf("CorrelationID:   %s \n", string(h.CorrelationID))
-	fmt.Printf("Payload: \n%s\n", string(h.Payload))
 }
 
 // EncodeHEP creates the HEP Packet which

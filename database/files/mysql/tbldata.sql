@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS `logs_capture` (
+CREATE TABLE IF NOT EXISTS `logs_capture_all_TableDate` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -18,13 +18,7 @@ CREATE TABLE IF NOT EXISTS `logs_capture` (
   KEY `correlationid` (`correlation_id`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
-    PARTITION pPartitionName04 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 04:00:00') ),
-    PARTITION pPartitionName08 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 08:00:00') ),
-    PARTITION pPartitionName12 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 12:00:00') ),
-    PARTITION pPartitionName16 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 16:00:00') ),
-    PARTITION pPartitionName20 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 20:00:00') ),
-    PARTITION pmax VALUES LESS THAN (MAXVALUE)
+    PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );
 
 -- name: create-report-table
@@ -47,13 +41,7 @@ CREATE TABLE IF NOT EXISTS `report_capture_all_TableDate` (
   KEY `correlationid` (`correlation_id`(255))
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
-    PARTITION pPartitionName04 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 04:00:00') ),
-    PARTITION pPartitionName08 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 08:00:00') ),
-    PARTITION pPartitionName12 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 12:00:00') ),
-    PARTITION pPartitionName16 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 16:00:00') ),
-    PARTITION pPartitionName20 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 20:00:00') ),
-    PARTITION pmax VALUES LESS THAN (MAXVALUE)
+    PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );
 
 -- name: create-rtcp-table
@@ -76,13 +64,7 @@ CREATE TABLE IF NOT EXISTS `rtcp_capture_all_TableDate` (
   KEY `correlationid` (`correlation_id`(255))
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
-    PARTITION pPartitionName04 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 04:00:00') ),
-    PARTITION pPartitionName08 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 08:00:00') ),
-    PARTITION pPartitionName12 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 12:00:00') ),
-    PARTITION pPartitionName16 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 16:00:00') ),
-    PARTITION pPartitionName20 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 20:00:00') ),
-    PARTITION pmax VALUES LESS THAN (MAXVALUE)
+    PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );
 
 -- name: create-call-table
@@ -142,16 +124,12 @@ CREATE TABLE IF NOT EXISTS `sip_capture_call_TableDate` (
   KEY `callid_aleg` (`callid_aleg`),
   KEY `date` (`date`),
   KEY `callid` (`callid`),
-  KEY `method` (`method`)
+  KEY `method` (`method`),
+  KEY `source_ip` (`source_ip`),
+  KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
-    PARTITION pPartitionName04 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 04:00:00') ),
-    PARTITION pPartitionName08 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 08:00:00') ),
-    PARTITION pPartitionName12 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 12:00:00') ),
-    PARTITION pPartitionName16 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 16:00:00') ),
-    PARTITION pPartitionName20 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 20:00:00') ),
-    PARTITION pmax VALUES LESS THAN (MAXVALUE)
+    PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );
 
 -- name: create-registration-table
@@ -210,14 +188,11 @@ CREATE TABLE IF NOT EXISTS `sip_capture_registration_TableDate` (
   KEY `auth_user` (`auth_user`),
   KEY `callid_aleg` (`callid_aleg`),
   KEY `date` (`date`),
-  KEY `callid` (`callid`)
+  KEY `callid` (`callid`),
+  KEY `method` (`method`),
+  KEY `source_ip` (`source_ip`),
+  KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION pPartitionName00 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') ),
-    PARTITION pPartitionName04 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 04:00:00') ),
-    PARTITION pPartitionName08 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 08:00:00') ),
-    PARTITION pPartitionName12 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 12:00:00') ),
-    PARTITION pPartitionName16 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 16:00:00') ),
-    PARTITION pPartitionName20 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 20:00:00') ),
-    PARTITION pmax VALUES LESS THAN (MAXVALUE)
+    PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );

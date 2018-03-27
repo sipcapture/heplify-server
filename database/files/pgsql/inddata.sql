@@ -1,48 +1,60 @@
 -- name: index-logs-date
-CREATE INDEX logs_capture_date ON "logs_capture" (date);
+CREATE INDEX IF NOT EXISTS logs_capture_PartitionName_pnr0000_date ON logs_capture_PartitionName_pnr0000 (date);
 -- name: index-logs-correlation
-CREATE INDEX logs_capture_correlation ON "logs_capture" (correlation_id);
+CREATE INDEX IF NOT EXISTS logs_capture_PartitionName_pnr0000_correlation_id ON logs_capture_PartitionName_pnr0000 (correlation_id);
 
 -- name: index-report-date
-CREATE INDEX report_capture_all_TableDate_date ON "report_capture_all_TableDate" (date);
+CREATE INDEX IF NOT EXISTS report_capture_PartitionName_pnr0000_date ON report_capture_PartitionName_pnr0000 (date);
 -- name: index-report-correlation
-CREATE INDEX report_capture_all_TableDate_correlation ON "report_capture_all_TableDate" (correlation_id);
+CREATE INDEX IF NOT EXISTS report_capture_PartitionName_pnr0000_correlation_id ON report_capture_PartitionName_pnr0000 (correlation_id);
 
 -- name: index-rtcp-date
-CREATE INDEX rtcp_capture_all_TableDate_date ON "rtcp_capture_all_TableDate" (date);
+CREATE INDEX IF NOT EXISTS rtcp_capture_PartitionName_pnr0000_date ON rtcp_capture_PartitionName_pnr0000 (date);
 -- name: index-rtcp-correlation
-CREATE INDEX rtcp_capture_all_TableDate_correlation ON "rtcp_capture_all_TableDate" (correlation_id);
+CREATE INDEX IF NOT EXISTS rtcp_capture_PartitionName_pnr0000_correlation_id ON rtcp_capture_PartitionName_pnr0000 (correlation_id);
 
--- name: index-call-ruri_user
-CREATE INDEX sip_capture_call_TableDate_ruri_user ON "sip_capture_call_TableDate" (ruri_user);
--- name: index-call-from_user
-CREATE INDEX sip_capture_call_TableDate_from_user ON "sip_capture_call_TableDate" (from_user);
--- name: index-call-to_user
-CREATE INDEX sip_capture_call_TableDate_to_user ON "sip_capture_call_TableDate" (to_user);
--- name: index-call-pid_user
-CREATE INDEX sip_capture_call_TableDate_pid_user ON "sip_capture_call_TableDate" (pid_user);
--- name: index-call-auth_user
-CREATE INDEX sip_capture_call_TableDate_auth_user ON "sip_capture_call_TableDate" (auth_user);
--- name: index-call-callid_aleg
-CREATE INDEX sip_capture_call_TableDate_callid_aleg ON "sip_capture_call_TableDate" (callid_aleg);
 -- name: index-call-date
-CREATE INDEX sip_capture_call_TableDate_date ON "sip_capture_call_TableDate" (date);
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_date ON sip_capture_call_PartitionName_pnr0000 (date);
+-- name: index-call-ruri_user
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_ruri_user ON sip_capture_call_PartitionName_pnr0000 (ruri_user);
+-- name: index-call-from_user
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_from_user ON sip_capture_call_PartitionName_pnr0000 (from_user);
+-- name: index-call-to_user
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_to_user ON sip_capture_call_PartitionName_pnr0000 (to_user);
+-- name: index-call-pid_user
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_pid_user ON sip_capture_call_PartitionName_pnr0000 (pid_user);
+-- name: index-call-auth_user
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_auth_user ON sip_capture_call_PartitionName_pnr0000 (auth_user);
+-- name: index-call-callid_aleg
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_callid_aleg ON sip_capture_call_PartitionName_pnr0000 (callid_aleg);
 -- name: index-call-callid
-CREATE INDEX sip_capture_call_TableDate_callid ON "sip_capture_call_TableDate" (callid);
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_callid ON sip_capture_call_PartitionName_pnr0000 (callid);
+-- name: index-call-method
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_method ON sip_capture_call_PartitionName_pnr0000 (method);
+-- name: index-call-source_ip
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_source_ip ON sip_capture_call_PartitionName_pnr0000 (source_ip);
+-- name: index-call-destination_ip
+CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_destination_ip ON sip_capture_call_PartitionName_pnr0000 (destination_ip);
 
--- name: index-registration-ruri_user
-CREATE INDEX sip_capture_registration_TableDate_ruri_user ON "sip_capture_registration_TableDate" (ruri_user);
--- name: index-registration-from_user
-CREATE INDEX sip_capture_registration_TableDate_from_user ON "sip_capture_registration_TableDate" (from_user);
--- name: index-registration-to_user
-CREATE INDEX sip_capture_registration_TableDate_to_user ON "sip_capture_registration_TableDate" (to_user);
--- name: index-registration-pid_user
-CREATE INDEX sip_capture_registration_TableDate_pid_user ON "sip_capture_registration_TableDate" (pid_user);
--- name: index-registration-auth_user
-CREATE INDEX sip_capture_registration_TableDate_auth_user ON "sip_capture_registration_TableDate" (auth_user);
--- name: index-registration-callid_aleg
-CREATE INDEX sip_capture_registration_TableDate_callid_aleg ON "sip_capture_registration_TableDate" (callid_aleg);
 -- name: index-registration-date
-CREATE INDEX sip_capture_registration_TableDate_date ON "sip_capture_registration_TableDate" (date);
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_date ON sip_capture_registration_PartitionName_pnr0000 (date);
+-- name: index-registration-ruri_user
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_ruri_user ON sip_capture_registration_PartitionName_pnr0000 (ruri_user);
+-- name: index-registration-from_user
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_from_user ON sip_capture_registration_PartitionName_pnr0000 (from_user);
+-- name: index-registration-to_user
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_to_user ON sip_capture_registration_PartitionName_pnr0000 (to_user);
+-- name: index-registration-pid_user
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_pid_user ON sip_capture_registration_PartitionName_pnr0000 (pid_user);
+-- name: index-registration-auth_user
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_auth_user ON sip_capture_registration_PartitionName_pnr0000 (auth_user);
+-- name: index-registration-callid_aleg
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_callid_aleg ON sip_capture_registration_PartitionName_pnr0000 (callid_aleg);
 -- name: index-registration-callid
-CREATE INDEX sip_capture_registration_TableDate_callid ON "sip_capture_registration_TableDate" (callid);
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_callid ON sip_capture_registration_PartitionName_pnr0000 (callid);
+-- name: index-registration-method
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_method ON sip_capture_registration_PartitionName_pnr0000 (method);
+-- name: index-registration-source_ip
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_source_ip ON sip_capture_registration_PartitionName_pnr0000 (source_ip);
+-- name: index-registration-destination_ip
+CREATE INDEX IF NOT EXISTS sip_capture_registration_PartitionName_pnr0000_destination_ip ON sip_capture_registration_PartitionName_pnr0000 (destination_ip);

@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/buger/jsonparser"
+	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
@@ -22,6 +23,7 @@ type Prometheus struct {
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
+	Cache             *freecache.Cache
 }
 
 func (p *Prometheus) setup() (err error) {
@@ -60,6 +62,7 @@ func (p *Prometheus) setup() (err error) {
 	if p.TargetIP[0] == "" && p.TargetName[0] == "" {
 		logp.Info("Start prometheus with no targets")
 		p.TargetEmpty = true
+		p.Cache = freecache.NewCache(80 * 1024 * 1024)
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
@@ -144,7 +147,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			if !p.TargetEmpty {
 				for k, tn := range p.TargetName {
 					if pkt.SrcIPString == p.TargetIP[k] || pkt.DstIPString == p.TargetIP[k] {
-						p.CounterVecMetrics["heplify_method_response"].WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
+						p.CounterVecMetrics["heplify_method_response"].WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 						if pkt.SIP.RTPStatVal != "" {
 							p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
@@ -152,7 +155,16 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 					}
 				}
 			} else {
-				p.CounterVecMetrics["heplify_method_response"].WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.Cseq.Method).Inc()
+				_, err := p.Cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
+				if err == nil {
+					continue
+				}
+				err = p.Cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
+				if err != nil {
+					logp.Warn("%v", err)
+				}
+
+				p.CounterVecMetrics["heplify_method_response"].WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 				if pkt.SIP.RTPStatVal != "" {
 					p.dissectXRTPStats("", pkt.SIP.RTPStatVal)

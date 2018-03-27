@@ -30,7 +30,7 @@ func (n *NSQ) setup() error {
 	return nil
 }
 
-func (n *NSQ) add(topic string, qCh chan []byte, ec *uint64) {
+func (n *NSQ) add(topic string, qCh chan []byte) {
 	var (
 		msg []byte
 		err error
@@ -48,7 +48,6 @@ func (n *NSQ) add(topic string, qCh chan []byte, ec *uint64) {
 		err = n.producer.Publish(topic, msg)
 		if err != nil {
 			logp.Err("%v", err)
-			*ec++
 		}
 	}
 }

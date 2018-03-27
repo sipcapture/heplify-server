@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	//"net"
@@ -16,7 +17,7 @@ import (
 	"github.com/negbie/heplify-server/server"
 )
 
-const version = "heplify-server 0.40"
+const version = "heplify-server 0.60"
 
 type server interface {
 	Run()
@@ -24,6 +25,7 @@ type server interface {
 }
 
 func init() {
+	var err error
 	var logging logp.Logging
 	var fileRotator logp.FileRotator
 
@@ -32,12 +34,16 @@ func init() {
 	c.MustLoad(cfg)
 	config.Setting = *cfg
 
-	cf := multiconfig.NewWithPath("heplify-server.toml")
-	err := cf.Load(cfg)
-	if err == nil {
-		config.Setting = *cfg
+	if tomlExists(config.Setting.Config) {
+		cf := multiconfig.NewWithPath(config.Setting.Config)
+		err := cf.Load(cfg)
+		if err == nil {
+			config.Setting = *cfg
+		} else {
+			fmt.Println("Syntax error in toml config file, use flag defaults.", err)
+		}
 	} else {
-		fmt.Println("Could not find heplify-server.toml, use flag defaults")
+		fmt.Println("Could not find toml config file, use flag defaults.", err)
 	}
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
@@ -52,6 +58,16 @@ func init() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func tomlExists(f string) bool {
+	_, err := os.Stat(f)
+	if os.IsNotExist(err) {
+		return false
+	} else if !strings.Contains(f, ".toml") {
+		return false
+	}
+	return err == nil
 }
 
 func main() {

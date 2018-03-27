@@ -1,14 +1,14 @@
--- name: drop-logs-table-partition
-DROP TABLE logs_capture_pPartitionName00;
+-- name: drop-partition-logs_capture
+DROP TABLE logs_capture_PartitionName_pnr0000;
 
--- name: drop-report-table-partition
-DROP TABLE report_capture_all_TableDate_pPartitionName00;
+-- name: drop-partition-report_capture
+DROP TABLE report_capture_PartitionName_pnr0000;
 
--- name: drop-rtcp-table-partition
-DROP TABLE rtcp_capture_all_TableDate_pPartitionName00;
+-- name: drop-partition-rtcp_capture
+DROP TABLE rtcp_capture_PartitionName_pnr0000;
 
--- name: drop-call-table-partition
-DROP TABLE sip_capture_call_TableDate_pPartitionName00;
+-- name: drop-partition-sip_capture_call
+DROP TABLE sip_capture_call_PartitionName_pnr0000;
 
--- name: drop-registration-table-partition
-DROP TABLE sip_capture_registration_TableDate_pPartitionName00;
+-- name: drop-partition-sip_capture_registration
+DROP TABLE sip_capture_registration_PartitionName_pnr0000;
