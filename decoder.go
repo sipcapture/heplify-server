@@ -174,18 +174,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case NodePW:
 			h.NodePW = string(chunkBody)
 		case Payload:
-			if config.Setting.Dedup {
-				_, err := dedup.Get(chunkBody)
-				if err == nil {
-					h.ProtoType = 0
-					return nil
-				}
-				err = dedup.Set(chunkBody, nil, 1)
-				if err != nil {
-					logp.Warn("%v", err)
-				}
-			}
-			h.Payload = getPayload(chunkBody)
+			h.Payload = h.getPayload(chunkBody)
 		case CompressedPayload:
 			h.CompressedPayload = string(chunkBody)
 		case CorrelationID:
@@ -350,7 +339,18 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	return w.Bytes()
 }
 
-func getPayload(pb []byte) string {
+func (h *HEP) getPayload(pb []byte) string {
+	if config.Setting.Dedup {
+		_, err := dedup.Get(pb)
+		if err == nil {
+			h.ProtoType = 0
+			return ""
+		}
+		err = dedup.Set(pb, nil, 1)
+		if err != nil {
+			logp.Warn("%v", err)
+		}
+	}
 	if !utf8.Valid(pb) {
 		v := make([]rune, 0, len(pb))
 		for i, r := range pb {

@@ -18,6 +18,8 @@ import (
 
 type HEPInput struct {
 	addr    string
+	ch      chan bool
+	wg      *sync.WaitGroup
 	pool    chan chan struct{}
 	stats   HEPStats
 	stop    bool
@@ -48,22 +50,49 @@ var (
 )
 
 func NewHEP() *HEPInput {
-	return &HEPInput{
+	h := &HEPInput{
 		addr:    config.Setting.HEPAddr,
+		ch:      make(chan bool),
+		wg:      &sync.WaitGroup{},
 		workers: config.Setting.HEPWorkers,
 		pool:    make(chan chan struct{}, runtime.NumCPU()*1e4),
 	}
+	h.wg.Add(1)
+	return h
 }
 
 func (h *HEPInput) Run() {
-	udpAddr, err := net.ResolveUDPAddr("udp", h.addr)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
+	var (
+		err error
+		ua  = &net.UDPAddr{}
+		uc  = &net.UDPConn{}
+		ta  = &net.TCPAddr{}
+		tl  = &net.TCPListener{}
+	)
+	if config.Setting.Network == "udp" {
+		ua, err = net.ResolveUDPAddr("udp", h.addr)
+		if err != nil {
+			logp.Critical("%v", err)
+		}
 
-	conn, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		logp.Critical("%v", err)
+		uc, err = net.ListenUDP("udp", ua)
+		if err != nil {
+			logp.Critical("%v", err)
+		}
+		defer uc.Close()
+	} else if config.Setting.Network == "tcp" {
+		ta, err = net.ResolveTCPAddr("tcp", h.addr)
+		if err != nil {
+			logp.Critical("%v", err)
+		}
+
+		tl, err = net.ListenTCP("tcp", ta)
+		if err != nil {
+			logp.Critical("%v", err)
+		}
+		defer tl.Close()
+	} else {
+		logp.Critical("Not supported network type %s", config.Setting.Network)
 	}
 
 	for n := 0; n < h.workers; n++ {
@@ -108,27 +137,85 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("hep input address: %s, workders: %d\n", h.addr, h.workers)
+	logp.Info("hep input address: %s:%s, workders: %d\n", config.Setting.Network, h.addr, h.workers)
 	go h.logStats()
 
-	for !h.stop {
+	if config.Setting.Network == "udp" {
+		for !h.stop {
+			uc.SetReadDeadline(time.Now().Add(1e9))
+			buf := hepBuffer.Get().([]byte)
+			n, _, err := uc.ReadFrom(buf)
+			if err != nil {
+				continue
+			} else if n > 8192 {
+				logp.Warn("received to big packet with %d bytes", n)
+				atomic.AddUint64(&h.stats.ErrCount, 1)
+				continue
+			}
+			atomic.AddUint64(&h.stats.PktCount, 1)
+			inCh <- buf[:n]
+		}
+	} else if config.Setting.Network == "tcp" {
+		h.listenTCP(tl)
+	}
+}
+
+func (h *HEPInput) listenTCP(listener *net.TCPListener) {
+	defer h.wg.Done()
+	for {
+		select {
+		case <-h.ch:
+			listener.Close()
+			return
+		default:
+		}
+		listener.SetDeadline(time.Now().Add(1e9))
+		conn, err := listener.AcceptTCP()
+		if nil != err {
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				continue
+			}
+		}
+		h.wg.Add(1)
+		go h.handleTCP(conn)
+	}
+}
+
+func (h *HEPInput) handleTCP(tc *net.TCPConn) {
+	defer tc.Close()
+	defer h.wg.Done()
+	for {
+		select {
+		case <-h.ch:
+			return
+		default:
+		}
+		tc.SetReadDeadline(time.Now().Add(1e9))
 		buf := hepBuffer.Get().([]byte)
-		conn.SetReadDeadline(time.Now().Add(1e9))
-		n, _, err := conn.ReadFrom(buf)
-		if err != nil {
-			continue
-		} else if n > 8192 {
-			logp.Warn("received to big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
-			continue
+		n, err := tc.Read(buf)
+		if nil != err {
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				continue
+			} else {
+				return
+			}
 		}
 		atomic.AddUint64(&h.stats.PktCount, 1)
 		inCh <- buf[:n]
 	}
 }
 
+func (h *HEPInput) stopTCP() {
+	close(h.ch)
+	h.wg.Wait()
+}
+
 func (h *HEPInput) End() {
+	logp.Info("stopping heplify-server...")
 	h.stop = true
+	if config.Setting.Network == "tcp" {
+		h.stopTCP()
+	}
 	time.Sleep(2 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)

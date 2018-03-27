@@ -9,7 +9,7 @@
 
 ### Status 
 #### v1 *(current)*
-  * Beta Stage - **NOT READY FOR PRODUCTION**
+  * Release Candidate Stage
   * HOMER 5 Schema
     * SIP, correlated RTCP, RTCPXR, Logs
   * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)

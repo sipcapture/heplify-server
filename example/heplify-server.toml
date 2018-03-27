@@ -1,3 +1,4 @@
+Network         = "udp"
 HEPAddr         = "0.0.0.0:9060"
 HEPWorkers      = 100
 MQName          = ""
@@ -30,6 +31,7 @@ Config          = "./heplify-server.toml"
 
 # Examples:
 # -------------------------------------
+# Network         = "tcp"
 # DBDriver        = "postgres"
 # DBPath          = "/var/lib/postgresql/data/homer"
 # PromAddr        = "0.0.0.0:8899"

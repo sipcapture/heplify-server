@@ -3,6 +3,7 @@ package config
 var Setting HeplifyServer
 
 type HeplifyServer struct {
+	Network        string `default:"udp"`
 	HEPAddr        string `default:"0.0.0.0:9060"`
 	HEPWorkers     int    `default:"100"`
 	MQName         string `default:""`
@@ -36,6 +37,7 @@ type HeplifyServer struct {
 
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
+		Network:        "udp",
 		HEPAddr:        "0.0.0.0:9060",
 		HEPWorkers:     100,
 		MQName:         "",
