@@ -162,7 +162,7 @@ GO:
 		if err != nil {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
-		} else if hepPkt.Version == 0 {
+		} else if hepPkt.ProtoType == 0 {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
 		}

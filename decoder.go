@@ -99,7 +99,7 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	err := h.parseHEP(packet)
-	if h.Version == 0 {
+	if h.ProtoType == 0 {
 		return nil
 	} else if err != nil {
 		logp.Warn("%v", err)
@@ -177,7 +177,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 			if config.Setting.Dedup {
 				_, err := dedup.Get(chunkBody)
 				if err == nil {
-					h.Version = 0
+					h.ProtoType = 0
 					return nil
 				}
 				err = dedup.Set(chunkBody, nil, 1)
@@ -350,7 +350,7 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	return w.Bytes()
 }
 
-func getPayload(pb []byte) (ps string) {
+func getPayload(pb []byte) string {
 	if !utf8.Valid(pb) {
 		v := make([]rune, 0, len(pb))
 		for i, r := range pb {

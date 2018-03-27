@@ -293,19 +293,19 @@ func (p *Prometheus) dissectRTCPStats(data []byte) {
 		switch idx {
 		case 0:
 			if fraction_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_fraction_lost"].Set(fraction_lost)
+				p.GaugeMetrics["heplify_rtcp_fraction_lost"].Set(normMax(fraction_lost))
 			}
 		case 1:
 			if packets_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_packets_lost"].Set(packets_lost)
+				p.GaugeMetrics["heplify_rtcp_packets_lost"].Set(normMax(packets_lost))
 			}
 		case 2:
 			if ia_jitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_jitter"].Set(ia_jitter)
+				p.GaugeMetrics["heplify_rtcp_jitter"].Set(normMax(ia_jitter))
 			}
 		case 3:
 			if dlsr, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_dlsr"].Set(dlsr)
+				p.GaugeMetrics["heplify_rtcp_dlsr"].Set(normMax(dlsr))
 			}
 		case 4:
 			if fraction_lost, err := jsonparser.ParseFloat(value); err == nil {
@@ -365,4 +365,11 @@ func cutSpace(str string) string {
 		}
 		return r
 	}, str)
+}
+
+func normMax(val float64) float64 {
+	if val > 10000000 {
+		return 0
+	}
+	return val
 }
