@@ -25,6 +25,7 @@ type HeplifyServer struct {
 	DBRotateSip    string `default:"2h"`
 	DBRotateQos    string `default:"12h"`
 	DBDropDays     int    `default:"0"`
+	Dedup          bool   `default:"false"`
 	SentryDSN      string `default:""`
 	AlegID         string `default:"x-cid"`
 	LogDbg         string `default:""`
@@ -57,6 +58,7 @@ func NewConfig() *HeplifyServer {
 		DBRotateSip:    "2h",
 		DBRotateQos:    "12h",
 		DBDropDays:     0,
+		Dedup:          false,
 		SentryDSN:      "",
 		AlegID:         "x-cid",
 		LogDbg:         "",
