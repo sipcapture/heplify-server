@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/coocood/freecache"
 	raven "github.com/getsentry/raven-go"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
@@ -32,6 +33,7 @@ var (
 	hepLen10 = []byte{0x00, 0x0a}
 	chunck16 = []byte{0x00, 0x00}
 	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
+	dedup    = freecache.NewCache(10 * 1024 * 1024)
 )
 
 // HEP chuncks
@@ -97,7 +99,9 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	err := h.parseHEP(packet)
-	if err != nil {
+	if h.ProtoType == 0 {
+		return nil
+	} else if err != nil {
 		logp.Warn("%v", err)
 		if config.Setting.SentryDSN != "" {
 			raven.CaptureError(err, nil)
@@ -170,20 +174,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case NodePW:
 			h.NodePW = string(chunkBody)
 		case Payload:
-			h.Payload = string(chunkBody)
-			if !utf8.ValidString(h.Payload) {
-				v := make([]rune, 0, len(h.Payload))
-				for i, r := range h.Payload {
-					if r == utf8.RuneError {
-						_, size := utf8.DecodeRuneInString(h.Payload[i:])
-						if size == 1 {
-							continue
-						}
-					}
-					v = append(v, r)
-				}
-				h.Payload = string(v)
-			}
+			h.Payload = h.getPayload(chunkBody)
 		case CompressedPayload:
 			h.CompressedPayload = string(chunkBody)
 		case CorrelationID:
@@ -346,4 +337,32 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 		w.Write(chunck16)
 	*/
 	return w.Bytes()
+}
+
+func (h *HEP) getPayload(pb []byte) string {
+	if config.Setting.Dedup {
+		_, err := dedup.Get(pb)
+		if err == nil {
+			h.ProtoType = 0
+			return ""
+		}
+		err = dedup.Set(pb, nil, 1)
+		if err != nil {
+			logp.Warn("%v", err)
+		}
+	}
+	if !utf8.Valid(pb) {
+		v := make([]rune, 0, len(pb))
+		for i, r := range pb {
+			if rune(r) == utf8.RuneError {
+				_, size := utf8.DecodeRune(pb[i:])
+				if size == 1 {
+					continue
+				}
+			}
+			v = append(v, rune(r))
+		}
+		return string(v)
+	}
+	return string(pb)
 }

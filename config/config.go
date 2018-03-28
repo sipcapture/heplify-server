@@ -3,6 +3,7 @@ package config
 var Setting HeplifyServer
 
 type HeplifyServer struct {
+	Network        string `default:"udp"`
 	HEPAddr        string `default:"0.0.0.0:9060"`
 	HEPWorkers     int    `default:"100"`
 	MQName         string `default:""`
@@ -25,6 +26,7 @@ type HeplifyServer struct {
 	DBRotateSip    string `default:"2h"`
 	DBRotateQos    string `default:"12h"`
 	DBDropDays     int    `default:"0"`
+	Dedup          bool   `default:"false"`
 	SentryDSN      string `default:""`
 	AlegID         string `default:"x-cid"`
 	LogDbg         string `default:""`
@@ -35,6 +37,7 @@ type HeplifyServer struct {
 
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
+		Network:        "udp",
 		HEPAddr:        "0.0.0.0:9060",
 		HEPWorkers:     100,
 		MQName:         "",
@@ -57,6 +60,7 @@ func NewConfig() *HeplifyServer {
 		DBRotateSip:    "2h",
 		DBRotateQos:    "12h",
 		DBDropDays:     0,
+		Dedup:          false,
 		SentryDSN:      "",
 		AlegID:         "x-cid",
 		LogDbg:         "",

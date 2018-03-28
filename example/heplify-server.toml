@@ -1,3 +1,4 @@
+Network         = "udp"
 HEPAddr         = "0.0.0.0:9060"
 HEPWorkers      = 100
 MQName          = ""
@@ -16,10 +17,11 @@ DBPath          = ""
 DBBulk          = 200
 DBTimer         = 2
 DBRotate        = true
-DBRotateLog     = "6h",
-DBRotateSip     = "2h",
-DBRotateQos     = "12h",
+DBRotateLog     = "6h"
+DBRotateSip     = "2h"
+DBRotateQos     = "12h"
 DBDropDays      = 0
+Dedup           = false
 SentryDSN       = ""
 AlegID          = "x-cid"
 LogDbg          = ""
@@ -29,6 +31,7 @@ Config          = "./heplify-server.toml"
 
 # Examples:
 # -------------------------------------
+# Network         = "tcp"
 # DBDriver        = "postgres"
 # DBPath          = "/var/lib/postgresql/data/homer"
 # PromAddr        = "0.0.0.0:8899"
