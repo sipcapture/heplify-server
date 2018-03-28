@@ -156,11 +156,11 @@ func (h *HEPInput) Run() {
 			inCh <- buf[:n]
 		}
 	} else if config.Setting.Network == "tcp" {
-		h.listenTCP(tl)
+		h.serveTCP(tl)
 	}
 }
 
-func (h *HEPInput) listenTCP(listener *net.TCPListener) {
+func (h *HEPInput) serveTCP(listener *net.TCPListener) {
 	defer h.wg.Done()
 	for {
 		select {
