@@ -17,7 +17,7 @@ import (
 	"github.com/negbie/heplify-server/server"
 )
 
-const version = "heplify-server 0.60"
+const version = "heplify-server 0.80"
 
 type server interface {
 	Run()
@@ -71,6 +71,10 @@ func tomlExists(f string) bool {
 }
 
 func main() {
+	if config.Setting.Version {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
 

@@ -19,9 +19,16 @@ type DBHandler interface {
 }
 
 func New(name string) *Database {
+	if config.Setting.Mode == "homer5" {
+		name += "Homer5"
+	} else if config.Setting.Mode == "homer5" {
+		name += "Homer7"
+	}
 	var register = map[string]DBHandler{
-		"mysql":    new(SQL),
-		"postgres": new(SQL),
+		"mysqlHomer5":    new(SQLHomer5),
+		"postgresHomer5": new(SQLHomer5),
+		"mysqlHomer7":    new(SQLHomer7),
+		"postgresHomer7": new(SQLHomer7),
 	}
 
 	return &Database{
@@ -37,6 +44,9 @@ func (d *Database) Run() error {
 
 	if config.Setting.DBDriver != "mysql" && config.Setting.DBDriver != "postgres" {
 		return fmt.Errorf("wrong database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
+	}
+	if config.Setting.Mode != "homer5" && config.Setting.Mode != "homer7" {
+		return fmt.Errorf("wrong mode: %s, please use homer5 or homer7", config.Setting.Mode)
 	}
 
 	err = d.DBH.setup()
