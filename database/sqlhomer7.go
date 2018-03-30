@@ -89,6 +89,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 
 		pkt        *decoder.HEP
 		date       string
+		pHeader    []byte
+		dHeader    []byte
 		ok         bool
 		regRows    = make([]interface{}, 0, s.bulkCnt)
 		callRows   = make([]interface{}, 0, s.bulkCnt)
@@ -115,8 +117,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			}
 
 			date = pkt.Timestamp.Format("2006-01-02 15:04:05")
-			pHeader := formProtocolHeader(pkt)
-			dHeader := formDataHeader(pkt, date)
+			pHeader = formProtocolHeader(pkt)
+			dHeader = formDataHeader(pkt, date)
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.CID != "" {
 				if pkt.SIP.CseqMethod == "REGISTER" {
