@@ -308,7 +308,7 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	// Chunk captured compressed payload (gzip/inflate)
 	//w.Write([]byte{0x00,0x00, 0x00,0x10})
 
-	if h.CID != "" {
+	if h.CID != "" && h.ProtoType != 1 {
 		// Chunk internal correlation id
 		w.Write([]byte{0x00, 0x00, 0x00, 0x11})
 		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.CID)))

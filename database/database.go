@@ -21,7 +21,7 @@ type DBHandler interface {
 func New(name string) *Database {
 	if config.Setting.Mode == "homer5" {
 		name += "Homer5"
-	} else if config.Setting.Mode == "homer5" {
+	} else if config.Setting.Mode == "homer7" {
 		name += "Homer7"
 	}
 	var register = map[string]DBHandler{

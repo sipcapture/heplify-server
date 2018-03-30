@@ -95,6 +95,13 @@ func (s *SQLHomer5) setup() error {
 		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
 		return err
 	}
+	if addr[1] == "3306" && config.Setting.DBDriver == "postgres" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+		return err
+	} else if addr[1] == "5432" && config.Setting.DBDriver == "mysql" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+		return err
+	}
 
 	if config.Setting.DBRotate {
 		b := packr.NewBox("./files/homer5")
