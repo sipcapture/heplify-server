@@ -1,20 +1,20 @@
 -- name: index-logs-date
-CREATE INDEX IF NOT EXISTS hep_proto_100_logs_PartitionName_pnr0000_date ON hep_proto_100_logs_PartitionName_pnr0000 ((data_header->'date'));
+CREATE INDEX IF NOT EXISTS hep_proto_100_logs_PartitionName_pnr0000_date ON hep_proto_100_logs_PartitionName_pnr0000 ((data_header->'create_date'));
 -- name: index-logs-correlation
 CREATE INDEX IF NOT EXISTS hep_proto_100_logs_PartitionName_pnr0000_cid ON hep_proto_100_logs_PartitionName_pnr0000 ((data_header->'cid'));
 
 -- name: index-report-date
-CREATE INDEX IF NOT EXISTS hep_proto_35_report_PartitionName_pnr0000_date ON hep_proto_35_report_PartitionName_pnr0000 ((data_header->'date'));
+CREATE INDEX IF NOT EXISTS hep_proto_35_report_PartitionName_pnr0000_date ON hep_proto_35_report_PartitionName_pnr0000 ((data_header->'create_date'));
 -- name: index-report-correlation
 CREATE INDEX IF NOT EXISTS hep_proto_35_report_PartitionName_pnr0000_cid ON hep_proto_35_report_PartitionName_pnr0000 ((data_header->'cid'));
 
 -- name: index-rtcp-date
-CREATE INDEX IF NOT EXISTS hep_proto_5_rtcp_PartitionName_pnr0000_date ON hep_proto_5_rtcp_PartitionName_pnr0000 ((data_header->'date'));
+CREATE INDEX IF NOT EXISTS hep_proto_5_rtcp_PartitionName_pnr0000_date ON hep_proto_5_rtcp_PartitionName_pnr0000 ((data_header->'create_date'));
 -- name: index-rtcp-correlation
 CREATE INDEX IF NOT EXISTS hep_proto_5_rtcp_PartitionName_pnr0000_cid ON hep_proto_5_rtcp_PartitionName_pnr0000 ((data_header->'cid'));
 
 -- name: index-call-date
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_PartitionName_pnr0000_date ON hep_proto_1_call_PartitionName_pnr0000 ((data_header->'date'));
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_PartitionName_pnr0000_date ON hep_proto_1_call_PartitionName_pnr0000 ((data_header->'create_date'));
 -- name: index-call-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_PartitionName_pnr0000_ruri_user ON hep_proto_1_call_PartitionName_pnr0000 ((data_header->'ruri_user'));
 -- name: index-call-from_user
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_call_PartitionName_pnr0000_source_ip ON h
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_PartitionName_pnr0000_destination_ip ON hep_proto_1_call_PartitionName_pnr0000 ((data_header->'destination_ip'));
 
 -- name: index-registration-date
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_PartitionName_pnr0000_date ON hep_proto_1_register_PartitionName_pnr0000 ((data_header->'date'));
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_PartitionName_pnr0000_date ON hep_proto_1_register_PartitionName_pnr0000 ((data_header->'create_date'));
 -- name: index-registration-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_PartitionName_pnr0000_ruri_user ON hep_proto_1_register_PartitionName_pnr0000 ((data_header->'ruri_user'));
 -- name: index-registration-from_user

@@ -26,7 +26,7 @@ type SQLHomer7 struct {
 	bulkVal string
 }
 
-var queryVal = `(cid,date,protocol_header,data_header,raw) VALUES `
+var queryVal = `(cid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
@@ -116,7 +116,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 
 			date = pkt.Timestamp.Format("2006-01-02 15:04:05")
 			pHeader := formProtocolHeader(pkt)
-			dHeader := formDataHeader(pkt)
+			dHeader := formDataHeader(pkt, date)
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.CID != "" {
 				if pkt.SIP.CseqMethod == "REGISTER" {
@@ -229,7 +229,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		case "log":
 			query = "INSERT INTO hep_proto_100_logs_" + time.Now().Format("20060102") + values
 		}
-	} else if config.Setting.DBDriver == "postgres_" {
+	} else if config.Setting.DBDriver == "postgres" {
 		switch query {
 		case "call":
 			query = "INSERT INTO hep_proto_1_call" + values
@@ -299,27 +299,32 @@ func formProtocolHeader(h *decoder.HEP) []byte {
 	return b.Bytes()
 }
 
-func formDataHeader(h *decoder.HEP) []byte {
-	var b bytes.Buffer
-	b.WriteString("{")
-	b.WriteString("\"ruri_user\":\"")
-	b.WriteString(h.SIP.StartLine.URI.User)
-	b.WriteString(",\"from_user\":\"")
-	b.WriteString(h.SIP.FromUser)
-	b.WriteString(",\"to_user\":\"")
-	b.WriteString(h.SIP.ToUser)
-	b.WriteString(",\"pid_user\":\"")
-	b.WriteString(h.SIP.PaiUser)
-	b.WriteString(",\"auth_user\":\"")
-	b.WriteString(h.SIP.AuthUser)
-	b.WriteString(",\"cid\":\"")
-	b.WriteString(h.CID)
-	b.WriteString(",\"method\":\"")
-	b.WriteString(h.SIP.StartLine.Method)
-	b.WriteString(",\"source_ip\":\"")
-	b.WriteString(h.SrcIPString)
-	b.WriteString(",\"destination_ip\":\"")
-	b.WriteString(h.DstIPString)
-	b.WriteString("\"}")
-	return b.Bytes()
+func formDataHeader(h *decoder.HEP, date string) []byte {
+	if h.ProtoType == 1 {
+		var b bytes.Buffer
+		b.WriteString("{")
+		b.WriteString("\"create_date\":\"")
+		b.WriteString(date)
+		b.WriteString("\",\"ruri_user\":\"")
+		b.WriteString(h.SIP.StartLine.URI.User)
+		b.WriteString("\",\"from_user\":\"")
+		b.WriteString(h.SIP.FromUser)
+		b.WriteString("\",\"to_user\":\"")
+		b.WriteString(h.SIP.ToUser)
+		b.WriteString("\",\"pid_user\":\"")
+		b.WriteString(h.SIP.PaiUser)
+		b.WriteString("\",\"auth_user\":\"")
+		b.WriteString(h.SIP.AuthUser)
+		b.WriteString("\",\"cid\":\"")
+		b.WriteString(h.CID)
+		b.WriteString("\",\"method\":\"")
+		b.WriteString(h.SIP.StartLine.Method)
+		b.WriteString("\",\"source_ip\":\"")
+		b.WriteString(h.SrcIPString)
+		b.WriteString("\",\"destination_ip\":\"")
+		b.WriteString(h.DstIPString)
+		b.WriteString("\"}")
+		return b.Bytes()
+	}
+	return nil
 }
