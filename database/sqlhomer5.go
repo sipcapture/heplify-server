@@ -97,7 +97,7 @@ func (s *SQLHomer5) setup() error {
 	}
 
 	if config.Setting.DBRotate {
-		b := packr.NewBox("./files")
+		b := packr.NewBox("./files/homer5")
 		r := NewRotator(&b)
 		r.Rotate()
 	}
@@ -273,13 +273,13 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						callCnt = 0
 					}
 				}
-			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
+			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -293,7 +293,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					reportRows = append(reportRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -307,7 +307,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					dnsRows = append(dnsRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -321,7 +321,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					logRows = append(logRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 

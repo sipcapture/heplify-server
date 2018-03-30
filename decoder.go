@@ -38,44 +38,44 @@ var (
 
 // HEP chuncks
 const (
-	Version       = 1  // Chunk 0x0001 IP protocol family (0x02=IPv4, 0x0a=IPv6)
-	Protocol      = 2  // Chunk 0x0002 IP protocol ID (0x06=TCP, 0x11=UDP)
-	IP4SrcIP      = 3  // Chunk 0x0003 IPv4 source address
-	IP4DstIP      = 4  // Chunk 0x0004 IPv4 destination address
-	IP6SrcIP      = 5  // Chunk 0x0005 IPv6 source address
-	IP6DstIP      = 6  // Chunk 0x0006 IPv6 destination address
-	SrcPort       = 7  // Chunk 0x0007 Protocol source port
-	DstPort       = 8  // Chunk 0x0008 Protocol destination port
-	Tsec          = 9  // Chunk 0x0009 Unix timestamp, seconds
-	Tmsec         = 10 // Chunk 0x000a Unix timestamp, microseconds
-	ProtoType     = 11 // Chunk 0x000b Protocol type (DNS, LOG, RTCP, SIP)
-	NodeID        = 12 // Chunk 0x000c Capture client ID
-	NodePW        = 14 // Chunk 0x000e Authentication key (plain text / TLS connection)
-	Payload       = 15 // Chunk 0x000f Captured packet payload
-	CorrelationID = 17 // Chunk 0x0011 Correlation ID
-	Vlan          = 18 // Chunk 0x0012 VLAN
+	Version   = 1  // Chunk 0x0001 IP protocol family (0x02=IPv4, 0x0a=IPv6)
+	Protocol  = 2  // Chunk 0x0002 IP protocol ID (0x06=TCP, 0x11=UDP)
+	IP4SrcIP  = 3  // Chunk 0x0003 IPv4 source address
+	IP4DstIP  = 4  // Chunk 0x0004 IPv4 destination address
+	IP6SrcIP  = 5  // Chunk 0x0005 IPv6 source address
+	IP6DstIP  = 6  // Chunk 0x0006 IPv6 destination address
+	SrcPort   = 7  // Chunk 0x0007 Protocol source port
+	DstPort   = 8  // Chunk 0x0008 Protocol destination port
+	Tsec      = 9  // Chunk 0x0009 Unix timestamp, seconds
+	Tmsec     = 10 // Chunk 0x000a Unix timestamp, microseconds
+	ProtoType = 11 // Chunk 0x000b Protocol type (DNS, LOG, RTCP, SIP)
+	NodeID    = 12 // Chunk 0x000c Capture client ID
+	NodePW    = 14 // Chunk 0x000e Authentication key (plain text / TLS connection)
+	Payload   = 15 // Chunk 0x000f Captured packet payload
+	CID       = 17 // Chunk 0x0011 Correlation ID
+	Vlan      = 18 // Chunk 0x0012 VLAN
 )
 
 // HEP represents a parsed HEP packet
 type HEP struct {
-	Version       byte
-	Protocol      byte
-	SrcIP         net.IP
-	DstIP         net.IP
-	SrcIPString   string
-	DstIPString   string
-	SrcPort       uint16
-	DstPort       uint16
-	Tsec          uint32
-	Tmsec         uint32
-	Timestamp     time.Time
-	ProtoType     byte
-	NodeID        uint32
-	NodePW        string
-	Payload       string
-	CorrelationID string
-	Vlan          uint16
-	SIP           *sipparser.SipMsg
+	Version     byte
+	Protocol    byte
+	SrcIP       net.IP
+	DstIP       net.IP
+	SrcIPString string
+	DstIPString string
+	SrcPort     uint16
+	DstPort     uint16
+	Tsec        uint32
+	Tmsec       uint32
+	Timestamp   time.Time
+	ProtoType   byte
+	NodeID      uint32
+	NodePW      string
+	Payload     string
+	CID         string
+	Vlan        uint16
+	SIP         *sipparser.SipMsg
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -112,6 +112,7 @@ func (h *HEP) parse(packet []byte) error {
 			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
 			return err
 		}
+		h.CID = h.SIP.CallID
 	}
 
 	logp.Debug("hep", "%+v\n\n", h)
@@ -168,8 +169,8 @@ func (h *HEP) parseHEP(packet []byte) error {
 			h.NodePW = string(chunkBody)
 		case Payload:
 			h.Payload = h.normPayload(chunkBody)
-		case CorrelationID:
-			h.CorrelationID = string(chunkBody)
+		case CID:
+			h.CID = string(chunkBody)
 		case Vlan:
 			h.Vlan = binary.BigEndian.Uint16(chunkBody)
 		default:
@@ -307,12 +308,12 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	// Chunk captured compressed payload (gzip/inflate)
 	//w.Write([]byte{0x00,0x00, 0x00,0x10})
 
-	if h.CorrelationID != "" {
+	if h.CID != "" {
 		// Chunk internal correlation id
 		w.Write([]byte{0x00, 0x00, 0x00, 0x11})
-		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.CorrelationID)))
+		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.CID)))
 		w.Write(hepLen)
-		w.Write([]byte(h.CorrelationID))
+		w.Write([]byte(h.CID))
 	}
 	/*
 		// Chunk VLAN

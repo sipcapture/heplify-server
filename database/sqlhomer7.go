@@ -1,8 +1,10 @@
 package database
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,9 +26,12 @@ type SQLHomer7 struct {
 	bulkVal string
 }
 
+var queryVal = `(cid,date,protocol_header,data_header,raw) VALUES `
+var queryValCnt = 5
+
 func (s *SQLHomer7) setup() error {
 	var err error
-	addr := strings.Split(config.Setting.DBAddr, ":")
+	var addr = strings.Split(config.Setting.DBAddr, ":")
 
 	if len(addr) != 2 {
 		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
@@ -34,7 +39,7 @@ func (s *SQLHomer7) setup() error {
 	}
 
 	if config.Setting.DBRotate {
-		b := packr.NewBox("./files")
+		b := packr.NewBox("./files/homer7")
 		r := NewRotator(&b)
 		r.Rotate()
 	}
@@ -65,7 +70,7 @@ func (s *SQLHomer7) setup() error {
 		s.bulkCnt = 1
 	}
 
-	s.bulkVal = s.createQueryValues(s.bulkCnt, sipVal)
+	s.bulkVal = s.createQueryValues(s.bulkCnt, queryVal)
 
 	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 	return nil
@@ -76,8 +81,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		regCnt, callCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
 		pkt        *decoder.HEP
-		ts         string
-		tsNano     int64
+		date       string
 		ok         bool
 		regRows    = make([]interface{}, 0, s.bulkCnt)
 		callRows   = make([]interface{}, 0, s.bulkCnt)
@@ -103,18 +107,13 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
-			tsNano = pkt.Timestamp.UnixNano() / 1000
+			date = pkt.Timestamp.Format("2006-01-02 15:04:05")
+			pHeader := formProtocolHeader(pkt)
+			dHeader := formDataHeader(pkt)
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-
+			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.CID != "" {
 				if pkt.SIP.CseqMethod == "REGISTER" {
-					regRows = append(regRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
+					regRows = append(regRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					regCnt++
 					if regCnt == s.bulkCnt {
 						s.bulkInsert("register", regRows, s.bulkVal)
@@ -122,12 +121,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						regCnt = 0
 					}
 				} else {
-					callRows = append(callRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
+					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					callCnt++
 					if callCnt == s.bulkCnt {
 						s.bulkInsert("call", callRows, s.bulkVal)
@@ -135,16 +129,10 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						callCnt = 0
 					}
 				}
-			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
+			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
-					rtcpRows = append(rtcpRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CorrelationID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					rtcpRows = append(rtcpRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					rtcpCnt++
 					if rtcpCnt == s.bulkCnt {
 						s.bulkInsert("rtcp", rtcpRows, s.bulkVal)
@@ -152,13 +140,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						rtcpCnt = 0
 					}
 				case 38:
-					reportRows = append(reportRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CorrelationID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					reportRows = append(reportRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					reportCnt++
 					if reportCnt == s.bulkCnt {
 						s.bulkInsert("report", reportRows, s.bulkVal)
@@ -166,13 +148,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						reportCnt = 0
 					}
 				case 53:
-					dnsRows = append(dnsRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CorrelationID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					dnsRows = append(dnsRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					dnsCnt++
 					if dnsCnt == s.bulkCnt {
 						s.bulkInsert("dns", dnsRows, s.bulkVal)
@@ -180,13 +156,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						dnsCnt = 0
 					}
 				case 100:
-					logRows = append(logRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CorrelationID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					logRows = append(logRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					logCnt++
 					if logCnt == s.bulkCnt {
 						s.bulkInsert("log", logRows, s.bulkVal)
@@ -198,37 +168,37 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		case <-ticker.C:
 			if regCnt > 1 {
 				l := len(regRows)
-				s.bulkInsert("register", regRows[:l], s.createQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert("register", regRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
 			if callCnt > 1 {
 				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				callRows = []interface{}{}
 				callCnt = 0
 			}
 			if rtcpCnt > 1 {
 				l := len(rtcpRows)
-				s.bulkInsert("rtcp", rtcpRows[:l], s.createQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("rtcp", rtcpRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 1 {
 				l := len(reportRows)
-				s.bulkInsert("report", reportRows[:l], s.createQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("report", reportRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
 			if dnsCnt > 1 {
 				l := len(dnsRows)
-				s.bulkInsert("dns", dnsRows[:l], s.createQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("dns", dnsRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
 			if logCnt > 1 {
 				l := len(logRows)
-				s.bulkInsert("log", logRows[:l], s.createQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("log", logRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				logRows = []interface{}{}
 				logCnt = 0
 			}
@@ -240,32 +210,32 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 	if config.Setting.DBDriver == "mysql" {
 		switch query {
 		case "call":
-			query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_1_call_" + time.Now().Format("20060102") + values
 		case "register":
-			query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_1_register_" + time.Now().Format("20060102") + values
 		case "rtcp":
-			query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_5_rtcp_" + time.Now().Format("20060102") + values
 		case "report":
-			query = "INSERT INTO report_capture_all_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_35_report_" + time.Now().Format("20060102") + values
 		case "dns":
-			query = "INSERT INTO dns_capture_all_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_53_dns_" + time.Now().Format("20060102") + values
 		case "log":
-			query = "INSERT INTO logs_capture_all_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_100_logs_" + time.Now().Format("20060102") + values
 		}
-	} else if config.Setting.DBDriver == "postgres" {
+	} else if config.Setting.DBDriver == "postgres_" {
 		switch query {
 		case "call":
-			query = "INSERT INTO sip_capture_call" + values
+			query = "INSERT INTO hep_proto_1_call" + values
 		case "register":
-			query = "INSERT INTO sip_capture_registration" + values
+			query = "INSERT INTO hep_proto_1_register" + values
 		case "rtcp":
-			query = "INSERT INTO rtcp_capture" + values
+			query = "INSERT INTO hep_proto_5_rtcp" + values
 		case "report":
-			query = "INSERT INTO report_capture" + values
+			query = "INSERT INTO hep_proto_35_report" + values
 		case "dns":
-			query = "INSERT INTO dns_capture" + values
+			query = "INSERT INTO hep_proto_53_dns" + values
 		case "log":
-			query = "INSERT INTO logs_capture" + values
+			query = "INSERT INTO hep_proto_100_logs" + values
 		}
 	}
 
@@ -283,13 +253,66 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 func (s *SQLHomer7) createQueryValues(count int, values string) string {
 	for i := 0; i < count; i++ {
 		if config.Setting.DBDriver == "mysql" {
-			values += `(?,?,?,?,?,?,?,?,?,?,?,?),`
+			values += `(?,?,?,?,?),`
 		} else if config.Setting.DBDriver == "postgres" {
-			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
-				i*rtcValCnt+1, i*rtcValCnt+2, i*rtcValCnt+3, i*rtcValCnt+4, i*rtcValCnt+5, i*rtcValCnt+6,
-				i*rtcValCnt+7, i*rtcValCnt+8, i*rtcValCnt+9, i*rtcValCnt+10, i*rtcValCnt+11, i*rtcValCnt+12)
+			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d),",
+				i*queryValCnt+1, i*queryValCnt+2, i*queryValCnt+3, i*queryValCnt+4, i*queryValCnt+5)
 		}
 	}
 	values = values[:len(values)-1]
 	return values
+}
+
+func formProtocolHeader(h *decoder.HEP) []byte {
+	var b bytes.Buffer
+	b.WriteString("{")
+	b.WriteString("\"protocolFamily\":")
+	b.WriteString(strconv.Itoa(int(h.Version)))
+	b.WriteString(",\"protocol\":")
+	b.WriteString(strconv.Itoa(int(h.Protocol)))
+	b.WriteString(",\"srcIp\":\"")
+	b.WriteString(h.SrcIPString)
+	b.WriteString("\",\"dstIp\":\"")
+	b.WriteString(h.DstIPString)
+	b.WriteString("\",\"srcPort\":")
+	b.WriteString(strconv.Itoa(int(h.SrcPort)))
+	b.WriteString(",\"dstPort\":")
+	b.WriteString(strconv.Itoa(int(h.DstPort)))
+	b.WriteString(",\"timeSeconds\":")
+	b.WriteString(strconv.Itoa(int(h.Tsec)))
+	b.WriteString(",\"timeUseconds\":")
+	b.WriteString(strconv.Itoa(int(h.Tmsec)))
+	b.WriteString(",\"payloadType\":")
+	b.WriteString(strconv.Itoa(int(h.ProtoType)))
+	b.WriteString(",\"captureId\":")
+	b.WriteString(strconv.Itoa(int(h.NodeID)))
+	b.WriteString(",\"capturePass\":\"")
+	b.WriteString(h.NodePW)
+	b.WriteString("\"}")
+	return b.Bytes()
+}
+
+func formDataHeader(h *decoder.HEP) []byte {
+	var b bytes.Buffer
+	b.WriteString("{")
+	b.WriteString("\"ruri_user\":\"")
+	b.WriteString(h.SIP.StartLine.URI.User)
+	b.WriteString(",\"from_user\":\"")
+	b.WriteString(h.SIP.FromUser)
+	b.WriteString(",\"to_user\":\"")
+	b.WriteString(h.SIP.ToUser)
+	b.WriteString(",\"pid_user\":\"")
+	b.WriteString(h.SIP.PaiUser)
+	b.WriteString(",\"auth_user\":\"")
+	b.WriteString(h.SIP.AuthUser)
+	b.WriteString(",\"cid\":\"")
+	b.WriteString(h.CID)
+	b.WriteString(",\"method\":\"")
+	b.WriteString(h.SIP.StartLine.Method)
+	b.WriteString(",\"source_ip\":\"")
+	b.WriteString(h.SrcIPString)
+	b.WriteString(",\"destination_ip\":\"")
+	b.WriteString(h.DstIPString)
+	b.WriteString("\"}")
+	return b.Bytes()
 }
