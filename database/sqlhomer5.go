@@ -77,7 +77,7 @@ var (
 	rtcValCnt = 12
 )
 
-type SQL struct {
+type SQLHomer5 struct {
 	//dbc     *sql.DB
 	dbc        *dbr.Connection
 	dbs        *dbr.Session
@@ -87,7 +87,7 @@ type SQL struct {
 	rtcBulkVal string
 }
 
-func (s *SQL) setup() error {
+func (s *SQLHomer5) setup() error {
 	var err error
 	addr := strings.Split(config.Setting.DBAddr, ":")
 
@@ -95,9 +95,16 @@ func (s *SQL) setup() error {
 		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
 		return err
 	}
+	if addr[1] == "3306" && config.Setting.DBDriver == "postgres" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+		return err
+	} else if addr[1] == "5432" && config.Setting.DBDriver == "mysql" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+		return err
+	}
 
 	if config.Setting.DBRotate {
-		b := packr.NewBox("./files")
+		b := packr.NewBox("./files/homer5")
 		r := NewRotator(&b)
 		r.Rotate()
 	}
@@ -132,14 +139,14 @@ func (s *SQL) setup() error {
 		s.rtcBulkCnt = 1
 	}
 
-	s.sipBulkVal = createSipQueryValues(s.sipBulkCnt, sipVal)
-	s.rtcBulkVal = createRtcQueryValues(s.rtcBulkCnt, rtcVal)
+	s.sipBulkVal = s.createSipQueryValues(s.sipBulkCnt, sipVal)
+	s.rtcBulkVal = s.createRtcQueryValues(s.rtcBulkCnt, rtcVal)
 
 	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 	return nil
 }
 
-func (s *SQL) insert(hCh chan *decoder.HEP) {
+func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	var (
 		regCnt, callCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
@@ -273,13 +280,13 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 						callCnt = 0
 					}
 				}
-			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CorrelationID != "" {
+			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -293,7 +300,7 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 					reportRows = append(reportRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -307,7 +314,7 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 					dnsRows = append(dnsRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -321,7 +328,7 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 					logRows = append(logRows, []interface{}{
 						ts,
 						tsNano,
-						pkt.CorrelationID,
+						pkt.CID,
 						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
@@ -336,37 +343,37 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 		case <-ticker.C:
 			if regCnt > 1 {
 				l := len(regRows)
-				s.bulkInsert("register", regRows[:l], createSipQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert("register", regRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
 			if callCnt > 1 {
 				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], createSipQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert("call", callRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				callRows = []interface{}{}
 				callCnt = 0
 			}
 			if rtcpCnt > 1 {
 				l := len(rtcpRows)
-				s.bulkInsert("rtcp", rtcpRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("rtcp", rtcpRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 1 {
 				l := len(reportRows)
-				s.bulkInsert("report", reportRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("report", reportRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
 			if dnsCnt > 1 {
 				l := len(dnsRows)
-				s.bulkInsert("dns", dnsRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("dns", dnsRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
 			if logCnt > 1 {
 				l := len(logRows)
-				s.bulkInsert("log", logRows[:l], createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert("log", logRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				logRows = []interface{}{}
 				logCnt = 0
 			}
@@ -374,7 +381,7 @@ func (s *SQL) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQL) bulkInsert(query string, rows []interface{}, values string) {
+func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) {
 	if config.Setting.DBDriver == "mysql" {
 		switch query {
 		case "call":
@@ -425,7 +432,7 @@ func short(s string, i int) string {
 	return s
 }
 
-func createSipQueryValues(count int, values string) string {
+func (s *SQLHomer5) createSipQueryValues(count int, values string) string {
 	for i := 0; i < count; i++ {
 		if config.Setting.DBDriver == "mysql" {
 			values += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
@@ -441,7 +448,7 @@ func createSipQueryValues(count int, values string) string {
 	return values
 }
 
-func createRtcQueryValues(count int, values string) string {
+func (s *SQLHomer5) createRtcQueryValues(count int, values string) string {
 	for i := 0; i < count; i++ {
 		if config.Setting.DBDriver == "mysql" {
 			values += `(?,?,?,?,?,?,?,?,?,?,?,?),`

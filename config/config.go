@@ -4,6 +4,7 @@ var Setting HeplifyServer
 
 type HeplifyServer struct {
 	Network        string `default:"udp"`
+	Mode           string `default:"homer5"`
 	HEPAddr        string `default:"0.0.0.0:9060"`
 	HEPWorkers     int    `default:"100"`
 	MQName         string `default:""`
@@ -33,11 +34,13 @@ type HeplifyServer struct {
 	LogLvl         string `default:"info"`
 	LogStd         bool   `default:"false"`
 	Config         string `default:"./heplify-server.toml"`
+	Version        bool   `default:"false"`
 }
 
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
 		Network:        "udp",
+		Mode:           "homer5",
 		HEPAddr:        "0.0.0.0:9060",
 		HEPWorkers:     100,
 		MQName:         "",
@@ -67,6 +70,7 @@ func NewConfig() *HeplifyServer {
 		LogLvl:         "info",
 		LogStd:         false,
 		Config:         "./heplify-server.toml",
+		Version:        false,
 	}
 }
 

@@ -1,4 +1,5 @@
 Network         = "udp"
+Mode            = "homer5"
 HEPAddr         = "0.0.0.0:9060"
 HEPWorkers      = 100
 MQName          = ""
@@ -28,10 +29,12 @@ LogDbg          = ""
 LogLvl          = "info"
 LogStd          = false
 Config          = "./heplify-server.toml"
+Version         = false
 
 # Examples:
 # -------------------------------------
 # Network         = "tcp"
+# Mode            = "homer7"
 # DBDriver        = "postgres"
 # DBPath          = "/var/lib/postgresql/data/homer"
 # PromAddr        = "0.0.0.0:8899"

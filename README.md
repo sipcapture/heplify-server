@@ -8,14 +8,13 @@
 **heplify-server** only offers a reduced set of options and is *not* designed for everyone, but should result ideal for those willing to have an *all-in-one* simple capture deployment with minimal complexity and no need for special customization.
 
 ### Status 
-#### v1 *(current)*
+#### HOMER 5 Schema *(current)*
   * Release Candidate Stage
-  * HOMER 5 Schema
-    * SIP, correlated RTCP, RTCPXR, Logs
+    * SIP, correlated RTCP, RTCPXR, Logs, Table rotation
   * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
-#### v2
-  * Homer v7 schema
-  * *Coming Soon!*
+#### HOMER 7 Schema
+  * Alpha Stage
+  * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Installation
 * Download a [release](https://github.com/negbie/heplify-server/releases)
