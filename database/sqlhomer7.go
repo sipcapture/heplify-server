@@ -300,8 +300,8 @@ func formProtocolHeader(h *decoder.HEP) []byte {
 }
 
 func formDataHeader(h *decoder.HEP, date string) []byte {
+	var b bytes.Buffer
 	if h.ProtoType == 1 {
-		var b bytes.Buffer
 		b.WriteString("{")
 		b.WriteString("\"create_date\":\"")
 		b.WriteString(date)
@@ -324,7 +324,13 @@ func formDataHeader(h *decoder.HEP, date string) []byte {
 		b.WriteString("\",\"destination_ip\":\"")
 		b.WriteString(h.DstIPString)
 		b.WriteString("\"}")
-		return b.Bytes()
+	} else {
+		b.WriteString("{")
+		b.WriteString("\"create_date\":\"")
+		b.WriteString(date)
+		b.WriteString("\",\"cid\":\"")
+		b.WriteString(h.CID)
+		b.WriteString("\"}")
 	}
-	return nil
+	return b.Bytes()
 }
