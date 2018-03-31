@@ -10,5 +10,5 @@ DROP TABLE hep_proto_5_rtcp_TableDate;
 -- name: drop-call-table
 DROP TABLE hep_proto_1_call_TableDate;
 
--- name: drop-registration-table
+-- name: drop-register-table
 DROP TABLE hep_proto_1_register_TableDate;

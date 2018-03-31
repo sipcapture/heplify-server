@@ -11,10 +11,9 @@
 #### HOMER 5 Schema
   * Release Candidate Stage
     * SIP, correlated RTCP, RTCPXR, Logs, Table rotation
-  * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 #### HOMER 7 Schema
   * Alpha Stage
-  * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
+    * Table rotation
 #### Prometheus
   * Release Candidate Stage
     * Global and device specific stats for SIP methods, responses, RTCP, RTCPXR, X-RTP-Stat
@@ -23,6 +22,7 @@
 ### Installation
 * Download a [release](https://github.com/negbie/heplify-server/releases)
 * Compile from [sources](https://github.com/negbie/heplify-server/blob/master/docker/heplify-server/Dockerfile)
+* Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Configuration
 heplify-server can be configured using command-line options, or by defining a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/heplify-server.toml)

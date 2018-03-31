@@ -1,18 +1,3 @@
--- name: index-logs-date
-CREATE INDEX IF NOT EXISTS logs_capture_PartitionName_pnr0000_date ON logs_capture_PartitionName_pnr0000 (date);
--- name: index-logs-correlation
-CREATE INDEX IF NOT EXISTS logs_capture_PartitionName_pnr0000_correlation_id ON logs_capture_PartitionName_pnr0000 (correlation_id);
-
--- name: index-report-date
-CREATE INDEX IF NOT EXISTS report_capture_PartitionName_pnr0000_date ON report_capture_PartitionName_pnr0000 (date);
--- name: index-report-correlation
-CREATE INDEX IF NOT EXISTS report_capture_PartitionName_pnr0000_correlation_id ON report_capture_PartitionName_pnr0000 (correlation_id);
-
--- name: index-rtcp-date
-CREATE INDEX IF NOT EXISTS rtcp_capture_PartitionName_pnr0000_date ON rtcp_capture_PartitionName_pnr0000 (date);
--- name: index-rtcp-correlation
-CREATE INDEX IF NOT EXISTS rtcp_capture_PartitionName_pnr0000_correlation_id ON rtcp_capture_PartitionName_pnr0000 (correlation_id);
-
 -- name: index-call-date
 CREATE INDEX IF NOT EXISTS sip_capture_call_PartitionName_pnr0000_date ON sip_capture_call_PartitionName_pnr0000 (date);
 -- name: index-call-ruri_user

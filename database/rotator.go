@@ -98,8 +98,12 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), suffix)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/pardata.sql"), suffix, duration, r.sipStep)
-		r.dbExecPartitionFile(db, r.box.String("pgsql/inddata.sql"), suffix, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/parlog.sql"), suffix, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/parqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/parsip.sql"), suffix, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/idxlog.sql"), suffix, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/idxqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/idxsip.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
@@ -122,7 +126,7 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		defer db.Close()
 		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
 		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix)
-		r.dbExecFile(db, r.box.String("pgsql/indconf.sql"), suffix)
+		r.dbExecFile(db, r.box.String("pgsql/idxconf.sql"), suffix)
 		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix)
 	}
 	return nil
@@ -143,7 +147,9 @@ func (r *Rotator) DropTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
-		r.dbExecPartitionFile(db, r.box.String("pgsql/droppar.sql"), suffix, duration, r.sipStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/droplog.sql"), suffix, duration, r.logStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/dropqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecPartitionFile(db, r.box.String("pgsql/dropsip.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
 }
