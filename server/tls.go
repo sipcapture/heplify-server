@@ -11,10 +11,11 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/negbie/heplify-server/logp"
 )
 
 var (
@@ -61,7 +62,7 @@ func NewCertificateAuthority() *CertificateAuthority {
 	if err != nil {
 		ca, err = CertificateAuthorityFromScratch()
 		if err != nil {
-			log.Fatal(err)
+			logp.Critical("%v", err)
 		}
 	}
 	return ca
@@ -112,7 +113,7 @@ func CertificateAuthorityFromScratch() (*CertificateAuthority, error) {
 	}
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	log.Printf("wrote certificate authority to heplify-server-cert.pem")
+	logp.Info("wrote certificate authority to heplify-server-cert.pem")
 
 	// write the private key to disk
 	keyOut, err := os.OpenFile("heplify-server-key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -121,7 +122,7 @@ func CertificateAuthorityFromScratch() (*CertificateAuthority, error) {
 	}
 	pem.Encode(keyOut, pemBlockForKey(priv))
 	keyOut.Close()
-	log.Printf("wrote private key to heplify-server-key.pem")
+	logp.Info("wrote private key to heplify-server-key.pem")
 
 	// return the certificate authority by reading from disk
 	return CertificateAuthorityFromFile()
@@ -149,7 +150,7 @@ func (ca *CertificateAuthority) GetCertificate(h *tls.ClientHelloInfo) (*tls.Cer
 	if h.ServerName == "" {
 		h.ServerName = defaultServerName()
 	}
-	log.Printf("%s -> %s", h.Conn.RemoteAddr(), h.ServerName)
+	logp.Info("%s -> %s", h.Conn.RemoteAddr(), h.ServerName)
 
 	// fetch previously signed certificate from storage if it exists
 	if cert, ok := ca.store[h.ServerName]; ok {
