@@ -2,6 +2,7 @@ package input
 
 import (
 	"bytes"
+	"crypto/tls"
 	"net"
 	"runtime"
 	"sync"
@@ -80,7 +81,7 @@ func (h *HEPInput) Run() {
 			logp.Critical("%v", err)
 		}
 		defer uc.Close()
-	} else if config.Setting.Network == "tcp" {
+	} else if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
 		ta, err = net.ResolveTCPAddr("tcp", h.addr)
 		if err != nil {
 			logp.Critical("%v", err)
@@ -155,12 +156,21 @@ func (h *HEPInput) Run() {
 			atomic.AddUint64(&h.stats.PktCount, 1)
 			inCh <- buf[:n]
 		}
-	} else if config.Setting.Network == "tcp" {
+	} else if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
 		h.serveTCP(tl)
 	}
 }
 
-func (h *HEPInput) serveTCP(listener *net.TCPListener) {
+func (h *HEPInput) serveTCP(tcpListener *net.TCPListener) {
+	var listener net.Listener
+	if config.Setting.Network == "tls" {
+		ca := NewCertificateAuthority()
+		listener = tls.NewListener(tcpListener, &tls.Config{
+			GetCertificate: ca.GetCertificate,
+		})
+	} else {
+		listener = tcpListener
+	}
 	defer h.wg.Done()
 	for {
 		select {
@@ -169,8 +179,8 @@ func (h *HEPInput) serveTCP(listener *net.TCPListener) {
 			return
 		default:
 		}
-		listener.SetDeadline(time.Now().Add(1e9))
-		conn, err := listener.AcceptTCP()
+		tcpListener.SetDeadline(time.Now().Add(1e9))
+		conn, err := listener.Accept()
 		if nil != err {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
@@ -181,7 +191,7 @@ func (h *HEPInput) serveTCP(listener *net.TCPListener) {
 	}
 }
 
-func (h *HEPInput) handleTCP(tc *net.TCPConn) {
+func (h *HEPInput) handleTCP(tc net.Conn) {
 	defer tc.Close()
 	defer h.wg.Done()
 	for {
@@ -213,7 +223,7 @@ func (h *HEPInput) stopTCP() {
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
 	h.stop = true
-	if config.Setting.Network == "tcp" {
+	if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
 		h.stopTCP()
 	}
 	time.Sleep(2 * time.Second)
