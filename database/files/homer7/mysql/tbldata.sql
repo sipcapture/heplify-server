@@ -66,7 +66,7 @@ PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
     PARTITION pPartitionName_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('PartitionDate 00:00:00') )
 );
 
--- name: create-registration-table
+-- name: create-register-table
 CREATE TABLE IF NOT EXISTS `hep_proto_1_register_TableDate` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `gid` int(10) NOT NULL DEFAULT 0,
