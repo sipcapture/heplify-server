@@ -211,9 +211,9 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						short(pkt.SIP.ContentType, 256),
 						short(pkt.SIP.AuthVal, 256),
 						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIPString,
+						pkt.SrcIP,
 						pkt.SrcPort,
-						pkt.DstIPString,
+						pkt.DstIP,
 						pkt.DstPort,
 						pkt.SIP.ContactHost,
 						pkt.SIP.ContactPort,
@@ -259,9 +259,9 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						short(pkt.SIP.ContentType, 256),
 						short(pkt.SIP.AuthVal, 256),
 						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIPString,
+						pkt.SrcIP,
 						pkt.SrcPort,
-						pkt.DstIPString,
+						pkt.DstIP,
 						pkt.DstPort,
 						pkt.SIP.ContactHost,
 						pkt.SIP.ContactPort,
@@ -287,7 +287,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						ts,
 						tsNano,
 						pkt.CID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					rtcpCnt++
@@ -301,7 +301,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						ts,
 						tsNano,
 						pkt.CID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					reportCnt++
@@ -315,7 +315,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						ts,
 						tsNano,
 						pkt.CID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					dnsCnt++
@@ -329,7 +329,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						ts,
 						tsNano,
 						pkt.CID,
-						pkt.SrcIPString, pkt.SrcPort, pkt.DstIPString, pkt.DstPort,
+						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					logCnt++

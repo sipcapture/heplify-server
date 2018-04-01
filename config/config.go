@@ -4,6 +4,7 @@ var Setting HeplifyServer
 
 type HeplifyServer struct {
 	Network        string `default:"udp"`
+	Protobuf       bool   `default:"false"`
 	Mode           string `default:"homer5"`
 	HEPAddr        string `default:"0.0.0.0:9060"`
 	HEPWorkers     int    `default:"100"`
@@ -40,6 +41,7 @@ type HeplifyServer struct {
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
 		Network:        "udp",
+		Protobuf:       false,
 		Mode:           "homer5",
 		HEPAddr:        "0.0.0.0:9060",
 		HEPWorkers:     100,
