@@ -9,6 +9,7 @@ MQTopic         = ""
 PromAddr        = ""
 PromTargetIP    = ""
 PromTargetName  = ""
+RTPAgent        = false
 DBDriver        = "mysql"
 DBAddr          = "localhost:3306"
 DBUser          = "root"
