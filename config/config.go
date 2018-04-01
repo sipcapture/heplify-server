@@ -14,6 +14,7 @@ type HeplifyServer struct {
 	PromAddr       string `default:""`
 	PromTargetIP   string `default:""`
 	PromTargetName string `default:""`
+	RTPAgent       bool   `default:"false"`
 	DBDriver       string `default:"mysql"`
 	DBAddr         string `default:"localhost:3306"`
 	DBUser         string `default:"root"`
@@ -51,6 +52,7 @@ func NewConfig() *HeplifyServer {
 		PromAddr:       "",
 		PromTargetIP:   "",
 		PromTargetName: "",
+		RTPAgent:       false,
 		DBDriver:       "mysql",
 		DBAddr:         "localhost:3306",
 		DBUser:         "root",

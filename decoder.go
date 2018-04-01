@@ -153,7 +153,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case CID:
 			h.CID = string(chunkBody)
 		case Vlan:
-			h.Vlan = binary.BigEndian.Uint32(chunkBody)
+			h.Vlan = uint32(binary.BigEndian.Uint16(chunkBody))
 		default:
 		}
 		currentByte += chunkLength
