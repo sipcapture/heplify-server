@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"time"
 	"unicode/utf8"
@@ -56,28 +55,6 @@ const (
 	Vlan      = 18 // Chunk 0x0012 VLAN
 )
 
-// HEP represents a parsed HEP packet
-type HEP struct {
-	Version     byte
-	Protocol    byte
-	SrcIP       net.IP
-	DstIP       net.IP
-	SrcIPString string
-	DstIPString string
-	SrcPort     uint16
-	DstPort     uint16
-	Tsec        uint32
-	Tmsec       uint32
-	Timestamp   time.Time
-	ProtoType   byte
-	NodeID      uint32
-	NodePW      string
-	Payload     string
-	CID         string
-	Vlan        uint16
-	SIP         *sipparser.SipMsg
-}
-
 // DecodeHEP returns a parsed HEP message
 func DecodeHEP(packet []byte) (*HEP, error) {
 	hep := &HEP{}
@@ -89,11 +66,15 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 }
 
 func (h *HEP) parse(packet []byte) error {
-	if packet[0] != 0x48 || packet[1] != 0x45 || packet[2] != 0x50 || packet[3] != 0x33 {
-		return errors.New("Not a valid HEP3 packet")
+	var err error
+	if config.Setting.Protobuf {
+		err = h.Unmarshal(packet)
+	} else if packet[0] == 0x48 && packet[1] == 0x45 && packet[2] == 0x50 && packet[3] == 0x33 {
+		err = h.parseHEP(packet)
+	} else {
+		return errors.New("Received invalid HEP3 packet")
 	}
 
-	err := h.parseHEP(packet)
 	if h.ProtoType == 0 {
 		return nil
 	} else if err != nil {
@@ -138,31 +119,31 @@ func (h *HEP) parseHEP(packet []byte) error {
 
 		switch chunkType {
 		case Version:
-			h.Version = chunkBody[0]
+			h.Version = uint32(chunkBody[0])
 		case Protocol:
-			h.Protocol = chunkBody[0]
+			h.Protocol = uint32(chunkBody[0])
 		case IP4SrcIP:
-			h.SrcIP = chunkBody
-			h.SrcIPString = h.SrcIP.String()
+			h.NetSrcIP = chunkBody
+			h.SrcIP = h.NetSrcIP.String()
 		case IP4DstIP:
-			h.DstIP = chunkBody
-			h.DstIPString = h.DstIP.String()
+			h.NetDstIP = chunkBody
+			h.DstIP = h.NetDstIP.String()
 		case IP6SrcIP:
-			h.SrcIP = chunkBody
-			h.SrcIPString = h.SrcIP.String()
+			h.NetSrcIP = chunkBody
+			h.SrcIP = h.NetSrcIP.String()
 		case IP6DstIP:
-			h.DstIP = chunkBody
-			h.DstIPString = h.DstIP.String()
+			h.NetDstIP = chunkBody
+			h.DstIP = h.NetDstIP.String()
 		case SrcPort:
-			h.SrcPort = binary.BigEndian.Uint16(chunkBody)
+			h.SrcPort = uint32(binary.BigEndian.Uint16(chunkBody))
 		case DstPort:
-			h.DstPort = binary.BigEndian.Uint16(chunkBody)
+			h.DstPort = uint32(binary.BigEndian.Uint16(chunkBody))
 		case Tsec:
 			h.Tsec = binary.BigEndian.Uint32(chunkBody)
 		case Tmsec:
 			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
 		case ProtoType:
-			h.ProtoType = chunkBody[0]
+			h.ProtoType = uint32(chunkBody[0])
 		case NodeID:
 			h.NodeID = binary.BigEndian.Uint32(chunkBody)
 		case NodePW:
@@ -172,7 +153,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case CID:
 			h.CID = string(chunkBody)
 		case Vlan:
-			h.Vlan = binary.BigEndian.Uint16(chunkBody)
+			h.Vlan = binary.BigEndian.Uint32(chunkBody)
 		default:
 		}
 		currentByte += chunkLength
@@ -222,49 +203,49 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	// Chunk IP protocol family (0x02=IPv4, 0x0a=IPv6)
 	w.Write([]byte{0x00, 0x00, 0x00, 0x01})
 	w.Write(hepLen7)
-	w.WriteByte(h.Version)
+	w.WriteByte(byte(h.Version))
 
 	// Chunk IP protocol ID (0x06=TCP, 0x11=UDP)
 	w.Write([]byte{0x00, 0x00, 0x00, 0x02})
 	w.Write(hepLen7)
-	w.WriteByte(h.Protocol)
+	w.WriteByte(byte(h.Protocol))
 
 	if h.Version == 0x02 {
 		// Chunk IPv4 source address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x03})
-		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.SrcIP)))
+		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.NetSrcIP)))
 		w.Write(hepLen)
-		w.Write([]byte(h.SrcIP))
+		w.Write([]byte(h.NetSrcIP))
 
 		// Chunk IPv4 destination address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x04})
-		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.DstIP)))
+		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.NetDstIP)))
 		w.Write(hepLen)
-		w.Write([]byte(h.DstIP))
+		w.Write([]byte(h.NetDstIP))
 	} else if h.Version == 0x0a {
 		// Chunk IPv6 source address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x05})
-		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.SrcIP)))
+		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.NetSrcIP)))
 		w.Write(hepLen)
-		w.Write([]byte(h.SrcIP))
+		w.Write([]byte(h.NetSrcIP))
 
 		// Chunk IPv6 destination address
 		w.Write([]byte{0x00, 0x00, 0x00, 0x06})
-		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.DstIP)))
+		binary.BigEndian.PutUint16(hepLen, 6+uint16(len(h.NetDstIP)))
 		w.Write(hepLen)
-		w.Write([]byte(h.DstIP))
+		w.Write([]byte(h.NetDstIP))
 	}
 
 	// Chunk protocol source port
 	w.Write([]byte{0x00, 0x00, 0x00, 0x07})
 	w.Write(hepLen8)
-	binary.BigEndian.PutUint16(chunck16, h.SrcPort)
+	binary.BigEndian.PutUint16(chunck16, uint16(h.SrcPort))
 	w.Write(chunck16)
 
 	// Chunk protocol destination port
 	w.Write([]byte{0x00, 0x00, 0x00, 0x08})
 	w.Write(hepLen8)
-	binary.BigEndian.PutUint16(chunck16, h.DstPort)
+	binary.BigEndian.PutUint16(chunck16, uint16(h.DstPort))
 	w.Write(chunck16)
 
 	// Chunk unix timestamp, seconds
@@ -282,7 +263,7 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	// Chunk protocol type (DNS, LOG, RTCP, SIP)
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0b})
 	w.Write(hepLen7)
-	w.WriteByte(h.ProtoType)
+	w.WriteByte(byte(h.ProtoType))
 
 	// Chunk capture agent ID
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0c})
