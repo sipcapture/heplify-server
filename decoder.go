@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/cespare/xxhash"
 	"github.com/coocood/freecache"
 	raven "github.com/getsentry/raven-go"
 	"github.com/negbie/heplify-server/config"
@@ -88,6 +89,7 @@ func (h *HEP) parse(packet []byte) error {
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
+		h.normPayload()
 		err = h.parseSIP()
 		if err != nil {
 			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
@@ -149,7 +151,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case NodePW:
 			h.NodePW = string(chunkBody)
 		case Payload:
-			h.Payload = h.normPayload(chunkBody)
+			h.Payload = string(chunkBody)
 		case CID:
 			h.CID = string(chunkBody)
 		case Vlan:
@@ -312,30 +314,29 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 	return w.Bytes()
 }
 
-func (h *HEP) normPayload(pb []byte) string {
+func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
-		_, err := dedup.Get(pb)
+		hashVal := int64(xxhash.Sum64String(h.Payload))
+		_, err := dedup.GetInt(hashVal)
 		if err == nil {
 			h.ProtoType = 0
-			return ""
 		}
-		err = dedup.Set(pb, nil, 1)
+		err = dedup.SetInt(hashVal, nil, 1)
 		if err != nil {
 			logp.Warn("%v", err)
 		}
 	}
-	if !utf8.Valid(pb) {
-		v := make([]rune, 0, len(pb))
-		for i, r := range pb {
-			if rune(r) == utf8.RuneError {
-				_, size := utf8.DecodeRune(pb[i:])
+	if !utf8.ValidString(h.Payload) {
+		v := make([]rune, 0, len(h.Payload))
+		for i, r := range h.Payload {
+			if r == utf8.RuneError {
+				_, size := utf8.DecodeRuneInString(h.Payload[i:])
 				if size == 1 {
 					continue
 				}
 			}
-			v = append(v, rune(r))
+			v = append(v, r)
 		}
-		return string(v)
+		h.Payload = string(v)
 	}
-	return string(pb)
 }
