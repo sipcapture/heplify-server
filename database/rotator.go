@@ -231,15 +231,15 @@ func (r *Rotator) createTables() {
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d))
+	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
 	oldName := "pnr0000"
 	newName := "pnr0"
 
-	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldStart := "StartTime"
 	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
 
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldEnd := "EndTime"
 	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
