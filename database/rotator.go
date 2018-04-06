@@ -231,15 +231,15 @@ func (r *Rotator) createTables() {
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d))
+	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
 	oldName := "pnr0000"
 	newName := "pnr0"
 
-	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldStart := "StartTime"
 	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
 
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldEnd := "EndTime"
 	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
@@ -284,10 +284,16 @@ func setStep(name string) (step int) {
 	switch name {
 	case "5m":
 		step = 5
+	case "10m":
+		step = 10
 	case "15m":
 		step = 15
+	case "20m":
+		step = 20
 	case "30m":
 		step = 30
+	case "45m":
+		step = 45
 	case "1h":
 		step = 60
 	case "2h":
