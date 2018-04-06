@@ -284,10 +284,16 @@ func setStep(name string) (step int) {
 	switch name {
 	case "5m":
 		step = 5
+	case "10m":
+		step = 10
 	case "15m":
 		step = 15
+	case "20m":
+		step = 20
 	case "30m":
 		step = 30
+	case "45m":
+		step = 45
 	case "1h":
 		step = 60
 	case "2h":
