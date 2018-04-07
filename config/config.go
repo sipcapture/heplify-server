@@ -21,13 +21,13 @@ type HeplifyServer struct {
 	DBPass         string `default:""`
 	DBDataTable    string `default:"homer_data"`
 	DBConfTable    string `default:"homer_configuration"`
-	DBPath         string `default:""`
+	DBTableSpace   string `default:""`
 	DBBulk         int    `default:"200"`
 	DBTimer        int    `default:"2"`
 	DBRotate       bool   `default:"true"`
-	DBRotateLog    string `default:"6h"`
-	DBRotateSip    string `default:"2h"`
-	DBRotateQos    string `default:"12h"`
+	DBPartLog      string `default:"6h"`
+	DBPartSip      string `default:"2h"`
+	DBPartQos      string `default:"12h"`
 	DBDropDays     int    `default:"0"`
 	Dedup          bool   `default:"false"`
 	AlegID         string `default:"x-cid"`
@@ -58,13 +58,13 @@ func NewConfig() *HeplifyServer {
 		DBPass:         "",
 		DBDataTable:    "homer_data",
 		DBConfTable:    "homer_configuration",
-		DBPath:         "",
+		DBTableSpace:   "",
 		DBBulk:         200,
 		DBTimer:        2,
 		DBRotate:       true,
-		DBRotateLog:    "6h",
-		DBRotateSip:    "2h",
-		DBRotateQos:    "12h",
+		DBPartLog:      "6h",
+		DBPartSip:      "2h",
+		DBPartQos:      "12h",
 		DBDropDays:     0,
 		Dedup:          false,
 		AlegID:         "x-cid",

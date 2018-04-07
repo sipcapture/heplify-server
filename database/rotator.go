@@ -27,9 +27,9 @@ func NewRotator(b *packr.Box) *Rotator {
 	r := &Rotator{}
 	r.addr = strings.Split(config.Setting.DBAddr, ":")
 	r.box = b
-	r.logStep = setStep(config.Setting.DBRotateLog)
-	r.qosStep = setStep(config.Setting.DBRotateQos)
-	r.sipStep = setStep(config.Setting.DBRotateSip)
+	r.logStep = setStep(config.Setting.DBPartLog)
+	r.qosStep = setStep(config.Setting.DBPartQos)
+	r.sipStep = setStep(config.Setting.DBPartSip)
 	return r
 }
 
@@ -66,7 +66,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				r.dbExec(db, "GRANT postgres to homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
-				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBPath+"';")
+				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBTableSpace+"';")
 				r.dbExec(db, "GRANT ALL ON TABLESPACE homer TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
