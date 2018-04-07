@@ -305,8 +305,8 @@ func setStep(name string) (step int) {
 	case "1d":
 		step = 1440
 	default:
-		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 15m, 5m]", name)
-		step = 1440
+		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 20m, 15m, 10m, 5m]", name)
+		step = 120
 	}
 	return
 }

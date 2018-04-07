@@ -11,7 +11,6 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/coocood/freecache"
-	raven "github.com/getsentry/raven-go"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/sipparser"
@@ -33,7 +32,7 @@ var (
 	hepLen10 = []byte{0x00, 0x0a}
 	chunck16 = []byte{0x00, 0x00}
 	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
-	dedup    = freecache.NewCache(10 * 1024 * 1024)
+	dedup    = freecache.NewCache(20 * 1024 * 1024)
 )
 
 // HEP chuncks
@@ -75,21 +74,20 @@ func (h *HEP) parse(packet []byte) error {
 	} else {
 		return errors.New("Received invalid HEP3 packet")
 	}
+	if err != nil {
+		logp.Warn("%v", err)
+		return err
+	}
+
+	h.normPayload()
 
 	if h.ProtoType == 0 {
 		return nil
-	} else if err != nil {
-		logp.Warn("%v", err)
-		if config.Setting.SentryDSN != "" {
-			raven.CaptureError(err, nil)
-		}
-		return err
 	}
 
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
-		h.normPayload()
 		err = h.parseSIP()
 		if err != nil {
 			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
@@ -320,8 +318,9 @@ func (h *HEP) normPayload() {
 		_, err := dedup.GetInt(hashVal)
 		if err == nil {
 			h.ProtoType = 0
+			return
 		}
-		err = dedup.SetInt(hashVal, nil, 1)
+		err = dedup.SetInt(hashVal, nil, 2)
 		if err != nil {
 			logp.Warn("%v", err)
 		}

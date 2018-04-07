@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	raven "github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
@@ -253,9 +252,6 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 	_, err := s.dbs.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
-		if config.Setting.SentryDSN != "" {
-			raven.CaptureError(err, nil)
-		}
 	}
 }
 

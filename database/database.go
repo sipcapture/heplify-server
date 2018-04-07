@@ -19,9 +19,9 @@ type DBHandler interface {
 }
 
 func New(name string) *Database {
-	if config.Setting.Mode == "homer5" {
+	if config.Setting.DBShema == "homer5" {
 		name += "Homer5"
-	} else if config.Setting.Mode == "homer7" {
+	} else if config.Setting.DBShema == "homer7" {
 		name += "Homer7"
 	}
 	var register = map[string]DBHandler{
@@ -45,8 +45,8 @@ func (d *Database) Run() error {
 	if config.Setting.DBDriver != "mysql" && config.Setting.DBDriver != "postgres" {
 		return fmt.Errorf("wrong database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
 	}
-	if config.Setting.Mode != "homer5" && config.Setting.Mode != "homer7" {
-		return fmt.Errorf("wrong mode: %s, please use homer5 or homer7", config.Setting.Mode)
+	if config.Setting.DBShema != "homer5" && config.Setting.DBShema != "homer7" {
+		return fmt.Errorf("wrong DBShema: %s, please use homer5 or homer7", config.Setting.DBShema)
 	}
 
 	err = d.DBH.setup()

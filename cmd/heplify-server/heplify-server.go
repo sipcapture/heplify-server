@@ -10,7 +10,6 @@ import (
 	//"net"
 	//_ "net/http/pprof"
 
-	raven "github.com/getsentry/raven-go"
 	"github.com/koding/multiconfig"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
@@ -79,10 +78,6 @@ func main() {
 	var sigCh = make(chan os.Signal, 1)
 
 	//go http.ListenAndServe(":8181", http.DefaultServeMux)
-
-	if config.Setting.SentryDSN != "" {
-		raven.SetDSN(config.Setting.SentryDSN)
-	}
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	hep := input.NewHEP()
