@@ -29,6 +29,7 @@ type HeplifyServer struct {
 	DBPartSip      string `default:"2h"`
 	DBPartQos      string `default:"12h"`
 	DBDropDays     int    `default:"0"`
+	DBDropOnStart  bool   `default:"false"`
 	Dedup          bool   `default:"false"`
 	AlegID         string `default:"x-cid"`
 	LogDbg         string `default:""`
@@ -66,6 +67,7 @@ func NewConfig() *HeplifyServer {
 		DBPartSip:      "2h",
 		DBPartQos:      "12h",
 		DBDropDays:     0,
+		DBDropOnStart:  false,
 		Dedup:          false,
 		AlegID:         "x-cid",
 		LogDbg:         "",

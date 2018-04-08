@@ -24,6 +24,7 @@ DBPartLog       = "6h"
 DBPartSip       = "2h"
 DBPartQos       = "12h"
 DBDropDays      = 0
+DBDropOnStart   = false
 Dedup           = false
 AlegID          = "x-cid"
 LogDbg          = ""

@@ -80,8 +80,7 @@ type SQLHomer5 struct {
 	//dbc     *sql.DB
 	dbc        *dbr.Connection
 	dbs        *dbr.Session
-	sipBulkCnt int
-	rtcBulkCnt int
+	bulkCnt    int
 	sipBulkVal string
 	rtcBulkVal string
 }
@@ -128,18 +127,13 @@ func (s *SQLHomer5) setup() error {
 	s.dbc.SetMaxIdleConns(40)
 	s.dbs = s.dbc.NewSession(nil)
 
-	s.sipBulkCnt = config.Setting.DBBulk
-	s.rtcBulkCnt = config.Setting.DBBulk / 10
-
-	if s.sipBulkCnt < 1 {
-		s.sipBulkCnt = 1
-	}
-	if s.rtcBulkCnt < 1 {
-		s.rtcBulkCnt = 1
+	s.bulkCnt = config.Setting.DBBulk
+	if s.bulkCnt < 1 {
+		s.bulkCnt = 1
 	}
 
-	s.sipBulkVal = s.createSipQueryValues(s.sipBulkCnt, sipVal)
-	s.rtcBulkVal = s.createRtcQueryValues(s.rtcBulkCnt, rtcVal)
+	s.sipBulkVal = s.createSipQueryValues(s.bulkCnt, sipVal)
+	s.rtcBulkVal = s.createRtcQueryValues(s.bulkCnt, rtcVal)
 
 	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 	return nil
@@ -153,12 +147,12 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 		ts         string
 		tsNano     int64
 		ok         bool
-		regRows    = make([]interface{}, 0, s.sipBulkCnt)
-		callRows   = make([]interface{}, 0, s.sipBulkCnt)
-		dnsRows    = make([]interface{}, 0, s.rtcBulkCnt)
-		logRows    = make([]interface{}, 0, s.rtcBulkCnt)
-		rtcpRows   = make([]interface{}, 0, s.rtcBulkCnt)
-		reportRows = make([]interface{}, 0, s.rtcBulkCnt)
+		regRows    = make([]interface{}, 0, s.bulkCnt)
+		callRows   = make([]interface{}, 0, s.bulkCnt)
+		dnsRows    = make([]interface{}, 0, s.bulkCnt)
+		logRows    = make([]interface{}, 0, s.bulkCnt)
+		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
+		reportRows = make([]interface{}, 0, s.bulkCnt)
 		timer      = config.Setting.DBTimer
 	)
 
@@ -225,7 +219,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						short(pkt.Payload, 3000)}...)
 
 					regCnt++
-					if regCnt == s.sipBulkCnt {
+					if regCnt == s.bulkCnt {
 						s.bulkInsert("register", regRows, s.sipBulkVal)
 						regRows = []interface{}{}
 						regCnt = 0
@@ -273,7 +267,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						short(pkt.Payload, 3000)}...)
 
 					callCnt++
-					if callCnt == s.sipBulkCnt {
+					if callCnt == s.bulkCnt {
 						s.bulkInsert("call", callRows, s.sipBulkVal)
 						callRows = []interface{}{}
 						callCnt = 0
@@ -290,7 +284,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					rtcpCnt++
-					if rtcpCnt == s.rtcBulkCnt {
+					if rtcpCnt == s.bulkCnt {
 						s.bulkInsert("rtcp", rtcpRows, s.rtcBulkVal)
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
@@ -304,7 +298,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					reportCnt++
-					if reportCnt == s.rtcBulkCnt {
+					if reportCnt == s.bulkCnt {
 						s.bulkInsert("report", reportRows, s.rtcBulkVal)
 						reportRows = []interface{}{}
 						reportCnt = 0
@@ -318,7 +312,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					dnsCnt++
-					if dnsCnt == s.rtcBulkCnt {
+					if dnsCnt == s.bulkCnt {
 						s.bulkInsert("dns", dnsRows, s.rtcBulkVal)
 						dnsRows = []interface{}{}
 						dnsCnt = 0
@@ -332,7 +326,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					logCnt++
-					if logCnt == s.rtcBulkCnt {
+					if logCnt == s.bulkCnt {
 						s.bulkInsert("log", logRows, s.rtcBulkVal)
 						logRows = []interface{}{}
 						logCnt = 0

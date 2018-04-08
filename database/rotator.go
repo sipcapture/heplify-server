@@ -228,6 +228,11 @@ func (r *Rotator) createTables() {
 	if err := r.CreateDataTables(1); err != nil {
 		logp.Err("%v", err)
 	}
+	if config.Setting.DBDropOnStart && config.Setting.DBDropDays != 0 {
+		if err := r.DropTables(config.Setting.DBDropDays); err != nil {
+			logp.Err("%v", err)
+		}
+	}
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
