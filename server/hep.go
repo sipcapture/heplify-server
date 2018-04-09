@@ -1,7 +1,6 @@
 package input
 
 import (
-	"bytes"
 	"crypto/tls"
 	"net"
 	"runtime"
@@ -229,22 +228,25 @@ func (h *HEPInput) End() {
 	time.Sleep(2 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)
+
+	/* 	for i := 0; i < config.Setting.HEPWorkers; i++ {
+		wQuit := <-h.pool
+		close(wQuit)
+	} */
+
 }
 
 func (h *HEPInput) hepWorker(shut chan struct{}) {
 	var (
 		hepPkt *decoder.HEP
 		msg    = hepBuffer.Get().([]byte)
-		buf    = new(bytes.Buffer)
 		err    error
 		ok     bool
 	)
 
 GO:
 	for {
-
 		hepBuffer.Put(msg[:8192])
-		buf.Reset()
 
 		select {
 		case <-shut:
@@ -320,11 +322,6 @@ func (h *HEPInput) logStats() {
 			atomic.StoreUint64(&h.stats.DupCount, 0)
 			atomic.StoreUint64(&h.stats.ErrCount, 0)
 
-			logp.Info("Current channel queue length Input: %d, Database: %d, Metric: %d",
-				len(inCh),
-				len(dbCh),
-				len(mCh),
-			)
 		}
 	}
 }
