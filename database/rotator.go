@@ -86,7 +86,9 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tbldata.sql"), suffix)
+		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldatalog.sql"), suffix, duration, r.logStep)
+		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldataqos.sql"), suffix, duration, r.qosStep)
+		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldatasip.sql"), suffix, duration, r.sipStep)
 		r.dbExecPartitionFile(db, r.box.String("mysql/parlog.sql"), suffix, duration, r.logStep)
 		r.dbExecPartitionFile(db, r.box.String("mysql/parqos.sql"), suffix, duration, r.qosStep)
 		r.dbExecPartitionFile(db, r.box.String("mysql/parsip.sql"), suffix, duration, r.sipStep)
@@ -152,6 +154,29 @@ func (r *Rotator) DropTables(duration int) (err error) {
 		r.dbExecPartitionFile(db, r.box.String("pgsql/dropsip.sql"), suffix, duration, r.sipStep)
 	}
 	return nil
+}
+
+func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
+	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
+	dot, err := dotsql.LoadFromString(pattern.Replace(file))
+	if err != nil {
+		logp.Err("%s\n\n", err)
+	}
+
+	for _, query := range dot.QueryMap() {
+		oldEnd := "EndTime"
+		
+		TimePos := strings.Index(query, oldEnd)
+		if TimePos != -1{
+			endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
+			newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
+			query = strings.Replace(query, oldEnd, newEnd, -1)
+		}
+		
+		logp.Debug("rotator", "db query:\n%s\n\n", query)
+		_, err := db.Exec(query)
+		checkDBErr(err)
+	}
 }
 
 func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Replacer) {
@@ -234,29 +259,25 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
 	oldName := "pnr0000"
 	newName := "pnr0"
+	OriQuery := query
 
 	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldStart := "StartTime"
-	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
 
 	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
 	oldEnd := "EndTime"
-	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
-	for i := 0; i < 1440/p; i++ {
-		if i > 0 {
-			newName = "pnr" + strconv.Itoa(i)
-			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
-			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
-		}
+	for i := 1; i < 1440/p; i++ {
+		query := OriQuery
+		newName = "pnr" + strconv.Itoa(i)
+		newStart := startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
+		newEnd := endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
+
 		query = strings.Replace(query, oldName, newName, -1)
-		oldName = newName
 
 		query = strings.Replace(query, oldStart, newStart, -1)
-		oldStart = newStart
 
-		query = strings.Replace(query, oldEnd+"');", newEnd+"');", -1)
-		oldEnd = newEnd
+		query = strings.Replace(query, oldEnd, newEnd, -1)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
