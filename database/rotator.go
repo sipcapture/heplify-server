@@ -236,23 +236,23 @@ func (r *Rotator) createTables() {
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
+	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	oldName := "pnr0000"
 	newName := "pnr0"
 
-	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldStart := "StartTime"
-	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
+	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05-07:00")
 
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldEnd := "EndTime"
-	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
+	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
 
 	for i := 0; i < 1440/p; i++ {
 		if i > 0 {
 			newName = "pnr" + strconv.Itoa(i)
-			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
-			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
+			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05-07:00")
+			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05-07:00")
 		}
 		query = strings.Replace(query, oldName, newName, -1)
 		oldName = newName
@@ -270,10 +270,12 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 }
 
 func replaceCreateDay(d int) strings.Replacer {
+	mT := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	mP := mT.Add(time.Hour * time.Duration(24*d)).Format("2006-01-02 15:04:05-07:00")
 	return *strings.NewReplacer(
 		"TableDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
 		"PartitionName", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("2006-01-02"),
+		"PartitionMin", mP,
 	)
 }
 
@@ -281,7 +283,6 @@ func replaceDropDay(d int) strings.Replacer {
 	return *strings.NewReplacer(
 		"TableDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
 		"PartitionName", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("2006-01-02"),
 	)
 }
 

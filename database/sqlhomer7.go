@@ -91,8 +91,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		pHeader    []byte
 		dHeader    []byte
 		ok         bool
-		regRows    = make([]interface{}, 0, s.bulkCnt)
 		callRows   = make([]interface{}, 0, s.bulkCnt)
+		regRows    = make([]interface{}, 0, s.bulkCnt)
 		dnsRows    = make([]interface{}, 0, s.bulkCnt)
 		logRows    = make([]interface{}, 0, s.bulkCnt)
 		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
@@ -115,7 +115,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			date = pkt.Timestamp.Format("2006-01-02 15:04:05")
+			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
 			pHeader = formProtocolHeader(pkt)
 			dHeader = formDataHeader(pkt, date)
 

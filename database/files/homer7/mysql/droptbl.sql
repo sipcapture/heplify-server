@@ -12,3 +12,6 @@ DROP TABLE hep_proto_1_call_TableDate;
 
 -- name: drop-register-table
 DROP TABLE hep_proto_1_register_TableDate;
+
+-- name: drop-default-table
+DROP TABLE hep_proto_1_default_TableDate;

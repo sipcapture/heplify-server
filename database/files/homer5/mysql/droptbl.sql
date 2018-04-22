@@ -12,3 +12,6 @@ DROP TABLE sip_capture_call_TableDate;
 
 -- name: drop-registration-table
 DROP TABLE sip_capture_registration_TableDate;
+
+-- name: drop-rest-table
+DROP TABLE sip_capture_rest_TableDate;

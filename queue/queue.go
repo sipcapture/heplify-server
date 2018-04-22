@@ -36,7 +36,7 @@ func (q *Queue) Run() error {
 	)
 
 	if config.Setting.MQDriver != "nats" && config.Setting.MQDriver != "nsq" {
-		return fmt.Errorf("wrong queue name: %s, please use nats or nsq", config.Setting.MQDriver)
+		return fmt.Errorf("Invalid message queue driver: %s, please use nats or nsq", config.Setting.MQDriver)
 	}
 
 	err = q.QH.setup()

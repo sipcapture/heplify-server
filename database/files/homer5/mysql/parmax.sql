@@ -12,3 +12,6 @@ ALTER TABLE sip_capture_call_TableDate ADD PARTITION (PARTITION pmax VALUES LESS
 
 -- name: create-partitionmax-sip_capture_registration
 ALTER TABLE sip_capture_registration_TableDate ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);
+
+-- name: create-partitionmax-sip_capture_rest
+ALTER TABLE sip_capture_rest_TableDate ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);

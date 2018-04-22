@@ -43,10 +43,10 @@ func (d *Database) Run() error {
 	)
 
 	if config.Setting.DBDriver != "mysql" && config.Setting.DBDriver != "postgres" {
-		return fmt.Errorf("wrong database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
+		return fmt.Errorf("Invalid database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
 	}
 	if config.Setting.DBShema != "homer5" && config.Setting.DBShema != "homer7" {
-		return fmt.Errorf("wrong DBShema: %s, please use homer5 or homer7", config.Setting.DBShema)
+		return fmt.Errorf("Invalid DBShema: %s, please use homer5 or homer7", config.Setting.DBShema)
 	}
 
 	err = d.DBH.setup()

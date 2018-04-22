@@ -12,3 +12,6 @@ ALTER TABLE hep_proto_1_call_TableDate ADD PARTITION (PARTITION pmax VALUES LESS
 
 -- name: create-partitionmax-hep_proto_1_register
 ALTER TABLE hep_proto_1_register_TableDate ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);
+
+-- name: create-partitionmax-hep_proto_1_default
+ALTER TABLE hep_proto_1_default_TableDate ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);
