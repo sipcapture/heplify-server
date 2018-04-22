@@ -1,8 +1,5 @@
-Network         = "udp"
-Protobuf        = false
 HEPAddr         = "0.0.0.0:9060"
-HEPWorkers      = 100
-MQName          = ""
+MQDriver        = ""
 MQAddr          = ""
 MQTopic         = ""
 PromAddr        = ""
@@ -35,7 +32,6 @@ Version         = false
 
 # Examples:
 # -------------------------------------
-# Network         = "tcp"
 # DBShema         = "homer7"
 # DBDriver        = "postgres"
 # DBTableSpace    = "/var/lib/postgresql/data/homer"

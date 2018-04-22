@@ -3,11 +3,8 @@ package config
 var Setting HeplifyServer
 
 type HeplifyServer struct {
-	Network        string `default:"udp"`
-	Protobuf       bool   `default:"false"`
 	HEPAddr        string `default:"0.0.0.0:9060"`
-	HEPWorkers     int    `default:"100"`
-	MQName         string `default:""`
+	MQDriver       string `default:""`
 	MQAddr         string `default:""`
 	MQTopic        string `default:""`
 	PromAddr       string `default:""`
@@ -41,11 +38,8 @@ type HeplifyServer struct {
 
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
-		Network:        "udp",
-		Protobuf:       false,
 		HEPAddr:        "0.0.0.0:9060",
-		HEPWorkers:     100,
-		MQName:         "",
+		MQDriver:       "",
 		MQAddr:         "",
 		MQTopic:        "",
 		PromAddr:       "",

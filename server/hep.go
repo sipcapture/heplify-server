@@ -18,11 +18,11 @@ import (
 
 type HEPInput struct {
 	addr    string
-	ch      chan bool
+	ch      chan struct{}
 	wg      *sync.WaitGroup
 	pool    chan chan struct{}
 	stats   HEPStats
-	stop    bool
+	isAlive bool
 	workers int
 }
 
@@ -35,9 +35,9 @@ type HEPStats struct {
 
 var (
 	inCh  = make(chan []byte, 10000)
-	dbCh  = make(chan *decoder.HEP, 10000)
+	dbCh  = make(chan *decoder.HEP, 20000)
 	mqCh  = make(chan []byte, 10000)
-	mCh   = make(chan *decoder.HEP, 10000)
+	pmCh  = make(chan *decoder.HEP, 10000)
 	dbCnt int
 	mqCnt int
 	mCnt  int
@@ -52,48 +52,26 @@ var (
 func NewHEP() *HEPInput {
 	h := &HEPInput{
 		addr:    config.Setting.HEPAddr,
-		ch:      make(chan bool),
+		ch:      make(chan struct{}),
 		wg:      &sync.WaitGroup{},
-		workers: config.Setting.HEPWorkers,
-		pool:    make(chan chan struct{}, runtime.NumCPU()*1e4),
+		workers: runtime.NumCPU() * 4,
+		pool:    make(chan chan struct{}, runtime.NumCPU()*1e2),
+		isAlive: true,
 	}
-	h.wg.Add(1)
 	return h
 }
 
 func (h *HEPInput) Run() {
-	var (
-		err error
-		ua  = &net.UDPAddr{}
-		uc  = &net.UDPConn{}
-		ta  = &net.TCPAddr{}
-		tl  = &net.TCPListener{}
-	)
-	if config.Setting.Network == "udp" {
-		ua, err = net.ResolveUDPAddr("udp", h.addr)
-		if err != nil {
-			logp.Critical("%v", err)
-		}
-
-		uc, err = net.ListenUDP("udp", ua)
-		if err != nil {
-			logp.Critical("%v", err)
-		}
-		defer uc.Close()
-	} else if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
-		ta, err = net.ResolveTCPAddr("tcp", h.addr)
-		if err != nil {
-			logp.Critical("%v", err)
-		}
-
-		tl, err = net.ListenTCP("tcp", ta)
-		if err != nil {
-			logp.Critical("%v", err)
-		}
-		defer tl.Close()
-	} else {
-		logp.Critical("Not supported network type %s", config.Setting.Network)
+	ua, err := net.ResolveUDPAddr("udp", h.addr)
+	if err != nil {
+		logp.Critical("%v", err)
 	}
+
+	uc, err := net.ListenUDP("udp", ua)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
+	defer uc.Close()
 
 	for n := 0; n < h.workers; n++ {
 		go func() {
@@ -114,9 +92,9 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	if config.Setting.MQAddr != "" && config.Setting.MQName != "" {
+	if config.Setting.MQAddr != "" && config.Setting.MQDriver != "" {
 		go func() {
-			q := queue.New(config.Setting.MQName)
+			q := queue.New(config.Setting.MQDriver)
 			q.Topic = config.Setting.MQTopic
 			q.Chan = mqCh
 
@@ -129,7 +107,7 @@ func (h *HEPInput) Run() {
 	if config.Setting.PromAddr != "" {
 		go func() {
 			m := metric.New("prometheus")
-			m.Chan = mCh
+			m.Chan = pmCh
 
 			if err := m.Run(); err != nil {
 				logp.Err("%v", err)
@@ -137,40 +115,36 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("hep input address: %s:%s, workders: %d\n", config.Setting.Network, h.addr, h.workers)
+	logp.Info("hep input address: %s, hep workers: %d\n", h.addr, h.workers)
 	go h.logStats()
+	go h.serveTLS()
 
-	if config.Setting.Network == "udp" {
-		for !h.stop {
-			uc.SetReadDeadline(time.Now().Add(1e9))
-			buf := hepBuffer.Get().([]byte)
-			n, _, err := uc.ReadFrom(buf)
-			if err != nil {
-				continue
-			} else if n > 8192 {
-				logp.Warn("received to big packet with %d bytes", n)
-				atomic.AddUint64(&h.stats.ErrCount, 1)
-				continue
-			}
-			atomic.AddUint64(&h.stats.PktCount, 1)
-			inCh <- buf[:n]
+	for h.isAlive {
+		uc.SetReadDeadline(time.Now().Add(1e9))
+		buf := hepBuffer.Get().([]byte)
+		n, _, err := uc.ReadFrom(buf)
+		if err != nil {
+			continue
+		} else if n > 8192 {
+			logp.Warn("received to big packet with %d bytes", n)
+			atomic.AddUint64(&h.stats.ErrCount, 1)
+			continue
 		}
-	} else if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
-		h.serveTCP(tl)
+		atomic.AddUint64(&h.stats.PktCount, 1)
+		inCh <- buf[:n]
 	}
 }
 
-func (h *HEPInput) serveTCP(tcpListener *net.TCPListener) {
-	var listener net.Listener
-	if config.Setting.Network == "tls" {
-		ca := NewCertificateAuthority()
-		listener = tls.NewListener(tcpListener, &tls.Config{
-			GetCertificate: ca.GetCertificate,
-		})
-	} else {
-		listener = tcpListener
+func (h *HEPInput) serveTLS() {
+	ca := NewCertificateAuthority()
+	listener, err := tls.Listen("tcp", h.addr, &tls.Config{
+		GetCertificate: ca.GetCertificate,
+	})
+	if err != nil {
+		logp.Err("%v", err)
+		return
 	}
-	defer h.wg.Done()
+
 	for {
 		select {
 		case <-h.ch:
@@ -178,20 +152,19 @@ func (h *HEPInput) serveTCP(tcpListener *net.TCPListener) {
 			return
 		default:
 		}
-		tcpListener.SetDeadline(time.Now().Add(1e9))
+
 		conn, err := listener.Accept()
-		if nil != err {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			}
+		if err != nil {
+			logp.Err("%v", err)
+			continue
 		}
 		h.wg.Add(1)
-		go h.handleTCP(conn)
+		go h.handleTLS(conn)
 	}
 }
 
-func (h *HEPInput) handleTCP(tc net.Conn) {
-	defer tc.Close()
+func (h *HEPInput) handleTLS(c net.Conn) {
+	defer c.Close()
 	defer h.wg.Done()
 	for {
 		select {
@@ -199,32 +172,35 @@ func (h *HEPInput) handleTCP(tc net.Conn) {
 			return
 		default:
 		}
-		tc.SetReadDeadline(time.Now().Add(1e9))
+
+		c.SetReadDeadline(time.Now().Add(1e9))
 		buf := hepBuffer.Get().([]byte)
-		n, err := tc.Read(buf)
-		if nil != err {
+		n, err := c.Read(buf)
+		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
 			} else {
 				return
 			}
+		} else if n > 8192 {
+			logp.Warn("received to big packet with %d bytes", n)
+			atomic.AddUint64(&h.stats.ErrCount, 1)
+			continue
 		}
 		atomic.AddUint64(&h.stats.PktCount, 1)
 		inCh <- buf[:n]
 	}
 }
 
-func (h *HEPInput) stopTCP() {
+func (h *HEPInput) closeTLS() {
 	close(h.ch)
 	h.wg.Wait()
 }
 
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
-	h.stop = true
-	if config.Setting.Network == "tcp" || config.Setting.Network == "tls" {
-		h.stopTCP()
-	}
+	h.isAlive = false
+	h.closeTLS()
 	time.Sleep(2 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)
@@ -282,7 +258,7 @@ GO:
 
 		if config.Setting.PromAddr != "" {
 			select {
-			case mCh <- hepPkt:
+			case pmCh <- hepPkt:
 			default:
 				mCnt++
 				if mCnt%128 == 0 {
@@ -321,7 +297,6 @@ func (h *HEPInput) logStats() {
 			atomic.StoreUint64(&h.stats.HEPCount, 0)
 			atomic.StoreUint64(&h.stats.DupCount, 0)
 			atomic.StoreUint64(&h.stats.ErrCount, 0)
-
 		}
 	}
 }

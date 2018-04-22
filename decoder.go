@@ -67,12 +67,10 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if config.Setting.Protobuf {
-		err = h.Unmarshal(packet)
-	} else if packet[0] == 0x48 && packet[1] == 0x45 && packet[2] == 0x50 && packet[3] == 0x33 {
+	if packet[0] == 0x48 && packet[1] == 0x45 && packet[2] == 0x50 && packet[3] == 0x33 {
 		err = h.parseHEP(packet)
 	} else {
-		return errors.New("Received invalid HEP3 packet")
+		err = h.Unmarshal(packet)
 	}
 	if err != nil {
 		logp.Warn("%v", err)

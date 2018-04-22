@@ -20,8 +20,8 @@ type QueueHandler interface {
 
 func New(name string) *Queue {
 	var register = map[string]QueueHandler{
-		"nsq":   new(NSQ),
-		"kafka": new(Kafka),
+		"nsq":  new(NSQ),
+		"nats": new(NATS),
 	}
 
 	return &Queue{
@@ -35,8 +35,8 @@ func (q *Queue) Run() error {
 		err error
 	)
 
-	if config.Setting.MQName != "kafka" && config.Setting.MQName != "nsq" {
-		return fmt.Errorf("wrong queue name: %s, please use kafka or nsq", config.Setting.MQName)
+	if config.Setting.MQDriver != "nats" && config.Setting.MQDriver != "nsq" {
+		return fmt.Errorf("wrong queue name: %s, please use nats or nsq", config.Setting.MQDriver)
 	}
 
 	err = q.QH.setup()

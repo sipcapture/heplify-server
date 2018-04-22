@@ -66,8 +66,8 @@ func (s *SQLHomer7) setup() error {
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(80)
-	s.dbc.SetMaxIdleConns(40)
+	s.dbc.SetMaxOpenConns(20)
+	s.dbc.SetMaxIdleConns(10)
 	s.dbs = s.dbc.NewSession(nil)
 
 	s.bulkCnt = config.Setting.DBBulk
