@@ -84,7 +84,7 @@ func (s *SQLHomer7) setup() error {
 
 func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 	var (
-		regCnt, callCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
+		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
 		pkt        *decoder.HEP
 		date       string
@@ -93,6 +93,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		ok         bool
 		callRows   = make([]interface{}, 0, s.bulkCnt)
 		regRows    = make([]interface{}, 0, s.bulkCnt)
+		defRows    = make([]interface{}, 0, s.bulkCnt)
 		dnsRows    = make([]interface{}, 0, s.bulkCnt)
 		logRows    = make([]interface{}, 0, s.bulkCnt)
 		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
@@ -120,7 +121,16 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			dHeader = formDataHeader(pkt, date)
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.CID != "" {
-				if pkt.SIP.CseqMethod == "REGISTER" {
+				switch pkt.SIP.CseqMethod {
+				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
+					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					callCnt++
+					if callCnt == s.bulkCnt {
+						s.bulkInsert("call", callRows, s.bulkVal)
+						callRows = []interface{}{}
+						callCnt = 0
+					}
+				case "REGISTER":
 					regRows = append(regRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					regCnt++
 					if regCnt == s.bulkCnt {
@@ -128,13 +138,13 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						regRows = []interface{}{}
 						regCnt = 0
 					}
-				} else {
-					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
-					callCnt++
-					if callCnt == s.bulkCnt {
-						s.bulkInsert("call", callRows, s.bulkVal)
-						callRows = []interface{}{}
-						callCnt = 0
+				default:
+					defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					defCnt++
+					if defCnt == s.bulkCnt {
+						s.bulkInsert("default", defRows, s.bulkVal)
+						defRows = []interface{}{}
+						defCnt = 0
 					}
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
@@ -174,17 +184,23 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				}
 			}
 		case <-ticker.C:
+			if callCnt > 1 {
+				l := len(callRows)
+				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				callRows = []interface{}{}
+				callCnt = 0
+			}
 			if regCnt > 1 {
 				l := len(regRows)
 				s.bulkInsert("register", regRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
-			if callCnt > 1 {
-				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
-				callRows = []interface{}{}
-				callCnt = 0
+			if defCnt > 1 {
+				l := len(defRows)
+				s.bulkInsert("default", defRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				defRows = []interface{}{}
+				defCnt = 0
 			}
 			if rtcpCnt > 1 {
 				l := len(rtcpRows)
@@ -221,6 +237,8 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 			query = "INSERT INTO hep_proto_1_call_" + time.Now().Format("20060102") + values
 		case "register":
 			query = "INSERT INTO hep_proto_1_register_" + time.Now().Format("20060102") + values
+		case "default":
+			query = "INSERT INTO hep_proto_1_default_" + time.Now().Format("20060102") + values
 		case "rtcp":
 			query = "INSERT INTO hep_proto_5_rtcp_" + time.Now().Format("20060102") + values
 		case "report":
@@ -236,6 +254,8 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 			query = "INSERT INTO hep_proto_1_call" + values
 		case "register":
 			query = "INSERT INTO hep_proto_1_register" + values
+		case "default":
+			query = "INSERT INTO hep_proto_1_default" + values
 		case "rtcp":
 			query = "INSERT INTO hep_proto_5_rtcp" + values
 		case "report":

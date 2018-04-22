@@ -270,19 +270,19 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 }
 
 func replaceCreateDay(d int) strings.Replacer {
-	mT := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	mP := mT.Add(time.Hour * time.Duration(24*d)).Format("2006-01-02 15:04:05-07:00")
+	md := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
+	mt := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	mp := mt.Add(time.Hour * time.Duration(24*d)).Format("2006-01-02 15:04:05-07:00")
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
-		"PartitionMin", mP,
+		"DayDate", md,
+		"PartitionMin", mp,
 	)
 }
 
 func replaceDropDay(d int) strings.Replacer {
+	md := time.Now().Add(time.Hour * time.Duration(-24*d)).Format("20060102")
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
+		"DayDate", md,
 	)
 }
 
