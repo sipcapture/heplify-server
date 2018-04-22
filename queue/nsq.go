@@ -9,6 +9,7 @@ import (
 	nsq "github.com/nsqio/go-nsq"
 )
 
+// NSQ producer struct
 type NSQ struct {
 	producer *nsq.Producer
 }
@@ -37,7 +38,7 @@ func (n *NSQ) add(topic string, qCh chan []byte) {
 		ok  bool
 	)
 
-	logp.Info("Run NSQ Output, server: %+v, topic: %s\n", config.Setting.MQAddr, topic)
+	logp.Info("Run NSQ Output, server: %s, topic: %s\n", config.Setting.MQAddr, topic)
 
 	for {
 		msg, ok = <-qCh

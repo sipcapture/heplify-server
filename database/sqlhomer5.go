@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	raven "github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	"github.com/gocraft/dbr"
@@ -81,8 +80,7 @@ type SQLHomer5 struct {
 	//dbc     *sql.DB
 	dbc        *dbr.Connection
 	dbs        *dbr.Session
-	sipBulkCnt int
-	rtcBulkCnt int
+	bulkCnt    int
 	sipBulkVal string
 	rtcBulkVal string
 }
@@ -125,22 +123,17 @@ func (s *SQLHomer5) setup() error {
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(80)
-	s.dbc.SetMaxIdleConns(40)
+	s.dbc.SetMaxOpenConns(20)
+	s.dbc.SetMaxIdleConns(10)
 	s.dbs = s.dbc.NewSession(nil)
 
-	s.sipBulkCnt = config.Setting.DBBulk
-	s.rtcBulkCnt = config.Setting.DBBulk / 10
-
-	if s.sipBulkCnt < 1 {
-		s.sipBulkCnt = 1
-	}
-	if s.rtcBulkCnt < 1 {
-		s.rtcBulkCnt = 1
+	s.bulkCnt = config.Setting.DBBulk
+	if s.bulkCnt < 1 {
+		s.bulkCnt = 1
 	}
 
-	s.sipBulkVal = s.createSipQueryValues(s.sipBulkCnt, sipVal)
-	s.rtcBulkVal = s.createRtcQueryValues(s.rtcBulkCnt, rtcVal)
+	s.sipBulkVal = s.createSipQueryValues(s.bulkCnt, sipVal)
+	s.rtcBulkVal = s.createRtcQueryValues(s.bulkCnt, rtcVal)
 
 	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 	return nil
@@ -148,18 +141,19 @@ func (s *SQLHomer5) setup() error {
 
 func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	var (
-		regCnt, callCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
+		callCnt, regCnt, restCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
 		pkt        *decoder.HEP
 		ts         string
 		tsNano     int64
 		ok         bool
-		regRows    = make([]interface{}, 0, s.sipBulkCnt)
-		callRows   = make([]interface{}, 0, s.sipBulkCnt)
-		dnsRows    = make([]interface{}, 0, s.rtcBulkCnt)
-		logRows    = make([]interface{}, 0, s.rtcBulkCnt)
-		rtcpRows   = make([]interface{}, 0, s.rtcBulkCnt)
-		reportRows = make([]interface{}, 0, s.rtcBulkCnt)
+		callRows   = make([]interface{}, 0, s.bulkCnt)
+		regRows    = make([]interface{}, 0, s.bulkCnt)
+		restRows   = make([]interface{}, 0, s.bulkCnt)
+		dnsRows    = make([]interface{}, 0, s.bulkCnt)
+		logRows    = make([]interface{}, 0, s.bulkCnt)
+		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
+		reportRows = make([]interface{}, 0, s.bulkCnt)
 		timer      = config.Setting.DBTimer
 	)
 
@@ -178,60 +172,12 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			ts = pkt.Timestamp.Format("2006-01-02 15:04:05")
+			ts = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
 			tsNano = pkt.Timestamp.UnixNano() / 1000
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-
-				if pkt.SIP.CseqMethod == "REGISTER" {
-					regRows = append(regRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.StartLine.Method, 50),
-						short(pkt.SIP.StartLine.RespText, 100),
-						short(pkt.SIP.StartLine.URI.Raw, 200),
-						short(pkt.SIP.StartLine.URI.User, 100),
-						short(pkt.SIP.StartLine.URI.Host, 150),
-						short(pkt.SIP.FromUser, 100),
-						short(pkt.SIP.FromHost, 150),
-						short(pkt.SIP.FromTag, 64),
-						short(pkt.SIP.ToUser, 100),
-						short(pkt.SIP.ToHost, 150),
-						short(pkt.SIP.ToTag, 64),
-						short(pkt.SIP.PaiUser, 100),
-						short(pkt.SIP.ContactUser, 120),
-						short(pkt.SIP.AuthUser, 120),
-						short(pkt.SIP.CallID, 120),
-						short(pkt.SIP.XCallID, 120),
-						short(pkt.SIP.ViaOne, 256),
-						short(pkt.SIP.ViaOneBranch, 80),
-						short(pkt.SIP.CseqVal, 25),
-						short(pkt.SIP.DiversionVal, 256),
-						pkt.SIP.ReasonVal,
-						short(pkt.SIP.ContentType, 256),
-						short(pkt.SIP.AuthVal, 256),
-						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIP,
-						pkt.SrcPort,
-						pkt.DstIP,
-						pkt.DstPort,
-						pkt.SIP.ContactHost,
-						pkt.SIP.ContactPort,
-						pkt.Protocol,
-						pkt.Version,
-						short(pkt.SIP.RTPStatVal, 256),
-						pkt.ProtoType,
-						pkt.NodeID,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
-					regCnt++
-					if regCnt == s.sipBulkCnt {
-						s.bulkInsert("register", regRows, s.sipBulkVal)
-						regRows = []interface{}{}
-						regCnt = 0
-					}
-				} else {
+				switch pkt.SIP.CseqMethod {
+				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, []interface{}{
 						ts,
 						tsNano,
@@ -274,11 +220,108 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						short(pkt.Payload, 3000)}...)
 
 					callCnt++
-					if callCnt == s.sipBulkCnt {
+					if callCnt == s.bulkCnt {
 						s.bulkInsert("call", callRows, s.sipBulkVal)
 						callRows = []interface{}{}
 						callCnt = 0
 					}
+				case "REGISTER":
+					regRows = append(regRows, []interface{}{
+						ts,
+						tsNano,
+						short(pkt.SIP.StartLine.Method, 50),
+						short(pkt.SIP.StartLine.RespText, 100),
+						short(pkt.SIP.StartLine.URI.Raw, 200),
+						short(pkt.SIP.StartLine.URI.User, 100),
+						short(pkt.SIP.StartLine.URI.Host, 150),
+						short(pkt.SIP.FromUser, 100),
+						short(pkt.SIP.FromHost, 150),
+						short(pkt.SIP.FromTag, 64),
+						short(pkt.SIP.ToUser, 100),
+						short(pkt.SIP.ToHost, 150),
+						short(pkt.SIP.ToTag, 64),
+						short(pkt.SIP.PaiUser, 100),
+						short(pkt.SIP.ContactUser, 120),
+						short(pkt.SIP.AuthUser, 120),
+						short(pkt.SIP.CallID, 120),
+						short(pkt.SIP.XCallID, 120),
+						short(pkt.SIP.ViaOne, 256),
+						short(pkt.SIP.ViaOneBranch, 80),
+						short(pkt.SIP.CseqVal, 25),
+						short(pkt.SIP.DiversionVal, 256),
+						pkt.SIP.ReasonVal,
+						short(pkt.SIP.ContentType, 256),
+						short(pkt.SIP.AuthVal, 256),
+						short(pkt.SIP.UserAgent, 256),
+						pkt.SrcIP,
+						pkt.SrcPort,
+						pkt.DstIP,
+						pkt.DstPort,
+						pkt.SIP.ContactHost,
+						pkt.SIP.ContactPort,
+						pkt.Protocol,
+						pkt.Version,
+						short(pkt.SIP.RTPStatVal, 256),
+						pkt.ProtoType,
+						pkt.NodeID,
+						short(pkt.SIP.CallID, 120),
+						short(pkt.Payload, 3000)}...)
+
+					regCnt++
+					if regCnt == s.bulkCnt {
+						s.bulkInsert("register", regRows, s.sipBulkVal)
+						regRows = []interface{}{}
+						regCnt = 0
+					}
+				default:
+					restRows = append(restRows, []interface{}{
+						ts,
+						tsNano,
+						short(pkt.SIP.StartLine.Method, 50),
+						short(pkt.SIP.StartLine.RespText, 100),
+						short(pkt.SIP.StartLine.URI.Raw, 200),
+						short(pkt.SIP.StartLine.URI.User, 100),
+						short(pkt.SIP.StartLine.URI.Host, 150),
+						short(pkt.SIP.FromUser, 100),
+						short(pkt.SIP.FromHost, 150),
+						short(pkt.SIP.FromTag, 64),
+						short(pkt.SIP.ToUser, 100),
+						short(pkt.SIP.ToHost, 150),
+						short(pkt.SIP.ToTag, 64),
+						short(pkt.SIP.PaiUser, 100),
+						short(pkt.SIP.ContactUser, 120),
+						short(pkt.SIP.AuthUser, 120),
+						short(pkt.SIP.CallID, 120),
+						short(pkt.SIP.XCallID, 120),
+						short(pkt.SIP.ViaOne, 256),
+						short(pkt.SIP.ViaOneBranch, 80),
+						short(pkt.SIP.CseqVal, 25),
+						short(pkt.SIP.DiversionVal, 256),
+						pkt.SIP.ReasonVal,
+						short(pkt.SIP.ContentType, 256),
+						short(pkt.SIP.AuthVal, 256),
+						short(pkt.SIP.UserAgent, 256),
+						pkt.SrcIP,
+						pkt.SrcPort,
+						pkt.DstIP,
+						pkt.DstPort,
+						pkt.SIP.ContactHost,
+						pkt.SIP.ContactPort,
+						pkt.Protocol,
+						pkt.Version,
+						short(pkt.SIP.RTPStatVal, 256),
+						pkt.ProtoType,
+						pkt.NodeID,
+						short(pkt.SIP.CallID, 120),
+						short(pkt.Payload, 3000)}...)
+
+					restCnt++
+					if restCnt == s.bulkCnt {
+						s.bulkInsert("rest", restRows, s.sipBulkVal)
+						restRows = []interface{}{}
+						restCnt = 0
+					}
+
 				}
 			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CID != "" {
 				switch pkt.ProtoType {
@@ -291,7 +334,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					rtcpCnt++
-					if rtcpCnt == s.rtcBulkCnt {
+					if rtcpCnt == s.bulkCnt {
 						s.bulkInsert("rtcp", rtcpRows, s.rtcBulkVal)
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
@@ -305,7 +348,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					reportCnt++
-					if reportCnt == s.rtcBulkCnt {
+					if reportCnt == s.bulkCnt {
 						s.bulkInsert("report", reportRows, s.rtcBulkVal)
 						reportRows = []interface{}{}
 						reportCnt = 0
@@ -319,7 +362,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					dnsCnt++
-					if dnsCnt == s.rtcBulkCnt {
+					if dnsCnt == s.bulkCnt {
 						s.bulkInsert("dns", dnsRows, s.rtcBulkVal)
 						dnsRows = []interface{}{}
 						dnsCnt = 0
@@ -333,7 +376,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
 
 					logCnt++
-					if logCnt == s.rtcBulkCnt {
+					if logCnt == s.bulkCnt {
 						s.bulkInsert("log", logRows, s.rtcBulkVal)
 						logRows = []interface{}{}
 						logCnt = 0
@@ -341,17 +384,23 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				}
 			}
 		case <-ticker.C:
+			if callCnt > 1 {
+				l := len(callRows)
+				s.bulkInsert("call", callRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
+				callRows = []interface{}{}
+				callCnt = 0
+			}
 			if regCnt > 1 {
 				l := len(regRows)
 				s.bulkInsert("register", regRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
-			if callCnt > 1 {
-				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
-				callRows = []interface{}{}
-				callCnt = 0
+			if restCnt > 1 {
+				l := len(restRows)
+				s.bulkInsert("rest", restRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
+				restRows = []interface{}{}
+				restCnt = 0
 			}
 			if rtcpCnt > 1 {
 				l := len(rtcpRows)
@@ -388,6 +437,8 @@ func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) 
 			query = "INSERT INTO sip_capture_call_" + time.Now().Format("20060102") + values
 		case "register":
 			query = "INSERT INTO sip_capture_registration_" + time.Now().Format("20060102") + values
+		case "rest":
+			query = "INSERT INTO sip_capture_rest_" + time.Now().Format("20060102") + values
 		case "rtcp":
 			query = "INSERT INTO rtcp_capture_all_" + time.Now().Format("20060102") + values
 		case "report":
@@ -403,6 +454,8 @@ func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) 
 			query = "INSERT INTO sip_capture_call" + values
 		case "register":
 			query = "INSERT INTO sip_capture_registration" + values
+		case "rest":
+			query = "INSERT INTO sip_capture_rest" + values
 		case "rtcp":
 			query = "INSERT INTO rtcp_capture" + values
 		case "report":
@@ -419,9 +472,6 @@ func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) 
 	_, err := s.dbs.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
-		if config.Setting.SentryDSN != "" {
-			raven.CaptureError(err, nil)
-		}
 	}
 }
 

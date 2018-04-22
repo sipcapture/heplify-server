@@ -27,9 +27,9 @@ func NewRotator(b *packr.Box) *Rotator {
 	r := &Rotator{}
 	r.addr = strings.Split(config.Setting.DBAddr, ":")
 	r.box = b
-	r.logStep = setStep(config.Setting.DBRotateLog)
-	r.qosStep = setStep(config.Setting.DBRotateQos)
-	r.sipStep = setStep(config.Setting.DBRotateSip)
+	r.logStep = setStep(config.Setting.DBPartLog)
+	r.qosStep = setStep(config.Setting.DBPartQos)
+	r.sipStep = setStep(config.Setting.DBPartSip)
 	return r
 }
 
@@ -66,7 +66,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				r.dbExec(db, "GRANT postgres to homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
-				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBPath+"';")
+				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBTableSpace+"';")
 				r.dbExec(db, "GRANT ALL ON TABLESPACE homer TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
@@ -228,26 +228,31 @@ func (r *Rotator) createTables() {
 	if err := r.CreateDataTables(1); err != nil {
 		logp.Err("%v", err)
 	}
+	if config.Setting.DBDropOnStart && config.Setting.DBDropDays != 0 {
+		if err := r.DropTables(config.Setting.DBDropDays); err != nil {
+			logp.Err("%v", err)
+		}
+	}
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
+	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	oldName := "pnr0000"
 	newName := "pnr0"
 
-	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldStart := "StartTime"
-	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05")
+	newStart := startTime.Add(time.Minute * time.Duration(0)).Format("2006-01-02 15:04:05-07:00")
 
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).UTC()
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldEnd := "EndTime"
-	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
+	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
 
 	for i := 0; i < 1440/p; i++ {
 		if i > 0 {
 			newName = "pnr" + strconv.Itoa(i)
-			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
-			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
+			newStart = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05-07:00")
+			newEnd = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05-07:00")
 		}
 		query = strings.Replace(query, oldName, newName, -1)
 		oldName = newName
@@ -265,18 +270,19 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 }
 
 func replaceCreateDay(d int) strings.Replacer {
+	md := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
+	mt := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	mp := mt.Add(time.Hour * time.Duration(24*d)).Format("2006-01-02 15:04:05-07:00")
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*time.Duration(24*d)).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*time.Duration(24*d)).Format("2006-01-02"),
+		"DayDate", md,
+		"PartitionMin", mp,
 	)
 }
 
 func replaceDropDay(d int) strings.Replacer {
+	md := time.Now().Add(time.Hour * time.Duration(-24*d)).Format("20060102")
 	return *strings.NewReplacer(
-		"TableDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
-		"PartitionName", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("20060102"),
-		"PartitionDate", time.Now().Add(time.Hour*time.Duration(-24*d)).Format("2006-01-02"),
+		"DayDate", md,
 	)
 }
 
@@ -305,8 +311,8 @@ func setStep(name string) (step int) {
 	case "1d":
 		step = 1440
 	default:
-		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 15m, 5m]", name)
-		step = 1440
+		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 20m, 15m, 10m, 5m]", name)
+		step = 120
 	}
 	return
 }

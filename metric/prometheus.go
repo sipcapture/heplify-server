@@ -64,7 +64,7 @@ func (p *Prometheus) setup() (err error) {
 	if p.TargetIP[0] == "" && p.TargetName[0] == "" {
 		logp.Info("Start prometheus with no targets")
 		p.TargetEmpty = true
-		p.Cache = freecache.NewCache(80 * 1024 * 1024)
+		p.Cache = freecache.NewCache(60 * 1024 * 1024)
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
@@ -329,52 +329,52 @@ func (p *Prometheus) dissectRTCPStats(data []byte) {
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
-			if fraction_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_fraction_lost"].Set(normMax(fraction_lost))
+			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcp_fraction_lost"].Set(normMax(fractionLost))
 			}
 		case 1:
-			if packets_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_packets_lost"].Set(normMax(packets_lost))
+			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcp_packets_lost"].Set(normMax(packetsLost))
 			}
 		case 2:
-			if ia_jitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_jitter"].Set(normMax(ia_jitter))
+			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcp_jitter"].Set(normMax(iaJitter))
 			}
 		case 3:
 			if dlsr, err := jsonparser.ParseFloat(value); err == nil {
 				p.GaugeMetrics["heplify_rtcp_dlsr"].Set(normMax(dlsr))
 			}
 		case 4:
-			if fraction_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_fraction_lost"].Set(fraction_lost)
+			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_fraction_lost"].Set(fractionLost)
 			}
 		case 5:
-			if fraction_discard, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_fraction_discard"].Set(fraction_discard)
+			if fractionDiscard, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_fraction_discard"].Set(fractionDiscard)
 			}
 		case 6:
-			if burst_density, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_burst_density"].Set(burst_density)
+			if burstDensity, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_burst_density"].Set(burstDensity)
 			}
 		case 7:
-			if gap_density, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_gap_density"].Set(gap_density)
+			if gapDensity, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_gap_density"].Set(gapDensity)
 			}
 		case 8:
-			if burst_duration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_burst_duration"].Set(burst_duration)
+			if burstDuration, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_burst_duration"].Set(burstDuration)
 			}
 		case 9:
-			if gap_duration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_gap_duration"].Set(gap_duration)
+			if gapDuration, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_gap_duration"].Set(gapDuration)
 			}
 		case 10:
-			if round_trip_delay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_round_trip_delay"].Set(round_trip_delay)
+			if roundTripDelay, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_round_trip_delay"].Set(roundTripDelay)
 			}
 		case 11:
-			if end_system_delay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_end_system_delay"].Set(end_system_delay)
+			if endSystemDelay, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtcpxr_end_system_delay"].Set(endSystemDelay)
 			}
 		}
 	}, p.rtcpPaths...)
@@ -385,19 +385,19 @@ func (p *Prometheus) dissectRTPStats(data []byte) {
 		switch idx {
 		case 0:
 			if delta, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_delta"].Set(normMax(delta))
+				p.GaugeMetrics["heplify_rtpagent_delta"].Set(delta)
 			}
 		case 1:
-			if ia_jitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_jitter"].Set(normMax(ia_jitter))
+			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtpagent_jitter"].Set(iaJitter)
 			}
 		case 2:
 			if mos, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_mos"].Set(normMax(mos))
+				p.GaugeMetrics["heplify_rtpagent_mos"].Set(mos)
 			}
 		case 3:
-			if packets_lost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_packets_lost"].Set(normMax(packets_lost))
+			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeMetrics["heplify_rtpagent_packets_lost"].Set(packetsLost)
 			}
 		case 4:
 			if rfactor, err := jsonparser.ParseFloat(value); err == nil {
