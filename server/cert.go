@@ -113,7 +113,6 @@ func CertificateAuthorityFromScratch() (*CertificateAuthority, error) {
 	}
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	logp.Info("wrote certificate authority to heplify-server-cert.pem")
 
 	// write the private key to disk
 	keyOut, err := os.OpenFile("heplify-server-key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -122,7 +121,6 @@ func CertificateAuthorityFromScratch() (*CertificateAuthority, error) {
 	}
 	pem.Encode(keyOut, pemBlockForKey(priv))
 	keyOut.Close()
-	logp.Info("wrote private key to heplify-server-key.pem")
 
 	// return the certificate authority by reading from disk
 	return CertificateAuthorityFromFile()

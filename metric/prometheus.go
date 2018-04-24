@@ -115,15 +115,12 @@ func (p *Prometheus) setup() (err error) {
 	}
 
 	for k := range p.GaugeMetrics {
-		logp.Info("prometheus register gaugeMetric %s", k)
 		prometheus.MustRegister(p.GaugeMetrics[k])
 	}
 	for k := range p.GaugeVecMetrics {
-		logp.Info("prometheus register gaugeVecMetric %s", k)
 		prometheus.MustRegister(p.GaugeVecMetrics[k])
 	}
 	for k := range p.CounterVecMetrics {
-		logp.Info("prometheus register counterVecMetric %s", k)
 		prometheus.MustRegister(p.CounterVecMetrics[k])
 	}
 
