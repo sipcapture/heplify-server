@@ -28,15 +28,16 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'heplify-server'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['localhost:8888']
-  
   - job_name: 'horaclifix'
     scrape_interval: 5s
     static_configs:
-      - targets: ['localhost:8899']
+      - targets: ['horaclifix:8899']
+
+  - job_name: 'heplify-server'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['heplify-server:9999']
+  
 
 alerting:
   alertmanagers:

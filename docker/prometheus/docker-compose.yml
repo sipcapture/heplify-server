@@ -123,3 +123,25 @@ services:
       - monitor-net
     labels:
       org.label-schema.group: "monitoring"
+
+  heplify-server:
+    image: negbie/heplify-server:latest
+    container_name: heplify-server
+    ports:
+      - "9060:9060"
+      - "9060:9060/udp"
+    command:
+      - './heplify-server'
+    environment:
+      - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_DBADDR="
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
+      - "HEPLIFYSERVER_PROMTARGETIP="
+      - "HEPLIFYSERVER_PROMTARGETNAME="
+    restart: unless-stopped
+    expose:
+      - 9999
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
