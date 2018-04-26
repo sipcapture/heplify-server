@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.1'
 
 networks:
   monitor-net:
@@ -9,7 +9,6 @@ volumes:
     grafana_data: {}
 
 services:
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -67,23 +66,6 @@ services:
       - monitor-net
     labels:
       org.label-schema.group: "monitoring"
-
-  cadvisor:
-    image: google/cadvisor:latest
-    container_name: cadvisor
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      #- /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
-    restart: unless-stopped
-    expose:
-      - 8080
-    networks:
-      - monitor-net
-    labels:
-      org.label-schema.group: "monitoring"
   
   grafana:
     image: grafana/grafana:latest
@@ -124,6 +106,29 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
+  db:
+    container_name: db
+    image: mariadb:latest
+    environment:
+      - "MYSQL_ROOT_PASSWORD="
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+      - "MYSQL_ROOT_HOST=%"
+    ports:
+      - 3306:3306
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    depends_on: 
+      - db
+    ports:
+      - 8080:8080
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
   heplify-server:
     image: negbie/heplify-server:latest
     container_name: heplify-server
@@ -134,7 +139,12 @@ services:
       - './heplify-server'
     environment:
       - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
-      - "HEPLIFYSERVER_DBADDR="
+      - "HEPLIFYSERVER_DBDRIVER=mysql"
+      - "HEPLIFYSERVER_DBADDR=db:3306"
+      - "HEPLIFYSERVER_DBUSER=root"
+      - "HEPLIFYSERVER_DBPASS="
+      - "HEPLIFYSERVER_LOGLVL=debug"
+      - "HEPLIFYSERVER_LOGSTD=true"
       - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
       - "HEPLIFYSERVER_PROMTARGETIP="
       - "HEPLIFYSERVER_PROMTARGETNAME="
@@ -143,5 +153,24 @@ services:
       - 9999
     networks:
       - monitor-net
+    depends_on:
+      - db
     labels:
       org.label-schema.group: "monitoring"
+
+  homer-webapp:
+    container_name: homer-webapp
+    image: sipcapture/homer-webapp
+    environment:
+      - "DB_HOST=db"
+      - "DB_USER=homer_user"
+      - "DB_PASS=homer_password"
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker-compose.yml:/homer-semaphore/.bootstrapped
+    networks:
+      - monitor-net
+    restart: unless-stopped
+    depends_on:
+      - db
