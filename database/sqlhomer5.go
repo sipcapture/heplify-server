@@ -373,7 +373,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						tsNano,
 						pkt.CID,
 						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, short(pkt.Payload, 4000)}...)
 
 					logCnt++
 					if logCnt == s.bulkCnt {
