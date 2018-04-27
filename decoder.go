@@ -77,13 +77,18 @@ func (h *HEP) parse(packet []byte) error {
 		return err
 	}
 
-	h.normPayload()
+	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
+	t := time.Now()
+	d := t.Sub(h.Timestamp)
+	if d < 0 {
+		logp.Debug("hep", "packet with timestamp in the future with delta %v from nodeID %d", d, h.NodeID)
+		h.Timestamp = time.Now()
+	}
 
+	h.normPayload()
 	if h.ProtoType == 0 {
 		return nil
 	}
-
-	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
 		err = h.parseSIP()
