@@ -116,7 +116,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			date = pkt.Timestamp.UTC().Format("2006-01-02 15:04:05.999999")
+			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
 			pHeader = formProtocolHeader(pkt)
 			dHeader = formDataHeader(pkt, date)
 
