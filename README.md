@@ -1,4 +1,4 @@
-# ![](https://i.imgur.com/QvLYJkC.png)
+![image](https://user-images.githubusercontent.com/1423657/38167610-1bccc596-3538-11e8-944c-8bd9ee0433b2.png)
 
 **heplify-server** is a stand-alone **HOMER** *Capture Server* developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP** encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent or platform, indexing to database using H5 or H7 table format, producing basic usage metrics timeseries and providing users with simple, basic options for correlation and tagging inline. **heplify-server** also supports protobuf so you don't have to write your own **HEP** implementation.
 
