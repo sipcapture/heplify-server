@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `hep_proto_100_logs_DayDate` (
   `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `protocol_header` json NOT NULL,
   `data_header` json NOT NULL,
-  `raw` varchar(3000) NOT NULL DEFAULT '',
+  `raw` varchar(4000) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`,`create_date`),
   KEY `create_date` (`create_date`),
   KEY `cid` (`cid`(255))
