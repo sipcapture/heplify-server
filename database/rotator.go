@@ -160,16 +160,16 @@ func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strin
 		logp.Err("%s\n\n", err)
 	}
 
+	oldEnd := "EndTime"
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
+
 	for _, query := range dot.QueryMap() {
-		oldEnd := "EndTime"
-		
 		TimePos := strings.Index(query, oldEnd)
-		if TimePos != -1{
-			endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-			newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
+		if TimePos != -1 {
 			query = strings.Replace(query, oldEnd, newEnd, -1)
 		}
-		
+
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
 		checkDBErr(err)
@@ -261,7 +261,7 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	oldName := "pnr0000"
 	newName := "pnr0"
-	OriQuery := query
+	oriQuery := query
 
 	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldStart := "StartTime"
@@ -270,15 +270,13 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 	oldEnd := "EndTime"
 
 	for i := 1; i < 1440/p; i++ {
-		query := OriQuery
+		query := oriQuery
 		newName = "pnr" + strconv.Itoa(i)
 		newStart := startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05-07:00")
 		newEnd := endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05-07:00")
 
 		query = strings.Replace(query, oldName, newName, -1)
-
 		query = strings.Replace(query, oldStart, newStart, -1)
-
 		query = strings.Replace(query, oldEnd, newEnd, -1)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
