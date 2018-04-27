@@ -157,7 +157,7 @@ func (r *Rotator) DropTables(duration int) (err error) {
 }
 
 func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d)).UTC()
+	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Err("%s\n\n", err)
