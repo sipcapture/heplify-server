@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS logs_capture (
   family smallint DEFAULT NULL,
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(4000) NOT NULL DEFAULT ''
+  msg text NOT NULL DEFAULT ''
 ) PARTITION BY RANGE (date);
 
 -- name: create-report_capture

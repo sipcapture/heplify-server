@@ -40,7 +40,7 @@ var (
 	pmCh  = make(chan *decoder.HEP, 10000)
 	dbCnt int
 	mqCnt int
-	mCnt  int
+	pmCnt int
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -249,9 +249,9 @@ GO:
 			case dbCh <- hepPkt:
 			default:
 				dbCnt++
-				if dbCnt%128 == 0 {
+				if dbCnt%2048 == 0 {
 					dbCnt = 0
-					logp.Warn("overflowing db channel by 128 packets")
+					logp.Warn("overflowing db channel by 2048 packets")
 				}
 			}
 		}
@@ -260,10 +260,10 @@ GO:
 			select {
 			case pmCh <- hepPkt:
 			default:
-				mCnt++
-				if mCnt%128 == 0 {
-					mCnt = 0
-					logp.Warn("overflowing metric channel by 128 packets")
+				pmCnt++
+				if pmCnt%2048 == 0 {
+					pmCnt = 0
+					logp.Warn("overflowing metric channel by 2048 packets")
 				}
 			}
 		}
@@ -273,9 +273,9 @@ GO:
 			case mqCh <- msg:
 			default:
 				mqCnt++
-				if mqCnt%128 == 0 {
+				if mqCnt%2048 == 0 {
 					mqCnt = 0
-					logp.Warn("overflowing queue channel by 128 packets")
+					logp.Warn("overflowing queue channel by 2048 packets")
 				}
 			}
 		}
@@ -287,7 +287,7 @@ func (h *HEPInput) logStats() {
 	for {
 		select {
 		case <-ticker.C:
-			logp.Info("Packet stats since last minute Total: %d, HEP: %d, Duplicate: %d, Error: %d",
+			logp.Info("Packet stats since last 5 minutes. Total: %d, HEP: %d, Duplicate: %d, Error: %d",
 				atomic.LoadUint64(&h.stats.PktCount),
 				atomic.LoadUint64(&h.stats.HEPCount),
 				atomic.LoadUint64(&h.stats.DupCount),
