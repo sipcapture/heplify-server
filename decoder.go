@@ -69,12 +69,16 @@ func (h *HEP) parse(packet []byte) error {
 	var err error
 	if packet[0] == 0x48 && packet[1] == 0x45 && packet[2] == 0x50 && packet[3] == 0x33 {
 		err = h.parseHEP(packet)
+		if err != nil {
+			logp.Warn("%v", err)
+			return err
+		}
 	} else {
 		err = h.Unmarshal(packet)
-	}
-	if err != nil {
-		logp.Warn("%v", err)
-		return err
+		if err != nil {
+			logp.Warn("malformed packet which is neither hep nor protobuf encapsulated")
+			return err
+		}
 	}
 
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))

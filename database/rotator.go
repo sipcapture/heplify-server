@@ -154,19 +154,20 @@ func (r *Rotator) DropTables(duration int) (err error) {
 }
 
 func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
+	oldEnd := "EndTime"
+
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
+
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Err("%s\n\n", err)
 	}
 
-	oldEnd := "EndTime"
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
-
 	for _, query := range dot.QueryMap() {
-		TimePos := strings.Index(query, oldEnd)
-		if TimePos != -1 {
+		timePos := strings.Index(query, oldEnd)
+		if timePos != -1 {
 			query = strings.Replace(query, oldEnd, newEnd, -1)
 		}
 
@@ -258,16 +259,15 @@ func (r *Rotator) createTables() {
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
-	t := time.Now().Add(time.Hour * time.Duration(24*d))
+	oriQuery := query
 	oldName := "pnr0000"
 	newName := "pnr0"
-	oriQuery := query
-
-	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldStart := "StartTime"
-
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	oldEnd := "EndTime"
+
+	t := time.Now().Add(time.Hour * time.Duration(24*d))
+	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
 	for i := 1; i < 1440/p; i++ {
 		query := oriQuery

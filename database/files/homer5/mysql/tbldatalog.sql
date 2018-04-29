@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `logs_capture_all_DayDate` (
   `family` int(1) DEFAULT NULL,
   `type` int(5) NOT NULL DEFAULT 0,
   `node` varchar(125) NOT NULL DEFAULT '',
-  `msg` varchar(1500) NOT NULL DEFAULT '',
+  `msg` text NOT NULL,
   PRIMARY KEY (`id`,`date`),
   KEY `date` (`date`),
   KEY `correlationid` (`correlation_id`(255))
