@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/buger/jsonparser"
 	"github.com/coocood/freecache"
@@ -24,6 +23,7 @@ type Prometheus struct {
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
 	Cache             *freecache.Cache
+	horaclifixPaths   [][]string
 	rtpPaths          [][]string
 	rtcpPaths         [][]string
 }
@@ -96,7 +96,7 @@ func (p *Prometheus) setup() (err error) {
 	p.GaugeMetrics["heplify_rtcpxr_round_trip_delay"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_round_trip_delay", Help: "RTCPXR round trip delay"})
 	p.GaugeMetrics["heplify_rtcpxr_end_system_delay"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_end_system_delay", Help: "RTCPXR end system delay"})
 
-	if config.Setting.RTPAgent {
+	if config.Setting.RTPAgentStats {
 		p.GaugeMetrics["heplify_rtpagent_delta"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_delta", Help: "RTPAgent delta"})
 		p.GaugeMetrics["heplify_rtpagent_jitter"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_jitter", Help: "RTPAgent jitter"})
 		p.GaugeMetrics["heplify_rtpagent_mos"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_mos", Help: "RTPAgent mos"})
@@ -114,14 +114,78 @@ func (p *Prometheus) setup() (err error) {
 		}
 	}
 
-	for k := range p.GaugeMetrics {
-		prometheus.MustRegister(p.GaugeMetrics[k])
-	}
-	for k := range p.GaugeVecMetrics {
-		prometheus.MustRegister(p.GaugeVecMetrics[k])
-	}
-	for k := range p.CounterVecMetrics {
-		prometheus.MustRegister(p.CounterVecMetrics[k])
+	if config.Setting.HoraclifixStats {
+		p.GaugeVecMetrics["horaclifix_inc_rtp_mos"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_mos", Help: "Incoming RTP MOS"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtp_rval"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_rval", Help: "Incoming RTP rVal"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtp_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_packets", Help: "Incoming RTP packets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtp_lost_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_lost_packets", Help: "Incoming RTP lostPackets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtp_avg_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_avg_jitter", Help: "Incoming RTP avgJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtp_max_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtp_max_jitter", Help: "Incoming RTP maxJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_packets", Help: "Incoming RTCP packets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_lost_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_lost_packets", Help: "Incoming RTCP lostPackets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_avg_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_avg_jitter", Help: "Incoming RTCP avgJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_max_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_max_jitter", Help: "Incoming RTCP maxJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_avg_lat"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_avg_lat", Help: "Incoming RTCP avgLat"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_inc_rtcp_max_lat"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_inc_rtcp_max_lat", Help: "Incoming RTCP maxLat"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_mos"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_mos", Help: "Outgoing RTP MOS"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_rval"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_rval", Help: "Outgoing RTP rVal"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_packets", Help: "Outgoing RTP packets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_lost_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_lost_packets", Help: "Outgoing RTP lostPackets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_avg_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_avg_jitter", Help: "Outgoing RTP avgJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtp_max_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtp_max_jitter", Help: "Outgoing RTP maxJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_packets", Help: "Outgoing RTCP packets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_lost_packets"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_lost_packets", Help: "Outgoing RTCP lostPackets"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_avg_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_avg_jitter", Help: "Outgoing RTCP avgJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_max_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_max_jitter", Help: "Outgoing RTCP maxJitter"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_avg_lat"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_avg_lat", Help: "Outgoing RTCP avgLat"}, []string{"sbc_name", "inc_realm", "out_realm"})
+		p.GaugeVecMetrics["horaclifix_out_rtcp_max_lat"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "horaclifix_out_rtcp_max_lat", Help: "Outgoing RTCP maxLat"}, []string{"sbc_name", "inc_realm", "out_realm"})
+
+		p.horaclifixPaths = [][]string{
+			[]string{"NAME"},
+			[]string{"INC_REALM"},
+			[]string{"OUT_REALM"},
+			//[]string{"INC_ID"},
+			//[]string{"OUT_ID"},
+			[]string{"INC_MOS"},
+			[]string{"INC_RVAL"},
+			//[]string{"INC_RTP_BYTE"},
+			[]string{"INC_RTP_PK"},
+			[]string{"INC_RTP_PK_LOSS"},
+			[]string{"INC_RTP_AVG_JITTER"},
+			[]string{"INC_RTP_MAX_JITTER"},
+			//[]string{"INC_RTCP_BYTE"},
+			[]string{"INC_RTCP_PK"},
+			[]string{"INC_RTCP_PK_LOSS"},
+			[]string{"INC_RTCP_AVG_JITTER"},
+			[]string{"INC_RTCP_MAX_JITTER"},
+			[]string{"INC_RTCP_AVG_LAT"},
+			[]string{"INC_RTCP_MAX_LAT"},
+			//[]string{"CALLER_VLAN"},
+			//[]string{"CALLER_SRC_IP"},
+			//[]string{"CALLER_SRC_PORT"},
+			//[]string{"CALLER_DST_IP"},
+			//[]string{"CALLER_DST_PORT"},
+			[]string{"OUT_MOS"},
+			[]string{"OUT_RVAL"},
+			//[]string{"OUT_RTP_BYTE"},
+			[]string{"OUT_RTP_PK"},
+			[]string{"OUT_RTP_PK_LOSS"},
+			[]string{"OUT_RTP_AVG_JITTER"},
+			[]string{"OUT_RTP_MAX_JITTER"},
+			//[]string{"OUT_RTCP_BYTE"},
+			[]string{"OUT_RTCP_PK"},
+			[]string{"OUT_RTCP_PK_LOSS"},
+			[]string{"OUT_RTCP_AVG_JITTER"},
+			[]string{"OUT_RTCP_MAX_JITTER"},
+			[]string{"OUT_RTCP_AVG_LAT"},
+			[]string{"OUT_RTCP_MAX_LAT"},
+			//[]string{"CALLEE_VLAN"},
+			//[]string{"CALLEE_SRC_IP"},
+			//[]string{"CALLEE_SRC_PORT"},
+			//[]string{"CALLEE_DST_IP"},
+			//[]string{"CALLEE_DST_PORT"},
+			//[]string{"MEDIA_TYPE"},
+		}
 	}
 
 	p.rtcpPaths = [][]string{
@@ -137,6 +201,16 @@ func (p *Prometheus) setup() (err error) {
 		[]string{"report_blocks_xr", "gap_duration"},
 		[]string{"report_blocks_xr", "round_trip_delay"},
 		[]string{"report_blocks_xr", "end_system_delay"},
+	}
+
+	for k := range p.GaugeMetrics {
+		prometheus.MustRegister(p.GaugeMetrics[k])
+	}
+	for k := range p.GaugeVecMetrics {
+		prometheus.MustRegister(p.GaugeVecMetrics[k])
+	}
+	for k := range p.CounterVecMetrics {
+		prometheus.MustRegister(p.CounterVecMetrics[k])
 	}
 
 	go func() {
@@ -204,8 +278,10 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			}
 		} else if pkt.ProtoType == 5 {
 			p.dissectRTCPStats([]byte(pkt.Payload))
-		} else if pkt.ProtoType == 34 && config.Setting.RTPAgent {
+		} else if pkt.ProtoType == 34 && config.Setting.RTPAgentStats {
 			p.dissectRTPStats([]byte(pkt.Payload))
+		} else if pkt.ProtoType == 38 && config.Setting.HoraclifixStats {
+			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		}
 	}
 }
@@ -408,18 +484,122 @@ func (p *Prometheus) dissectRTPStats(data []byte) {
 	}, p.rtpPaths...)
 }
 
-func cutSpace(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, str)
-}
+func (p *Prometheus) dissectHoraclifixStats(data []byte) {
+	var sbcName, incRealm, outRealm string
 
-func normMax(val float64) float64 {
-	if val > 10000000 {
-		return 0
-	}
-	return val
+	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			if sbcName, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("could not decode sbcName %s from horaclifix report", string(sbcName))
+				return
+			}
+		case 1:
+			if incRealm, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("could not decode incRealm %s from horaclifix report", string(incRealm))
+				return
+			}
+		case 2:
+			if outRealm, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("could not decode outRealm %s from horaclifix report", string(outRealm))
+				return
+			}
+		case 3:
+			if incMos, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_mos"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incMos / 100))
+			}
+		case 4:
+			if incRval, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_rval"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRval / 100))
+			}
+		case 5:
+			if incRtpPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtpPackets))
+			}
+		case 6:
+			if incRtpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_lost_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtpLostPackets))
+			}
+		case 7:
+			if incRtpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_avg_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtpAvgJitter))
+			}
+		case 8:
+			if incRtpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtp_max_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtpMaxJitter))
+			}
+		case 9:
+			if incRtcpPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpPackets))
+			}
+		case 10:
+			if incRtcpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_lost_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpLostPackets))
+			}
+		case 11:
+			if incRtcpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_avg_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpAvgJitter))
+			}
+		case 12:
+			if incRtcpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_max_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpMaxJitter))
+			}
+		case 13:
+			if incRtcpAvgLat, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_avg_lat"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpAvgLat))
+			}
+		case 14:
+			if incRtcpMaxLat, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_inc_rtcp_max_lat"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(incRtcpMaxLat))
+			}
+		case 15:
+			if outMos, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_mos"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outMos / 100))
+			}
+		case 16:
+			if outRval, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_rval"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRval / 100))
+			}
+		case 17:
+			if outRtpPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtpPackets))
+			}
+		case 18:
+			if outRtpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_lost_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtpLostPackets))
+			}
+		case 19:
+			if outRtpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_avg_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtpAvgJitter))
+			}
+		case 20:
+			if outRtpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtp_max_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtpMaxJitter))
+			}
+		case 21:
+			if outRtcpPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpPackets))
+			}
+		case 22:
+			if outRtcpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_lost_packets"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpLostPackets))
+			}
+		case 23:
+			if outRtcpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_avg_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpAvgJitter))
+			}
+		case 24:
+			if outRtcpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_max_jitter"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpMaxJitter))
+			}
+		case 25:
+			if outRtcpAvgLat, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_avg_lat"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpAvgLat))
+			}
+		case 26:
+			if outRtcpMaxLat, err := jsonparser.ParseFloat(value); err == nil {
+				p.GaugeVecMetrics["horaclifix_out_rtcp_max_lat"].WithLabelValues(sbcName, incRealm, outRealm).Set(normMax(outRtcpMaxLat))
+			}
+		}
+	}, p.horaclifixPaths...)
 }
