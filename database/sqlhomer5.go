@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 
@@ -123,8 +124,8 @@ func (s *SQLHomer5) setup() error {
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(20)
-	s.dbc.SetMaxIdleConns(10)
+	s.dbc.SetMaxOpenConns(runtime.NumCPU() * 4)
+	s.dbc.SetMaxIdleConns(runtime.NumCPU())
 	s.dbs = s.dbc.NewSession(nil)
 
 	s.bulkCnt = config.Setting.DBBulk
