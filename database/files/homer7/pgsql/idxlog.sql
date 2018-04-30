@@ -1,4 +1,4 @@
 -- name: index-logs-date
-CREATE INDEX IF NOT EXISTS hep_proto_100_logs_DayDate_pnr0000_date ON hep_proto_100_logs_DayDate_pnr0000 ((data_header->'create_date'));
+CREATE INDEX IF NOT EXISTS hep_proto_100_logs_{{date}}_{{time}}_date ON hep_proto_100_logs_{{date}}_{{time}} ((data_header->'create_date'));
 -- name: index-logs-correlation
-CREATE INDEX IF NOT EXISTS hep_proto_100_logs_DayDate_pnr0000_sid ON hep_proto_100_logs_DayDate_pnr0000 ((data_header->'sid'));
+CREATE INDEX IF NOT EXISTS hep_proto_100_logs_{{date}}_{{time}}_sid ON hep_proto_100_logs_{{date}}_{{time}} ((data_header->'sid'));

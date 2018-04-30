@@ -1,5 +1,5 @@
 -- name: create-call-table
-CREATE TABLE IF NOT EXISTS `sip_capture_call_DayDate` (
+CREATE TABLE IF NOT EXISTS `sip_capture_call_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -60,11 +60,11 @@ CREATE TABLE IF NOT EXISTS `sip_capture_call_DayDate` (
   KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION DayDate_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') )
+    PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
 
 -- name: create-registration-table
-CREATE TABLE IF NOT EXISTS `sip_capture_registration_DayDate` (
+CREATE TABLE IF NOT EXISTS `sip_capture_registration_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -125,11 +125,11 @@ CREATE TABLE IF NOT EXISTS `sip_capture_registration_DayDate` (
   KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION DayDate_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') )
+    PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
 
 -- name: create-rest-table
-CREATE TABLE IF NOT EXISTS `sip_capture_rest_DayDate` (
+CREATE TABLE IF NOT EXISTS `sip_capture_rest_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -190,5 +190,5 @@ CREATE TABLE IF NOT EXISTS `sip_capture_rest_DayDate` (
   KEY `destination_ip` (`destination_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
-    PARTITION DayDate_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') )
+    PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );

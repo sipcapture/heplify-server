@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS `hep_proto_100_logs_DayDate` (
+CREATE TABLE IF NOT EXISTS `hep_proto_100_logs_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `sid` varchar(256) NOT NULL DEFAULT '',
   `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS `hep_proto_100_logs_DayDate` (
   KEY `sid` (`sid`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
-    PARTITION DayDate_pnr0 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') )
+    PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );

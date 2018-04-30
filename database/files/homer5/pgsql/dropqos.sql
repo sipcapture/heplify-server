@@ -1,5 +1,5 @@
 -- name: drop-partition-report_capture
-DROP TABLE report_capture_DayDate_pnr0000;
+DROP TABLE report_capture_{{date}}_{{time}};
 
 -- name: drop-partition-rtcp_capture
-DROP TABLE rtcp_capture_DayDate_pnr0000;
+DROP TABLE rtcp_capture_{{date}}_{{time}};

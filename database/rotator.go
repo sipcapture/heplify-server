@@ -2,7 +2,6 @@ package database
 
 import (
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +12,13 @@ import (
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/logp"
 	"github.com/robfig/cron"
+)
+
+const (
+	partitionTime      = "{{time}}"
+	partitionMinTime   = "{{minTime}}"
+	partitionStartTime = "{{startTime}}"
+	partitionEndTime   = "{{endTime}}"
 )
 
 type Rotator struct {
@@ -154,11 +160,10 @@ func (r *Rotator) DropTables(duration int) (err error) {
 }
 
 func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
-	oldEnd := "EndTime"
-
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
-	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-	newEnd := endTime.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05-07:00")
+	tt := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	newMinTime := tt.Format("1504")
+	newEndTime := tt.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
@@ -166,10 +171,8 @@ func (r *Rotator) dbExecFileMYSQL(db *dbr.Connection, file string, pattern strin
 	}
 
 	for _, query := range dot.QueryMap() {
-		timePos := strings.Index(query, oldEnd)
-		if timePos != -1 {
-			query = strings.Replace(query, oldEnd, newEnd, -1)
-		}
+		query = strings.Replace(query, partitionMinTime, newMinTime, -1)
+		query = strings.Replace(query, partitionEndTime, newEndTime, -1)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
@@ -259,25 +262,23 @@ func (r *Rotator) createTables() {
 }
 
 func rotatePartitions(db *dbr.Connection, query string, d, p int) {
+	var newStartTime, newEndTime, newPartTime string
 	oriQuery := query
-	oldName := "pnr0000"
-	newName := "pnr0"
-	oldStart := "StartTime"
-	oldEnd := "EndTime"
 
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	startTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	endTime := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	for i := 1; i < 1440/p; i++ {
+	for i := 0; i < 1440/p; i++ {
 		query := oriQuery
-		newName = "pnr" + strconv.Itoa(i)
-		newStart := startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05-07:00")
-		newEnd := endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05-07:00")
 
-		query = strings.Replace(query, oldName, newName, -1)
-		query = strings.Replace(query, oldStart, newStart, -1)
-		query = strings.Replace(query, oldEnd, newEnd, -1)
+		newPartTime = startTime.Add(time.Minute * time.Duration(i*p)).Format("1504")
+		newStartTime = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
+		newEndTime = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
+
+		query = strings.Replace(query, partitionTime, newPartTime, -1)
+		query = strings.Replace(query, partitionStartTime, newStartTime, -1)
+		query = strings.Replace(query, partitionEndTime, newEndTime, -1)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)
@@ -286,19 +287,16 @@ func rotatePartitions(db *dbr.Connection, query string, d, p int) {
 }
 
 func replaceCreateDay(d int) strings.Replacer {
-	dd := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
-	pt := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	pm := pt.Add(time.Hour * time.Duration(24*d)).Format("2006-01-02 15:04:05-07:00")
+	pn := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
 	return *strings.NewReplacer(
-		"DayDate", dd,
-		"PartitionMin", pm,
+		"{{date}}", pn,
 	)
 }
 
 func replaceDropDay(d int) strings.Replacer {
-	dd := time.Now().Add(time.Hour * time.Duration(-24*d)).Format("20060102")
+	pn := time.Now().Add(time.Hour * time.Duration(-24*d)).Format("20060102")
 	return *strings.NewReplacer(
-		"DayDate", dd,
+		"{{date}}", pn,
 	)
 }
 
