@@ -10,8 +10,8 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_to_user ON hep_proto
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_pid_user ON hep_proto_1_call_DayDate_pnr0000 ((data_header->'pid_user'));
 -- name: index-call-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_auth_user ON hep_proto_1_call_DayDate_pnr0000 ((data_header->'auth_user'));
--- name: index-call-cid
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_cid ON hep_proto_1_call_DayDate_pnr0000 ((data_header->'cid'));
+-- name: index-call-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_sid ON hep_proto_1_call_DayDate_pnr0000 ((data_header->'sid'));
 -- name: index-call-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_DayDate_pnr0000_method ON hep_proto_1_call_DayDate_pnr0000 ((data_header->'method'));
 -- name: index-call-source_ip
@@ -31,8 +31,8 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_to_user ON hep_p
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_pid_user ON hep_proto_1_register_DayDate_pnr0000 ((data_header->'pid_user'));
 -- name: index-register-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_auth_user ON hep_proto_1_register_DayDate_pnr0000 ((data_header->'auth_user'));
--- name: index-register-cid
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_cid ON hep_proto_1_register_DayDate_pnr0000 ((data_header->'cid'));
+-- name: index-register-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_sid ON hep_proto_1_register_DayDate_pnr0000 ((data_header->'sid'));
 -- name: index-register-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_DayDate_pnr0000_method ON hep_proto_1_register_DayDate_pnr0000 ((data_header->'method'));
 -- name: index-register-source_ip
@@ -52,8 +52,8 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_to_user ON hep_pr
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_pid_user ON hep_proto_1_default_DayDate_pnr0000 ((data_header->'pid_user'));
 -- name: index-default-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_auth_user ON hep_proto_1_default_DayDate_pnr0000 ((data_header->'auth_user'));
--- name: index-default-cid
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_cid ON hep_proto_1_default_DayDate_pnr0000 ((data_header->'cid'));
+-- name: index-default-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_sid ON hep_proto_1_default_DayDate_pnr0000 ((data_header->'sid'));
 -- name: index-default-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_DayDate_pnr0000_method ON hep_proto_1_default_DayDate_pnr0000 ((data_header->'method'));
 -- name: index-default-source_ip

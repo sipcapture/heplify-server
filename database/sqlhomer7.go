@@ -26,7 +26,7 @@ type SQLHomer7 struct {
 	bulkVal string
 }
 
-var queryVal = `(cid,create_date,protocol_header,data_header,raw) VALUES `
+var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
