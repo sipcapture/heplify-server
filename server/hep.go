@@ -34,10 +34,10 @@ type HEPStats struct {
 }
 
 var (
-	inCh  = make(chan []byte, 10000)
-	dbCh  = make(chan *decoder.HEP, 20000)
-	mqCh  = make(chan []byte, 10000)
-	pmCh  = make(chan *decoder.HEP, 10000)
+	inCh  = make(chan []byte, 20000)
+	dbCh  = make(chan *decoder.HEP, 200000)
+	mqCh  = make(chan []byte, 20000)
+	pmCh  = make(chan *decoder.HEP, 20000)
 	dbCnt int
 	mqCnt int
 	pmCnt int
