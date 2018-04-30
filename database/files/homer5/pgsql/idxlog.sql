@@ -1,4 +1,4 @@
 -- name: index-logs-date
-CREATE INDEX IF NOT EXISTS logs_capture_DayDate_pnr0000_date ON logs_capture_DayDate_pnr0000 (date);
+CREATE INDEX IF NOT EXISTS logs_capture_{{date}}_{{time}}_date ON logs_capture_{{date}}_{{time}} (date);
 -- name: index-logs-correlation
-CREATE INDEX IF NOT EXISTS logs_capture_DayDate_pnr0000_correlation_id ON logs_capture_DayDate_pnr0000 (correlation_id);
+CREATE INDEX IF NOT EXISTS logs_capture_{{date}}_{{time}}_correlation_id ON logs_capture_{{date}}_{{time}} (correlation_id);

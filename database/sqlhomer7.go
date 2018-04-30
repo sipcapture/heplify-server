@@ -26,7 +26,7 @@ type SQLHomer7 struct {
 	bulkVal string
 }
 
-var queryVal = `(cid,create_date,protocol_header,data_header,raw) VALUES `
+var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
@@ -334,7 +334,7 @@ func formDataHeader(h *decoder.HEP, date string) []byte {
 		b.WriteString(h.SIP.PaiUser)
 		b.WriteString("\",\"auth_user\":\"")
 		b.WriteString(h.SIP.AuthUser)
-		b.WriteString("\",\"cid\":\"")
+		b.WriteString("\",\"sid\":\"")
 		b.WriteString(h.CID)
 		b.WriteString("\",\"method\":\"")
 		b.WriteString(h.SIP.StartLine.Method)
@@ -347,7 +347,7 @@ func formDataHeader(h *decoder.HEP, date string) []byte {
 		b.WriteString("{")
 		b.WriteString("\"create_date\":\"")
 		b.WriteString(date)
-		b.WriteString("\",\"cid\":\"")
+		b.WriteString("\",\"sid\":\"")
 		b.WriteString(h.CID)
 		b.WriteString("\"}")
 	}

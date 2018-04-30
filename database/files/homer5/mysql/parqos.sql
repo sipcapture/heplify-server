@@ -1,5 +1,5 @@
 -- name: create-partition-report_capture
-ALTER TABLE report_capture_all_DayDate ADD PARTITION (PARTITION DayDate_pnr0000 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') ));
+ALTER TABLE report_capture_all_{{date}} ADD PARTITION (PARTITION {{date}}_{{time}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') ));
 
 -- name: create-partition-rtcp_capture
-ALTER TABLE rtcp_capture_all_DayDate ADD PARTITION (PARTITION DayDate_pnr0000 VALUES LESS THAN ( UNIX_TIMESTAMP('EndTime') ));
+ALTER TABLE rtcp_capture_all_{{date}} ADD PARTITION (PARTITION {{date}}_{{time}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') ));
