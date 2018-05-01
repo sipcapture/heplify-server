@@ -233,21 +233,22 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 
 func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) {
 	if config.Setting.DBDriver == "mysql" {
+		tableDate := time.Now().Format("20060102")
 		switch query {
 		case "call":
-			query = "INSERT INTO hep_proto_1_call_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_1_call_" + tableDate + values
 		case "register":
-			query = "INSERT INTO hep_proto_1_register_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_1_register_" + tableDate + values
 		case "default":
-			query = "INSERT INTO hep_proto_1_default_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_1_default_" + tableDate + values
 		case "rtcp":
-			query = "INSERT INTO hep_proto_5_rtcp_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_5_rtcp_" + tableDate + values
 		case "report":
-			query = "INSERT INTO hep_proto_35_report_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_35_report_" + tableDate + values
 		case "dns":
-			query = "INSERT INTO hep_proto_53_dns_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_53_dns_" + tableDate + values
 		case "log":
-			query = "INSERT INTO hep_proto_100_logs_" + time.Now().Format("20060102") + values
+			query = "INSERT INTO hep_proto_100_logs_" + tableDate + values
 		}
 	} else if config.Setting.DBDriver == "postgres" {
 		switch query {
