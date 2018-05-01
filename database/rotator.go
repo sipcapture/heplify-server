@@ -89,6 +89,8 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
+		// Set this connection to UTC time and create the partitions with it.
+		r.dbExec(db, "SET time_zone = \"+00:00\";")
 		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldatalog.sql"), suffix, duration, r.logStep)
 		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldataqos.sql"), suffix, duration, r.qosStep)
 		r.dbExecFileMYSQL(db, r.box.String("mysql/tbldatasip.sql"), suffix, duration, r.sipStep)
