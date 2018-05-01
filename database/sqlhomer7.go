@@ -233,7 +233,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 
 func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) {
 	if config.Setting.DBDriver == "mysql" {
-		tableDate := time.Now().Format("20060102")
+		tableDate := time.Now().UTC().Format("20060102")
 		switch query {
 		case "call":
 			query = "INSERT INTO hep_proto_1_call_" + tableDate + values

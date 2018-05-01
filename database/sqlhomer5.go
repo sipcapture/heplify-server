@@ -433,7 +433,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 
 func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) {
 	if config.Setting.DBDriver == "mysql" {
-		tableDate := time.Now().Format("20060102")
+		tableDate := time.Now().UTC().Format("20060102")
 		switch query {
 		case "call":
 			query = "INSERT INTO sip_capture_call_" + tableDate + values
