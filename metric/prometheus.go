@@ -19,6 +19,9 @@ type Prometheus struct {
 	TargetIP          []string
 	TargetName        []string
 	TargetEmpty       bool
+	CvMethodResponse  *prometheus.CounterVec
+	CvPacketsTotal    *prometheus.CounterVec
+	GvPacketsSize     *prometheus.GaugeVec
 	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
@@ -71,9 +74,9 @@ func (p *Prometheus) setup() (err error) {
 	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
 	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
 
-	p.CounterVecMetrics["heplify_method_response"] = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_method_response", Help: "SIP method and response counter"}, []string{"target_name", "response", "method"})
-	p.CounterVecMetrics["heplify_packets_total"] = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_packets_total", Help: "Total packets by HEP type"}, []string{"type"})
-	p.GaugeVecMetrics["heplify_packets_size"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_packets_size", Help: "Packet size by HEP type"}, []string{"type"})
+	p.CvMethodResponse = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_method_response", Help: "SIP method and response counter"}, []string{"target_name", "response", "method"})
+	p.CvPacketsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_packets_total", Help: "Total packets by HEP type"}, []string{"type"})
+	p.GvPacketsSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_packets_size", Help: "Packet size by HEP type"}, []string{"type"})
 	p.GaugeVecMetrics["heplify_xrtp_cs"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_cs", Help: "XRTP call setup time"}, []string{"target_name"})
 	p.GaugeVecMetrics["heplify_xrtp_jir"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_jir", Help: "XRTP received jitter"}, []string{"target_name"})
 	p.GaugeVecMetrics["heplify_xrtp_jis"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_jis", Help: "XRTP sent jitter"}, []string{"target_name"})
@@ -203,6 +206,10 @@ func (p *Prometheus) setup() (err error) {
 		[]string{"report_blocks_xr", "end_system_delay"},
 	}
 
+	prometheus.MustRegister(p.CvMethodResponse)
+	prometheus.MustRegister(p.CvPacketsTotal)
+	prometheus.MustRegister(p.GvPacketsSize)
+
 	for k := range p.GaugeMetrics {
 		prometheus.MustRegister(p.GaugeMetrics[k])
 	}
@@ -236,24 +243,24 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 		}
 
 		if pkt.ProtoType == 1 {
-			p.CounterVecMetrics["heplify_packets_total"].WithLabelValues("sip").Inc()
-			p.GaugeVecMetrics["heplify_packets_size"].WithLabelValues("sip").Set(float64(len(pkt.Payload)))
+			p.CvPacketsTotal.WithLabelValues("sip").Inc()
+			p.GvPacketsSize.WithLabelValues("sip").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 5 {
-			p.CounterVecMetrics["heplify_packets_total"].WithLabelValues("rtcp").Inc()
-			p.GaugeVecMetrics["heplify_packets_size"].WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
+			p.CvPacketsTotal.WithLabelValues("rtcp").Inc()
+			p.GvPacketsSize.WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 38 {
-			p.CounterVecMetrics["heplify_packets_total"].WithLabelValues("horaclifix").Inc()
-			p.GaugeVecMetrics["heplify_packets_size"].WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
+			p.CvPacketsTotal.WithLabelValues("horaclifix").Inc()
+			p.GvPacketsSize.WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
 		} else if pkt.ProtoType == 100 {
-			p.CounterVecMetrics["heplify_packets_total"].WithLabelValues("log").Inc()
-			p.GaugeVecMetrics["heplify_packets_size"].WithLabelValues("log").Set(float64(len(pkt.Payload)))
+			p.CvPacketsTotal.WithLabelValues("log").Inc()
+			p.GvPacketsSize.WithLabelValues("log").Set(float64(len(pkt.Payload)))
 		}
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			if !p.TargetEmpty {
 				for k, tn := range p.TargetName {
 					if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
-						p.CounterVecMetrics["heplify_method_response"].WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+						p.CvMethodResponse.WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 						if pkt.SIP.RTPStatVal != "" {
 							p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
@@ -270,7 +277,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 					logp.Warn("%v", err)
 				}
 
-				p.CounterVecMetrics["heplify_method_response"].WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+				p.CvMethodResponse.WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 				if pkt.SIP.RTPStatVal != "" {
 					p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
