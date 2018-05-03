@@ -50,7 +50,7 @@ systemctl enable heplify-server
 ```
 
 ### Screenshots
-![sip_metrics](https://user-images.githubusercontent.com/20154956/39591222-708ee5ac-4f03-11e8-8016-19a564b12bac.jpeg | width=48)
+![image](https://user-images.githubusercontent.com/20154956/39591222-708ee5ac-4f03-11e8-8016-19a564b12bac.jpeg | width=48)
 
 ----
 #### Made by Humans
