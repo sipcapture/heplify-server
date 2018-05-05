@@ -1,0 +1,43 @@
+HEPAddr         = "0.0.0.0:9060"
+MQDriver        = ""
+MQAddr          = ""
+MQTopic         = ""
+PromAddr        = ""
+PromTargetIP    = ""
+PromTargetName  = ""
+HoraclifixStats = false
+RTPAgentStats   = false
+DBShema         = "homer5"
+DBDriver        = "mysql"
+DBAddr          = "localhost:3306"
+DBUser          = "root"
+DBPass          = ""
+DBDataTable     = "homer_data"
+DBConfTable     = "homer_configuration"
+DBTableSpace    = ""
+DBBulk          = 200
+DBTimer         = 2
+DBRotate        = true
+DBPartLog       = "2h"
+DBPartSip       = "1h"
+DBPartQos       = "12h"
+DBDropDays      = 0
+DBDropOnStart   = false
+Dedup           = false
+AlegID          = "x-cid"
+LogDbg          = ""
+LogLvl          = "info"
+LogStd          = false
+Config          = "./heplify-server.toml"
+Version         = false
+
+# Examples:
+# -------------------------------------
+# DBShema         = "homer7"
+# DBDriver        = "postgres"
+# DBTableSpace    = "/var/lib/postgresql/data/homer"
+# PromAddr        = "0.0.0.0:8899"
+# PromTargetIP    = "10.1.2.111,10.1.2.4,10.1.2.5,10.1.2.6,10.12.44.222"
+# PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
+# LogDbg          = "hep,sql"
+# LogLvl          = "warning"

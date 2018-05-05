@@ -16,7 +16,7 @@ import (
 	"github.com/negbie/heplify-server/server"
 )
 
-const version = "heplify-server 0.86"
+const version = "heplify-server 0.90"
 
 type server interface {
 	Run()
