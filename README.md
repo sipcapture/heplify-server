@@ -25,7 +25,7 @@
 * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Configuration
-heplify-server can be configured using command-line options, or by defining a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/heplify-server.toml)
+heplify-server can be configured using command-line options, or by defining a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/)
 
 ------
 
