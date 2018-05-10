@@ -389,6 +389,9 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	r = r - (float64(loss) * 2.5)
 
 	mos = 1 + (0.035)*r + (0.000007)*r*(r-60)*(100-r)
+	if mos < 1 || mos > 5 {
+		mos = 1
+	}
 	p.GaugeVecMetrics["heplify_xrtp_mos"].WithLabelValues(tn).Set(mos)
 
 }
