@@ -50,7 +50,7 @@ systemctl enable heplify-server
 ```
 
 ### Screenshots
-![sip_metrics](https://user-images.githubusercontent.com/20154956/39591222-708ee5ac-4f03-11e8-8016-19a564b12bac.jpeg)
+![sip_metrics](https://user-images.githubusercontent.com/20154956/39880524-57838c04-547e-11e8-8dec-262184192742.png)
 ![horaclifix_qos](https://user-images.githubusercontent.com/20154956/39879892-5e7feab8-547c-11e8-8046-a0c73fcef38a.jpeg)
 ![xrtp](https://user-images.githubusercontent.com/20154956/39675132-165c5f5a-5157-11e8-9d13-90bccf007638.jpeg)
 ----
