@@ -52,7 +52,7 @@ systemctl enable heplify-server
 ### Screenshots
 ![sip_metrics](https://user-images.githubusercontent.com/20154956/39880524-57838c04-547e-11e8-8dec-262184192742.png)
 ![horaclifix_qos](https://user-images.githubusercontent.com/20154956/39879892-5e7feab8-547c-11e8-8046-a0c73fcef38a.jpeg)
-![xrtp](https://user-images.githubusercontent.com/20154956/39675132-165c5f5a-5157-11e8-9d13-90bccf007638.jpeg)
+![xrtp](https://user-images.githubusercontent.com/20154956/39880861-4b1a2b34-547f-11e8-8d38-69fa88713aa9.png)
 ----
 #### Made by Humans
 This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patreons.<br>
