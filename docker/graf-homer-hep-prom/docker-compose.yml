@@ -165,8 +165,8 @@ services:
       - "DB_HOST=db"
       - "DB_USER=homer_user"
       - "DB_PASS=homer_password"
-    ports:
-      - "80:80"
+    expose:
+      - 80
     volumes:
       - ./docker-compose.yml:/homer-semaphore/.bootstrapped
     networks:
