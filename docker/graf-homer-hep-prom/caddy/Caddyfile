@@ -28,7 +28,7 @@
     tls off
 }
 
-:80 {
+:9080 {
     proxy / homer-webapp:80 {
             transparent
         }
