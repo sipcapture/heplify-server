@@ -27,3 +27,12 @@
     errors stderr
     tls off
 }
+
+:9080 {
+    proxy / homer-webapp:80 {
+            transparent
+        }
+
+    errors stderr
+    tls off
+}
