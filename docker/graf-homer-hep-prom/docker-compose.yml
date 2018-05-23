@@ -164,8 +164,8 @@ services:
     image: sipcapture/homer-webapp
     environment:
       - "DB_HOST=db"
-      - "DB_USER=homer_user"
-      - "DB_PASS=homer_password"
+      - "DB_USER=root"
+      - "DB_PASS="
     expose:
       - 80
     volumes:
