@@ -1,4 +1,4 @@
-Stack of Homer, heplify-server, Prometheus, Grafana
+Homer5, heplify-server, Prometheus, Grafana Stack
 ========
 
 Run from this folder  
