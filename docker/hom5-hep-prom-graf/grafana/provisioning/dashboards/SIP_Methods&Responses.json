@@ -1,7 +1,7 @@
 {
   "__inputs": [
     {
-      "name": "DS_PROMETHEUS",
+      "name": "Prometheus",
       "label": "Prometheus",
       "description": "",
       "type": "datasource",
@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1527164959440,
+  "iteration": 1527165287083,
   "links": [],
   "panels": [
     {
@@ -54,30 +54,36 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "Prometheus",
+      "decimals": 1,
+      "editable": true,
+      "error": false,
       "fill": 1,
+      "grid": {},
       "gridPos": {
-        "h": 5,
+        "h": 11,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 2,
+      "id": 18,
+      "isNew": true,
       "legend": {
         "alignAsTable": true,
         "avg": true,
         "current": true,
-        "max": false,
+        "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 350,
         "total": false,
         "values": true
       },
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null as zero",
+      "nullPointMode": "null",
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -88,35 +94,25 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
+          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\"}[10m])",
           "format": "time_series",
-          "intervalFactor": 3,
-          "legendFormat": "ASR",
-          "refId": "A"
-        },
-        {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
-          "format": "time_series",
-          "intervalFactor": 3,
-          "legendFormat": "NER",
-          "refId": "B"
-        },
-        {
-          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[5m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[5m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[5m]))) <=100",
-          "format": "time_series",
-          "intervalFactor": 3,
-          "legendFormat": "IRA",
-          "refId": "C"
+          "interval": "",
+          "intervalFactor": 2,
+          "legendFormat": "{{ target_name }}: {{ method }} {{ response }}",
+          "metric": "container_memory_usage_bytes",
+          "refId": "A",
+          "step": 10
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "KPI's",
+      "title": "INVITE per second",
       "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
+        "msResolution": true,
+        "shared": false,
+        "sort": 2,
+        "value_type": "cumulative"
       },
       "type": "graph",
       "xaxis": {
@@ -128,11 +124,12 @@
       },
       "yaxes": [
         {
-          "format": "percent",
+          "decimals": 1,
+          "format": "none",
           "label": null,
           "logBase": 1,
-          "max": "100",
-          "min": "0",
+          "max": null,
+          "min": null,
           "show": true
         },
         {
@@ -141,7 +138,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -154,30 +151,36 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "Prometheus",
+      "decimals": 1,
+      "editable": true,
+      "error": false,
       "fill": 1,
+      "grid": {},
       "gridPos": {
-        "h": 5,
+        "h": 11,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 11
       },
-      "id": 3,
+      "id": 22,
+      "isNew": true,
       "legend": {
         "alignAsTable": true,
-        "avg": false,
+        "avg": true,
         "current": true,
         "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 350,
         "total": false,
         "values": true
       },
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null as zero",
+      "nullPointMode": "null",
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -188,115 +191,25 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[1m])",
+          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\"}[10m])",
           "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "CPS",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"200\"}[1m])",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "RPS",
-          "refId": "B"
+          "interval": "",
+          "intervalFactor": 2,
+          "legendFormat": "{{ target_name }}: {{ method }} {{ response }}",
+          "metric": "container_memory_usage_bytes",
+          "refId": "A",
+          "step": 10
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Successful Calls & Register per second",
+      "title": "REGISTER per second",
       "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "decimals": 1,
-      "fill": 0,
-      "gridPos": {
-        "h": 6,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
-      "id": 4,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null as zero",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=~\"INVITE|REGISTER\" ,response=~\"403|404|408|480|482\"}[2m])",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "{{ method }} {{ response }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Invite & Register 403 | 404 | 408 | 480 | 482",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
+        "msResolution": true,
+        "shared": false,
+        "sort": 2,
+        "value_type": "cumulative"
       },
       "type": "graph",
       "xaxis": {
@@ -309,7 +222,7 @@
       "yaxes": [
         {
           "decimals": 1,
-          "format": "short",
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -322,7 +235,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -335,31 +248,38 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "Prometheus",
       "decimals": 1,
-      "fill": 0,
+      "editable": true,
+      "error": false,
+      "fill": 1,
+      "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 11,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 22
       },
-      "id": 5,
+      "id": 23,
+      "isNew": true,
       "legend": {
         "alignAsTable": true,
-        "avg": false,
+        "avg": true,
         "current": true,
         "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 350,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null as zero",
+      "nullPointMode": "null",
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -370,21 +290,25 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\",method=~\"INVITE|REGISTER\", response=~\"50.*\"}[2m])",
+          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method!~\"REGISTER|INVITE\"}[10m])",
           "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "{{ method }} {{ response }}",
-          "refId": "A"
+          "interval": "",
+          "intervalFactor": 2,
+          "legendFormat": "{{ target_name }}: {{ method }} {{ response }}",
+          "metric": "container_memory_usage_bytes",
+          "refId": "A",
+          "step": 10
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Invite & Register 50.*",
+      "title": "!INVITE & !REGISTER per second",
       "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
+        "msResolution": true,
+        "shared": false,
+        "sort": 2,
+        "value_type": "cumulative"
       },
       "type": "graph",
       "xaxis": {
@@ -397,7 +321,7 @@
       "yaxes": [
         {
           "decimals": 1,
-          "format": "short",
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -410,7 +334,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -419,7 +343,7 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [
@@ -430,11 +354,11 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": "Prometheus",
         "hide": 0,
         "includeAll": false,
         "label": "interface_name",
-        "multi": false,
+        "multi": true,
         "name": "tn",
         "options": [],
         "query": "heplify_method_response",
@@ -478,8 +402,8 @@
       "30d"
     ]
   },
-  "timezone": "",
-  "title": "SIP Overview",
-  "uid": "bbTfIr7ik",
-  "version": 47
+  "timezone": "browser",
+  "title": "SIP Methods & Responses",
+  "uid": "Wj1saDGez",
+  "version": 28
 }
