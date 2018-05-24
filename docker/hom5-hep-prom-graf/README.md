@@ -3,7 +3,9 @@ Homer5, heplify-server, Prometheus, Grafana Stack
 
 Run from this folder  
 
-* docker-compose up
+```bash
+    docker-compose up
+```
 
 To bring up  
 
