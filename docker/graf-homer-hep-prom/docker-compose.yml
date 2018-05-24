@@ -20,7 +20,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention=240h'
+      - '--storage.tsdb.retention=30d'
       - '--web.enable-lifecycle'
     restart: unless-stopped
     expose:
@@ -95,6 +95,7 @@ services:
       - "3000:3000"
       - "9090:9090"
       - "9093:9093"
+      - "9080:9080"
     volumes:
       - ./caddy/:/etc/caddy/
     environment:
@@ -143,14 +144,14 @@ services:
       - "HEPLIFYSERVER_DBADDR=db:3306"
       - "HEPLIFYSERVER_DBUSER=root"
       - "HEPLIFYSERVER_DBPASS="
-      - "HEPLIFYSERVER_LOGLVL=debug"
+      - "HEPLIFYSERVER_LOGLVL=info"
       - "HEPLIFYSERVER_LOGSTD=true"
-      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9999"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9096"
       - "HEPLIFYSERVER_PROMTARGETIP="
       - "HEPLIFYSERVER_PROMTARGETNAME="
     restart: unless-stopped
     expose:
-      - 9999
+      - 9096
     networks:
       - monitor-net
     depends_on:
@@ -163,10 +164,10 @@ services:
     image: sipcapture/homer-webapp
     environment:
       - "DB_HOST=db"
-      - "DB_USER=homer_user"
-      - "DB_PASS=homer_password"
-    ports:
-      - "80:80"
+      - "DB_USER=root"
+      - "DB_PASS="
+    expose:
+      - 80
     volumes:
       - ./docker-compose.yml:/homer-semaphore/.bootstrapped
     networks:

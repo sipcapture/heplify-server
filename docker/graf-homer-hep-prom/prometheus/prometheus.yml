@@ -5,7 +5,7 @@ global:
   # Attach these labels to any time series or alerts when communicating with
   # external systems (federation, remote storage, Alertmanager).
   external_labels:
-      monitor: 'docker-host-alpha'
+      monitor: 'docker-heplify-server'
 
 # Load and evaluate rules in this file every 'evaluation_interval' seconds.
 rule_files:
@@ -23,15 +23,10 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'horaclifix'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['horaclifix:8899']
-
   - job_name: 'heplify-server'
     scrape_interval: 5s
     static_configs:
-      - targets: ['heplify-server:9999']
+      - targets: ['heplify-server:9096']
   
 
 alerting:
