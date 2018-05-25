@@ -23,9 +23,10 @@
 * Download a [release](https://github.com/sipcapture/heplify-server/releases)
 * Compile from sources:
 ```
-install Go > 1.10
-cd cmd/heplify-server
-go build
+  install Go > 1.10
+  cd cmd/heplify-server
+  go get -u -v -d
+  go build
 ```
 * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
