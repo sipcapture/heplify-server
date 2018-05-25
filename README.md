@@ -20,8 +20,13 @@
     * SIP KPI's like ASR, NER can be calculated by Prometheus
 
 ### Installation
-* Download a [release](https://github.com/negbie/heplify-server/releases)
-* Compile from [sources](https://github.com/negbie/heplify-server/blob/master/docker/heplify-server/Dockerfile)
+* Download a [release](https://github.com/sipcapture/heplify-server/releases)
+* Compile from sources:
+```
+install Go > 1.10
+cd cmd/heplify-server
+go build
+```
 * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Configuration
