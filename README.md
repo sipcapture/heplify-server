@@ -22,12 +22,10 @@
 ### Installation
 * Download a [release](https://github.com/sipcapture/heplify-server/releases)
 * Compile from sources:
-```
-  install Go > 1.10
+  [install](https://golang.org/doc/install) Go > 1.10
   cd cmd/heplify-server
   go get -u -v -d
   go build
-```
 * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Configuration
@@ -38,7 +36,7 @@ heplify-server can be configured using command-line options, or by defining a lo
 ### Testing
 ##### Stand-Alone
 ```
-heplify-server -h
+./heplify-server -h
 ```
 ##### Docker
 A sample Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/hom5-hep-prom-graf) file is available providing heplify-server, Homer 5 UI, Prometheus, Alertmanager and Grafana in seconds!
