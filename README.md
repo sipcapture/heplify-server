@@ -1,31 +1,19 @@
 ![image](https://user-images.githubusercontent.com/1423657/38167610-1bccc596-3538-11e8-944c-8bd9ee0433b2.png)
 
-**heplify-server** is a stand-alone **HOMER** *Capture Server* developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP** encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent or platform, indexing to database using H5 or H7 table format, producing basic usage metrics timeseries and providing users with simple, basic options for correlation and tagging inline. **heplify-server** also supports protobuf so you don't have to write your own **HEP** implementation.
+**heplify-server** is a stand-alone **HOMER** *Capture Server* developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP** encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent or platform, indexing to database and rotating using H5 or H7 table format, producing precise usage metrics timeseries and providing users with simple, basic options for correlation and tagging inline. **heplify-server** also supports protobuf so you don't have to write your own **HEP** implementation.
 
-*TLDR; instant, stand-alone, minimal HOMER without Kamailio or OpenSIPS dependency/options.*
+*TLDR; instant, stand-alone, minimal HOMER capture server without Kamailio or OpenSIPS dependency/options. It's not as customizeable as Kamailio or OpenSIPS with their configuration language, the focus is simplicity!*
 
-### Notice
-**heplify-server** offers a reduced set of options and is *not* designed for everyone, but should result ideal for those willing to have an *all-in-one* simple capture deployment with minimal complexity and no need for special customization.
-
-### Status 
-#### HOMER 5 Schema
-  * Release Candidate Stage
-    * SIP, correlated RTCP, RTCPXR, Logs, Table rotation
-#### HOMER 7 Schema
-  * Alpha Stage
-    * Table rotation
-#### Prometheus
-  * Release Candidate Stage
-    * Global and device specific stats for SIP methods, responses, RTCP, RTCPXR, X-RTP-Stat
-    * SIP KPI's like ASR, NER can be calculated by Prometheus
 
 ### Installation
 * Download a [release](https://github.com/sipcapture/heplify-server/releases)
 * Compile from sources:  
+  
   [install](https://golang.org/doc/install) Go > 1.10  
   cd cmd/heplify-server  
   go get -u -v -d  
   go build  
+
 * Testers, Reporters and Contributors [welcome](https://github.com/sipcapture/heplify-server/issues)
 
 ### Configuration
