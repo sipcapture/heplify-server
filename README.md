@@ -1,6 +1,6 @@
 ![image](https://user-images.githubusercontent.com/1423657/38167610-1bccc596-3538-11e8-944c-8bd9ee0433b2.png)
 
-**heplify-server** is a stand-alone **HOMER** *Capture Server* developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP** encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent or platform, indexing to database and rotating using H5 or H7 table format, producing precise usage metrics timeseries and providing users with simple, basic options for correlation and tagging inline. **heplify-server** also supports protobuf so you don't have to write your own **HEP** implementation.
+**heplify-server** is a stand-alone **HOMER** *Capture Server* developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP**, Protobuf encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent, indexing to database and rotating using H5 or H7 table format. **heplify-server** provides precise SIP and RTCP metrics with the help of Prometheus and Grafana. It gives you the possibility to get a global view on your network and individual SIP trunking monitoring.
 
 *TLDR; instant, stand-alone, minimal HOMER capture server without Kamailio or OpenSIPS dependency/options. It's not as customizeable as Kamailio or OpenSIPS with their configuration language, the focus is simplicity!*
 
