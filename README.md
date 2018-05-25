@@ -35,9 +35,9 @@ heplify-server can be configured using command-line options, or by defining a lo
 heplify-server -h
 ```
 ##### Docker
-A sample Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/homer-heplify) file is available providing Heplify-Server, Homer 5 UI, and basic MySQL in seconds!
+A sample Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/hom5-hep-prom-graf) file is available providing heplify-server, Homer 5 UI, Prometheus, Alertmanager and Grafana in seconds!
 ```
-cd heplify-server/docker/homer-heplify
+cd heplify-server/docker/hom5-hep-prom-graf/
 docker-compose up -d
 ```
 ##### Service
