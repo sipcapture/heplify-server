@@ -180,6 +180,9 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.StartLine.Method == "" {
 		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
+	if h.SIP.StartLine.Method != h.SIP.CseqMethod && len(h.SIP.StartLine.Method) != 3 {
+		h.SIP.StartLine.Method = "UNKNOWN"
+	}
 
 	if h.SIP.Error != nil {
 		return h.SIP.Error
