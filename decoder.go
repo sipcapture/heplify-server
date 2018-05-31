@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -180,8 +181,16 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.StartLine.Method == "" {
 		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
 	}
-	if h.SIP.StartLine.Method != h.SIP.CseqMethod && len(h.SIP.StartLine.Method) != 3 {
-		h.SIP.StartLine.Method = "UNKNOWN"
+	if h.SIP.StartLine.Method != h.SIP.CseqMethod {
+		if len(h.SIP.StartLine.Method) == 3 {
+			if _, err := strconv.Atoi(h.SIP.StartLine.Method); err != nil {
+				h.SIP.StartLine.Method = "UNKNOWN"
+			}
+		} else if strings.Contains(h.SIP.StartLine.Method, h.SIP.CseqMethod) {
+			h.SIP.StartLine.Method = h.SIP.CseqMethod
+		} else {
+			h.SIP.StartLine.Method = "UNKNOWN"
+		}
 	}
 
 	if h.SIP.Error != nil {
