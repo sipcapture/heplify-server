@@ -16,9 +16,3 @@ to bring up:
 * Telegraf
 * HEPlify-server
 
-When the Grafana dashboard autoprovisioning does not work for you make sure you have no old grafana volumes.
-
-## Configuration
-
-When you change some files inside the Prometheus or Alertmanager folder you can reload them without interruption.
-
