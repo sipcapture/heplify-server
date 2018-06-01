@@ -1,14 +1,8 @@
 version: '3.1'
 
-networks:
-  monitor-net:
-    driver: bridge
-
-volumes:
-    influx_data: {}
-
 services:
   caddy:
+    container_name: caddy
     image: stefanprodan/caddy
     container_name: caddy
     ports:
@@ -22,8 +16,6 @@ services:
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
     restart: unless-stopped
-    networks:
-      - monitor-net
     labels:
       org.label-schema.group: "monitoring"
 
@@ -34,20 +26,8 @@ services:
       - "MYSQL_ROOT_PASSWORD="
       - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
       - "MYSQL_ROOT_HOST=%"
-    ports:
-      - 3306:3306
-    networks:
-      - monitor-net
-    restart: unless-stopped
-
-  adminer:
-    image: adminer
-    depends_on: 
-      - db
-    ports:
-      - 8080:8080
-    networks:
-      - monitor-net
+    expose:
+      - 3306
     restart: unless-stopped
 
   heplify-server:
@@ -72,8 +52,6 @@ services:
     restart: unless-stopped
     expose:
       - 9096
-    networks:
-      - monitor-net
     depends_on:
       - db
     labels:
@@ -90,8 +68,6 @@ services:
       - 80
     volumes:
       - ./docker-compose.yml:/homer-semaphore/.bootstrapped
-    networks:
-      - monitor-net
     restart: unless-stopped
     depends_on:
       - db
@@ -105,25 +81,22 @@ services:
       - "8092:8092/udp"
       - "8125:8125/udp"
     depends_on:
-      dbmysql:
-         condition: service_healthy
+      - heplify-server
 
   influxdb:
     image: influxdb:1.5-alpine
     volumes:
-      - ./influxdb:/var/lib/influxdb
-    ports:
-      - "8086:8086"
+      - ./influx:/var/lib/influxdb
+    expose:
+      - 8086
 
   chronograf:
     image: chronograf:1.5-alpine
     environment:
       INFLUXDB_URL: http://influxdb:8086
       KAPACITOR_URL: http://kapacitor:9092
-    ports:
-      - "8888:8888"
-    networks:
-      - monitor-net
+    expose:
+      - 8888
     links:
       - influxdb
       - kapacitor
@@ -133,9 +106,7 @@ services:
     environment:
       KAPACITOR_HOSTNAME: kapacitor
       KAPACITOR_INFLUXDB_0_URLS_0: http://influxdb:8086
-    networks:
-      - monitor-net
     links:
       - influxdb
-    ports:
-      - "9092:9092"
+    expose:
+      - 9092
