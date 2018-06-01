@@ -1,0 +1,141 @@
+version: '3.1'
+
+networks:
+  monitor-net:
+    driver: bridge
+
+volumes:
+    influx_data: {}
+
+services:
+  caddy:
+    image: stefanprodan/caddy
+    container_name: caddy
+    ports:
+      - "3000:3000"
+      - "9090:9090"
+      - "9093:9093"
+      - "9080:9080"
+    volumes:
+      - ./caddy/:/etc/caddy/
+    environment:
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  db:
+    container_name: db
+    image: mariadb:latest
+    environment:
+      - "MYSQL_ROOT_PASSWORD="
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+      - "MYSQL_ROOT_HOST=%"
+    ports:
+      - 3306:3306
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    depends_on: 
+      - db
+    ports:
+      - 8080:8080
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  heplify-server:
+    image: negbie/heplify-server:latest
+    container_name: heplify-server
+    ports:
+      - "9060:9060"
+      - "9060:9060/udp"
+    command:
+      - './heplify-server'
+    environment:
+      - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_DBDRIVER=mysql"
+      - "HEPLIFYSERVER_DBADDR=db:3306"
+      - "HEPLIFYSERVER_DBUSER=root"
+      - "HEPLIFYSERVER_DBPASS="
+      - "HEPLIFYSERVER_LOGLVL=info"
+      - "HEPLIFYSERVER_LOGSTD=true"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9096"
+      - "HEPLIFYSERVER_PROMTARGETIP="
+      - "HEPLIFYSERVER_PROMTARGETNAME="
+    restart: unless-stopped
+    expose:
+      - 9096
+    networks:
+      - monitor-net
+    depends_on:
+      - db
+    labels:
+      org.label-schema.group: "monitoring"
+
+  homer-webapp:
+    container_name: homer-webapp
+    image: sipcapture/homer-webapp
+    environment:
+      - "DB_HOST=db"
+      - "DB_USER=root"
+      - "DB_PASS="
+    expose:
+      - 80
+    volumes:
+      - ./docker-compose.yml:/homer-semaphore/.bootstrapped
+    networks:
+      - monitor-net
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  telegraf:
+    image: telegraf:1.5-alpine
+    restart: unless-stopped
+    volumes:
+      - ./conf/telegraf.conf:/etc/telegraf/telegraf.conf
+    ports:
+      - "8092:8092/udp"
+      - "8125:8125/udp"
+    depends_on:
+      dbmysql:
+         condition: service_healthy
+
+  influxdb:
+    image: influxdb:1.5-alpine
+    volumes:
+      - ./influxdb:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+
+  chronograf:
+    image: chronograf:1.5-alpine
+    environment:
+      INFLUXDB_URL: http://influxdb:8086
+      KAPACITOR_URL: http://kapacitor:9092
+    ports:
+      - "8888:8888"
+    networks:
+      - monitor-net
+    links:
+      - influxdb
+      - kapacitor
+
+  kapacitor:
+    image: kapacitor:1.5-alpine
+    environment:
+      KAPACITOR_HOSTNAME: kapacitor
+      KAPACITOR_INFLUXDB_0_URLS_0: http://influxdb:8086
+    networks:
+      - monitor-net
+    links:
+      - influxdb
+    ports:
+      - "9092:9092"
