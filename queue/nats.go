@@ -3,7 +3,7 @@ package queue
 import (
 	"github.com/nats-io/go-nats"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/logp"
 )
 
 // NATS producer struct

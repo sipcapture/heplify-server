@@ -12,8 +12,8 @@ import (
 
 	"github.com/koding/multiconfig"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
 	"github.com/negbie/heplify-server/server"
+	"github.com/negbie/logp"
 )
 
 const version = "heplify-server 0.90"

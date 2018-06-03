@@ -13,7 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/logp"
 )
 
 var (

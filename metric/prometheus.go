@@ -10,7 +10,7 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
