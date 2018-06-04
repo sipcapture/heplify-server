@@ -242,6 +242,10 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 		} else if pkt.ProtoType == 100 {
 			p.CvPacketsTotal.WithLabelValues("log").Inc()
 			p.GvPacketsSize.WithLabelValues("log").Set(float64(len(pkt.Payload)))
+		} else {
+			pt := strconv.Itoa(int(pkt.ProtoType))
+			p.CvPacketsTotal.WithLabelValues(pt).Inc()
+			p.GvPacketsSize.WithLabelValues(pt).Set(float64(len(pkt.Payload)))
 		}
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
@@ -284,6 +288,10 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
 	cs, pr, ps, plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
+
+	p.CvPacketsTotal.WithLabelValues("xrtp").Inc()
+	p.GvPacketsSize.WithLabelValues("xrtp").Set(float64(len(stats)))
+
 	m := make(map[string]string)
 	sr := strings.Split(stats, ";")
 
