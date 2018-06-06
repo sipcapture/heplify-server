@@ -10,7 +10,7 @@ import (
 	"github.com/gocraft/dbr"
 	"github.com/negbie/dotsql"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/logp"
 	"github.com/robfig/cron"
 )
 

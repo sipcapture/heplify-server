@@ -3,14 +3,18 @@ package metric
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 
 	"github.com/buger/jsonparser"
 	"github.com/coocood/freecache"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/logp"
+	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -19,6 +23,7 @@ type Prometheus struct {
 	TargetIP          []string
 	TargetName        []string
 	TargetEmpty       bool
+	TargetConf        *sync.RWMutex
 	CvMethodResponse  *prometheus.CounterVec
 	CvPacketsTotal    *prometheus.CounterVec
 	GvPacketsSize     *prometheus.GaugeVec
@@ -32,42 +37,33 @@ type Prometheus struct {
 }
 
 func (p *Prometheus) setup() (err error) {
-	promTargetIP := cutSpace(config.Setting.PromTargetIP)
-	promTargetName := cutSpace(config.Setting.PromTargetName)
+	p.TargetConf = new(sync.RWMutex)
+	p.TargetIP = strings.Split(cutSpace(config.Setting.PromTargetIP), ",")
+	p.TargetName = strings.Split(cutSpace(config.Setting.PromTargetName), ",")
 
-	p.TargetIP = strings.Split(promTargetIP, ",")
-	p.TargetName = strings.Split(promTargetName, ",")
-
-	dedupIP := make(map[string]bool)
-	dedupName := make(map[string]bool)
-
-	uniqueIP := []string{}
-	for _, ti := range p.TargetIP {
-		if _, ok := dedupIP[ti]; !ok {
-			dedupIP[ti] = true
-			uniqueIP = append(uniqueIP, ti)
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGHUP)
+	go func() {
+		for {
+			<-s
+			p.loadPromConf()
 		}
-	}
+	}()
 
-	uniqueNames := []string{}
-	for _, tn := range p.TargetName {
-		if _, ok := dedupName[tn]; !ok {
-			dedupName[tn] = true
-			uniqueNames = append(uniqueNames, tn)
+	if len(p.TargetIP) == len(p.TargetName) && p.TargetIP != nil && p.TargetName != nil {
+		if len(p.TargetIP[0]) == 0 || len(p.TargetName[0]) == 0 {
+			logp.Info("expose metrics with no or unbalanced targets")
+			p.TargetIP[0] = ""
+			p.TargetName[0] = ""
+			p.TargetEmpty = true
+			p.Cache = freecache.NewCache(60 * 1024 * 1024)
+		} else {
+			logp.Info("start prometheus with PromTargetIP: %#v", p.TargetIP)
+			logp.Info("start prometheus with PromTargetName: %#v", p.TargetName)
 		}
-	}
-
-	p.TargetIP = uniqueIP
-	p.TargetName = uniqueNames
-
-	if len(p.TargetIP) != len(p.TargetName) {
-		return fmt.Errorf("please give every prometheus Target a unique IP address and a unique name")
-	}
-
-	if p.TargetIP[0] == "" && p.TargetName[0] == "" {
-		logp.Info("Start prometheus with no targets")
-		p.TargetEmpty = true
-		p.Cache = freecache.NewCache(60 * 1024 * 1024)
+	} else {
+		logp.Info("please give every PromTargetIP a unique IP and PromTargetName a unique name")
+		return fmt.Errorf("faulty PromTargetIP or PromTargetName")
 	}
 
 	p.GaugeMetrics = map[string]prometheus.Gauge{}
@@ -225,58 +221,64 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 	)
 
 	for {
-		pkt, ok = <-hCh
-		if !ok {
-			break
-		}
+		select {
+		case pkt, ok = <-hCh:
+			if !ok {
+				break
+			}
 
-		if pkt.ProtoType == 1 {
-			p.CvPacketsTotal.WithLabelValues("sip").Inc()
-			p.GvPacketsSize.WithLabelValues("sip").Set(float64(len(pkt.Payload)))
-		} else if pkt.ProtoType == 5 {
-			p.CvPacketsTotal.WithLabelValues("rtcp").Inc()
-			p.GvPacketsSize.WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
-		} else if pkt.ProtoType == 38 {
-			p.CvPacketsTotal.WithLabelValues("horaclifix").Inc()
-			p.GvPacketsSize.WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
-		} else if pkt.ProtoType == 100 {
-			p.CvPacketsTotal.WithLabelValues("log").Inc()
-			p.GvPacketsSize.WithLabelValues("log").Set(float64(len(pkt.Payload)))
-		}
+			if pkt.ProtoType == 1 {
+				p.CvPacketsTotal.WithLabelValues("sip").Inc()
+				p.GvPacketsSize.WithLabelValues("sip").Set(float64(len(pkt.Payload)))
+			} else if pkt.ProtoType == 5 {
+				p.CvPacketsTotal.WithLabelValues("rtcp").Inc()
+				p.GvPacketsSize.WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
+			} else if pkt.ProtoType == 38 {
+				p.CvPacketsTotal.WithLabelValues("horaclifix").Inc()
+				p.GvPacketsSize.WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
+			} else if pkt.ProtoType == 100 {
+				p.CvPacketsTotal.WithLabelValues("log").Inc()
+				p.GvPacketsSize.WithLabelValues("log").Set(float64(len(pkt.Payload)))
+			} else {
+				pt := strconv.Itoa(int(pkt.ProtoType))
+				p.CvPacketsTotal.WithLabelValues(pt).Inc()
+				p.GvPacketsSize.WithLabelValues(pt).Set(float64(len(pkt.Payload)))
+			}
 
-		if pkt.SIP != nil && pkt.ProtoType == 1 {
-			if !p.TargetEmpty {
-				for k, tn := range p.TargetName {
-					if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
-						p.CvMethodResponse.WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+			if pkt.SIP != nil && pkt.ProtoType == 1 {
+				if !p.TargetEmpty {
+					for k, tn := range p.TargetName {
+						if pkt.SrcIP == p.TargetIP[k] || pkt.DstIP == p.TargetIP[k] {
+							p.CvMethodResponse.WithLabelValues(tn, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
-						if pkt.SIP.RTPStatVal != "" {
-							p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
+							if pkt.SIP.RTPStatVal != "" {
+								p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
+							}
 						}
 					}
-				}
-			} else {
-				_, err := p.Cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
-				if err == nil {
-					continue
-				}
-				err = p.Cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
-				if err != nil {
-					logp.Warn("%v", err)
-				}
+				} else {
+					_, err := p.Cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
+					if err == nil {
+						continue
+					}
+					err = p.Cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
+					if err != nil {
+						logp.Warn("%v", err)
+					}
 
-				p.CvMethodResponse.WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+					p.CvMethodResponse.WithLabelValues("", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
-				if pkt.SIP.RTPStatVal != "" {
-					p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
+					if pkt.SIP.RTPStatVal != "" {
+						p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
+					}
 				}
+			} else if pkt.ProtoType == 5 {
+				p.dissectRTCPStats([]byte(pkt.Payload))
+			} else if pkt.ProtoType == 34 && config.Setting.RTPAgentStats {
+				p.dissectRTPStats([]byte(pkt.Payload))
+			} else if pkt.ProtoType == 38 && config.Setting.HoraclifixStats {
+				p.dissectHoraclifixStats([]byte(pkt.Payload))
 			}
-		} else if pkt.ProtoType == 5 {
-			p.dissectRTCPStats([]byte(pkt.Payload))
-		} else if pkt.ProtoType == 34 && config.Setting.RTPAgentStats {
-			p.dissectRTPStats([]byte(pkt.Payload))
-		} else if pkt.ProtoType == 38 && config.Setting.HoraclifixStats {
-			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		}
 	}
 }
@@ -284,6 +286,10 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
 	cs, pr, ps, plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
+
+	p.CvPacketsTotal.WithLabelValues("xrtp").Inc()
+	p.GvPacketsSize.WithLabelValues("xrtp").Set(float64(len(stats)))
+
 	m := make(map[string]string)
 	sr := strings.Split(stats, ";")
 
