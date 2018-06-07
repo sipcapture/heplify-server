@@ -158,7 +158,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
 					}
-				case 38:
+				case 34, 35, 38:
 					reportRows = append(reportRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					reportCnt++
 					if reportCnt == s.bulkCnt {
