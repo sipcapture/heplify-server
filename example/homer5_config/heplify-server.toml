@@ -41,3 +41,6 @@ Version         = false
 # PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
 # LogDbg          = "hep,sql"
 # LogLvl          = "warning"
+# -------------------------------------
+# To hot reload PromTargetIP and PromTargetName run:
+# killall -HUP heplify-server
