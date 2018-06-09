@@ -1,5 +1,5 @@
 -- name: create-call-table
-CREATE TABLE IF NOT EXISTS `sip_capture_call_{{date}}` (
+CREATE TABLE `sip_capture_call_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -64,7 +64,7 @@ PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
 );
 
 -- name: create-registration-table
-CREATE TABLE IF NOT EXISTS `sip_capture_registration_{{date}}` (
+CREATE TABLE `sip_capture_registration_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -129,7 +129,7 @@ PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
 );
 
 -- name: create-rest-table
-CREATE TABLE IF NOT EXISTS `sip_capture_rest_{{date}}` (
+CREATE TABLE `sip_capture_rest_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',

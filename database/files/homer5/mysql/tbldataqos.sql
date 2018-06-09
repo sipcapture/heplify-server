@@ -1,5 +1,5 @@
 -- name: create-report-table
-CREATE TABLE IF NOT EXISTS `report_capture_all_{{date}}` (
+CREATE TABLE `report_capture_all_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
@@ -22,7 +22,7 @@ PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
 );
 
 -- name: create-rtcp-table
-CREATE TABLE IF NOT EXISTS `rtcp_capture_all_{{date}}` (
+CREATE TABLE `rtcp_capture_all_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `micro_ts` bigint(18) NOT NULL DEFAULT '0',
