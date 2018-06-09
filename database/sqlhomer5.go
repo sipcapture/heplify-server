@@ -166,6 +166,60 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 		ticker.Stop()
 	}
 
+	addSIPRow := func(r []interface{}) []interface{} {
+		r = append(r, []interface{}{
+			ts,
+			tsNano,
+			short(pkt.SIP.StartLine.Method, 50),
+			short(pkt.SIP.StartLine.RespText, 100),
+			short(pkt.SIP.StartLine.URI.Raw, 200),
+			short(pkt.SIP.StartLine.URI.User, 100),
+			short(pkt.SIP.StartLine.URI.Host, 150),
+			short(pkt.SIP.FromUser, 100),
+			short(pkt.SIP.FromHost, 150),
+			short(pkt.SIP.FromTag, 64),
+			short(pkt.SIP.ToUser, 100),
+			short(pkt.SIP.ToHost, 150),
+			short(pkt.SIP.ToTag, 64),
+			short(pkt.SIP.PaiUser, 100),
+			short(pkt.SIP.ContactUser, 120),
+			short(pkt.SIP.AuthUser, 120),
+			short(pkt.SIP.CallID, 120),
+			short(pkt.SIP.XCallID, 120),
+			short(pkt.SIP.ViaOne, 256),
+			short(pkt.SIP.ViaOneBranch, 80),
+			short(pkt.SIP.CseqVal, 25),
+			short(pkt.SIP.DiversionVal, 256),
+			pkt.SIP.ReasonVal,
+			short(pkt.SIP.ContentType, 256),
+			short(pkt.SIP.AuthVal, 256),
+			short(pkt.SIP.UserAgent, 256),
+			pkt.SrcIP,
+			pkt.SrcPort,
+			pkt.DstIP,
+			pkt.DstPort,
+			pkt.SIP.ContactHost,
+			pkt.SIP.ContactPort,
+			pkt.Protocol,
+			pkt.Version,
+			short(pkt.SIP.RTPStatVal, 256),
+			pkt.ProtoType,
+			pkt.NodeID,
+			short(pkt.SIP.CallID, 120),
+			short(pkt.Payload, 3000)}...)
+		return r
+	}
+
+	addRTCRow := func(r []interface{}) []interface{} {
+		r = append(r, []interface{}{
+			ts,
+			tsNano,
+			pkt.CID,
+			pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
+			pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+		return r
+	}
+
 	for {
 		select {
 		case pkt, ok = <-hCh:
@@ -179,47 +233,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
-					callRows = append(callRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.StartLine.Method, 50),
-						short(pkt.SIP.StartLine.RespText, 100),
-						short(pkt.SIP.StartLine.URI.Raw, 200),
-						short(pkt.SIP.StartLine.URI.User, 100),
-						short(pkt.SIP.StartLine.URI.Host, 150),
-						short(pkt.SIP.FromUser, 100),
-						short(pkt.SIP.FromHost, 150),
-						short(pkt.SIP.FromTag, 64),
-						short(pkt.SIP.ToUser, 100),
-						short(pkt.SIP.ToHost, 150),
-						short(pkt.SIP.ToTag, 64),
-						short(pkt.SIP.PaiUser, 100),
-						short(pkt.SIP.ContactUser, 120),
-						short(pkt.SIP.AuthUser, 120),
-						short(pkt.SIP.CallID, 120),
-						short(pkt.SIP.XCallID, 120),
-						short(pkt.SIP.ViaOne, 256),
-						short(pkt.SIP.ViaOneBranch, 80),
-						short(pkt.SIP.CseqVal, 25),
-						short(pkt.SIP.DiversionVal, 256),
-						pkt.SIP.ReasonVal,
-						short(pkt.SIP.ContentType, 256),
-						short(pkt.SIP.AuthVal, 256),
-						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIP,
-						pkt.SrcPort,
-						pkt.DstIP,
-						pkt.DstPort,
-						pkt.SIP.ContactHost,
-						pkt.SIP.ContactPort,
-						pkt.Protocol,
-						pkt.Version,
-						short(pkt.SIP.RTPStatVal, 256),
-						pkt.ProtoType,
-						pkt.NodeID,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
+					callRows = addSIPRow(callRows)
 					callCnt++
 					if callCnt == s.bulkCnt {
 						s.bulkInsert("call", callRows, s.sipBulkVal)
@@ -227,47 +241,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						callCnt = 0
 					}
 				case "REGISTER":
-					regRows = append(regRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.StartLine.Method, 50),
-						short(pkt.SIP.StartLine.RespText, 100),
-						short(pkt.SIP.StartLine.URI.Raw, 200),
-						short(pkt.SIP.StartLine.URI.User, 100),
-						short(pkt.SIP.StartLine.URI.Host, 150),
-						short(pkt.SIP.FromUser, 100),
-						short(pkt.SIP.FromHost, 150),
-						short(pkt.SIP.FromTag, 64),
-						short(pkt.SIP.ToUser, 100),
-						short(pkt.SIP.ToHost, 150),
-						short(pkt.SIP.ToTag, 64),
-						short(pkt.SIP.PaiUser, 100),
-						short(pkt.SIP.ContactUser, 120),
-						short(pkt.SIP.AuthUser, 120),
-						short(pkt.SIP.CallID, 120),
-						short(pkt.SIP.XCallID, 120),
-						short(pkt.SIP.ViaOne, 256),
-						short(pkt.SIP.ViaOneBranch, 80),
-						short(pkt.SIP.CseqVal, 25),
-						short(pkt.SIP.DiversionVal, 256),
-						pkt.SIP.ReasonVal,
-						short(pkt.SIP.ContentType, 256),
-						short(pkt.SIP.AuthVal, 256),
-						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIP,
-						pkt.SrcPort,
-						pkt.DstIP,
-						pkt.DstPort,
-						pkt.SIP.ContactHost,
-						pkt.SIP.ContactPort,
-						pkt.Protocol,
-						pkt.Version,
-						short(pkt.SIP.RTPStatVal, 256),
-						pkt.ProtoType,
-						pkt.NodeID,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
+					regRows = addSIPRow(regRows)
 					regCnt++
 					if regCnt == s.bulkCnt {
 						s.bulkInsert("register", regRows, s.sipBulkVal)
@@ -275,47 +249,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						regCnt = 0
 					}
 				default:
-					restRows = append(restRows, []interface{}{
-						ts,
-						tsNano,
-						short(pkt.SIP.StartLine.Method, 50),
-						short(pkt.SIP.StartLine.RespText, 100),
-						short(pkt.SIP.StartLine.URI.Raw, 200),
-						short(pkt.SIP.StartLine.URI.User, 100),
-						short(pkt.SIP.StartLine.URI.Host, 150),
-						short(pkt.SIP.FromUser, 100),
-						short(pkt.SIP.FromHost, 150),
-						short(pkt.SIP.FromTag, 64),
-						short(pkt.SIP.ToUser, 100),
-						short(pkt.SIP.ToHost, 150),
-						short(pkt.SIP.ToTag, 64),
-						short(pkt.SIP.PaiUser, 100),
-						short(pkt.SIP.ContactUser, 120),
-						short(pkt.SIP.AuthUser, 120),
-						short(pkt.SIP.CallID, 120),
-						short(pkt.SIP.XCallID, 120),
-						short(pkt.SIP.ViaOne, 256),
-						short(pkt.SIP.ViaOneBranch, 80),
-						short(pkt.SIP.CseqVal, 25),
-						short(pkt.SIP.DiversionVal, 256),
-						pkt.SIP.ReasonVal,
-						short(pkt.SIP.ContentType, 256),
-						short(pkt.SIP.AuthVal, 256),
-						short(pkt.SIP.UserAgent, 256),
-						pkt.SrcIP,
-						pkt.SrcPort,
-						pkt.DstIP,
-						pkt.DstPort,
-						pkt.SIP.ContactHost,
-						pkt.SIP.ContactPort,
-						pkt.Protocol,
-						pkt.Version,
-						short(pkt.SIP.RTPStatVal, 256),
-						pkt.ProtoType,
-						pkt.NodeID,
-						short(pkt.SIP.CallID, 120),
-						short(pkt.Payload, 3000)}...)
-
+					restRows = addSIPRow(restRows)
 					restCnt++
 					if restCnt == s.bulkCnt {
 						s.bulkInsert("rest", restRows, s.sipBulkVal)
@@ -327,13 +261,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
-					rtcpRows = append(rtcpRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CID,
-						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					rtcpRows = addRTCRow(rtcpRows)
 					rtcpCnt++
 					if rtcpCnt == s.bulkCnt {
 						s.bulkInsert("rtcp", rtcpRows, s.rtcBulkVal)
@@ -341,13 +269,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						rtcpCnt = 0
 					}
 				case 34, 35, 38:
-					reportRows = append(reportRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CID,
-						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					reportRows = addRTCRow(reportRows)
 					reportCnt++
 					if reportCnt == s.bulkCnt {
 						s.bulkInsert("report", reportRows, s.rtcBulkVal)
@@ -355,13 +277,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						reportCnt = 0
 					}
 				case 53:
-					dnsRows = append(dnsRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CID,
-						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					dnsRows = addRTCRow(dnsRows)
 					dnsCnt++
 					if dnsCnt == s.bulkCnt {
 						s.bulkInsert("dns", dnsRows, s.rtcBulkVal)
@@ -369,13 +285,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 						dnsCnt = 0
 					}
 				case 100:
-					logRows = append(logRows, []interface{}{
-						ts,
-						tsNano,
-						pkt.CID,
-						pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-						pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
-
+					logRows = addRTCRow(logRows)
 					logCnt++
 					if logCnt == s.bulkCnt {
 						s.bulkInsert("log", logRows, s.rtcBulkVal)

@@ -249,9 +249,9 @@ GO:
 			case dbCh <- hepPkt:
 			default:
 				dbCnt++
-				if dbCnt%2048 == 0 {
+				if dbCnt%1024 == 0 {
 					dbCnt = 0
-					logp.Warn("overflowing db channel by 2048 packets")
+					logp.Warn("overflowing db channel by 1024 packets")
 				}
 			}
 		}
@@ -261,9 +261,9 @@ GO:
 			case pmCh <- hepPkt:
 			default:
 				pmCnt++
-				if pmCnt%2048 == 0 {
+				if pmCnt%1024 == 0 {
 					pmCnt = 0
-					logp.Warn("overflowing metric channel by 2048 packets")
+					logp.Warn("overflowing metric channel by 1024 packets")
 				}
 			}
 		}
@@ -273,9 +273,9 @@ GO:
 			case mqCh <- msg:
 			default:
 				mqCnt++
-				if mqCnt%2048 == 0 {
+				if mqCnt%1024 == 0 {
 					mqCnt = 0
-					logp.Warn("overflowing queue channel by 2048 packets")
+					logp.Warn("overflowing queue channel by 1024 packets")
 				}
 			}
 		}
