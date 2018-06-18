@@ -68,7 +68,7 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if packet[0] == 0x48 && packet[1] == 0x45 && packet[2] == 0x50 && packet[3] == 0x33 {
+	if bytes.HasPrefix(packet, []byte("HEP3")) {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
@@ -102,6 +102,14 @@ func (h *HEP) parse(packet []byte) error {
 			return err
 		}
 		h.CID = h.SIP.CallID
+
+		if len(config.Setting.DiscardMethod) > 0 {
+			for k := range config.Setting.DiscardMethod {
+				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
+					h.Payload = ""
+				}
+			}
+		}
 	}
 
 	logp.Debug("hep", "%+v\n\n", h)
@@ -319,7 +327,7 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 		// Chunk VLAN
 		w.Write([]byte{0x00, 0x00, 0x00, 0x12})
 		w.Write(hepLen8)
-		binary.BigEndian.PutUint16(chunck16, h.Vlan)
+		binary.BigEndian.PutUint16(chunck16, uint16(h.Vlan))
 		w.Write(chunck16)
 
 		// Chunk MOS only

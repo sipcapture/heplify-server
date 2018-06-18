@@ -258,7 +258,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					}
 
 				}
-			} else if pkt.ProtoType >= 2 && pkt.ProtoType <= 200 && pkt.CID != "" {
+			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = addRTCRow(rtcpRows)

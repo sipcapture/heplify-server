@@ -240,6 +240,8 @@ GO:
 		} else if hepPkt.ProtoType == 0 {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
+		} else if hepPkt.Payload == "" {
+			continue
 		}
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
