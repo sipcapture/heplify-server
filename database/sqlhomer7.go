@@ -121,7 +121,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			pHeader = formProtocolHeader(pkt)
 			dHeader = formDataHeader(pkt, date)
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.CID != "" {
+			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
