@@ -1,4 +1,5 @@
 HEPAddr         = "0.0.0.0:9060"
+ESAddr          = ""
 MQDriver        = ""
 MQAddr          = ""
 MQTopic         = ""
@@ -34,6 +35,7 @@ Version         = false
 
 # Examples:
 # -------------------------------------
+# ESAddr          = "http://127.0.0.1:9200"
 # DBShema         = "homer7"
 # DBDriver        = "postgres"
 # DBTableSpace    = "/var/lib/postgresql/data/homer"
