@@ -1,7 +1,7 @@
 package elastic
 
 import (
-	"runtime"
+	"sync"
 
 	"github.com/negbie/heplify-server"
 )
@@ -18,7 +18,7 @@ type ElasticHandler interface {
 
 func New(name string) *Elastic {
 	var register = map[string]ElasticHandler{
-		"graylog": new(Graylog),
+		"elasticsearch": new(Elasticsearch),
 	}
 
 	return &Elastic{
@@ -28,7 +28,7 @@ func New(name string) *Elastic {
 
 func (e *Elastic) Run() error {
 	var (
-		//wg  sync.WaitGroup
+		wg  sync.WaitGroup
 		err error
 	)
 
@@ -37,12 +37,12 @@ func (e *Elastic) Run() error {
 		return err
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go func() {
-			e.EH.send(e.Chan)
-		}()
-	}
-
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.EH.send(e.Chan)
+	}()
+	wg.Wait()
 	return nil
 }
 

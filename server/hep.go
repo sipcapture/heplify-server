@@ -11,6 +11,7 @@ import (
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
+	"github.com/negbie/heplify-server/elastic"
 	"github.com/negbie/heplify-server/metric"
 	"github.com/negbie/heplify-server/queue"
 	"github.com/negbie/logp"
@@ -38,9 +39,11 @@ var (
 	dbCh  = make(chan *decoder.HEP, 200000)
 	mqCh  = make(chan []byte, 20000)
 	pmCh  = make(chan *decoder.HEP, 20000)
+	esCh  = make(chan *decoder.HEP, 20000)
 	dbCnt int
 	mqCnt int
 	pmCnt int
+	esCnt int
 
 	hepBuffer = &sync.Pool{
 		New: func() interface{} {
@@ -110,6 +113,17 @@ func (h *HEPInput) Run() {
 			m.Chan = pmCh
 
 			if err := m.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+		}()
+	}
+
+	if config.Setting.ESAddr != "" {
+		go func() {
+			e := elastic.New("elasticsearch")
+			e.Chan = esCh
+
+			if err := e.Run(); err != nil {
 				logp.Err("%v", err)
 			}
 		}()
@@ -278,6 +292,18 @@ GO:
 				if mqCnt%1024 == 0 {
 					mqCnt = 0
 					logp.Warn("overflowing queue channel by 1024 packets")
+				}
+			}
+		}
+
+		if config.Setting.ESAddr != "" {
+			select {
+			case esCh <- hepPkt:
+			default:
+				esCnt++
+				if esCnt%1024 == 0 {
+					esCnt = 0
+					logp.Warn("overflowing elastic channel by 1024 packets")
 				}
 			}
 		}
