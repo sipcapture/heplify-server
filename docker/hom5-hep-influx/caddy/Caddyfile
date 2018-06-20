@@ -1,0 +1,19 @@
+
+:9090 {
+    basicauth / {$ADMIN_USER} {$ADMIN_PASSWORD}
+    proxy / chronograf:8888 {
+            transparent
+        }
+
+    errors stderr
+    tls off
+}
+
+:9080 {
+    proxy / homer-webapp:80 {
+            transparent
+        }
+
+    errors stderr
+    tls off
+}

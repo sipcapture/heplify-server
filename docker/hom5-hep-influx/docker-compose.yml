@@ -1,0 +1,145 @@
+version: '3.1'
+
+services:
+  caddy:
+    container_name: caddy
+    image: stefanprodan/caddy
+    container_name: caddy
+    ports:
+      - "3000:3000"
+      - "9090:9090"
+      - "9093:9093"
+      - "9080:9080"
+    volumes:
+      - ./caddy/:/etc/caddy/
+    environment:
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+    restart: unless-stopped
+    labels:
+      org.label-schema.group: "monitoring"
+
+  db:
+    container_name: db
+    image: mariadb:latest
+    environment:
+      - "MYSQL_ROOT_PASSWORD="
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+      - "MYSQL_ROOT_HOST=%"
+    expose:
+      - 3306
+    restart: unless-stopped
+
+  heplify-server:
+    image: negbie/heplify-server:latest
+    container_name: heplify-server
+    ports:
+      - "9060:9060"
+      - "9060:9060/udp"
+    command:
+      - './heplify-server'
+    environment:
+      - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_ESADDR="
+      - "HEPLIFYSERVER_DBDRIVER=mysql"
+      - "HEPLIFYSERVER_DBADDR=db:3306"
+      - "HEPLIFYSERVER_DBUSER=root"
+      - "HEPLIFYSERVER_DBPASS="
+      - "HEPLIFYSERVER_LOGLVL=info"
+      - "HEPLIFYSERVER_LOGSTD=true"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9096"
+      - "HEPLIFYSERVER_PROMTARGETIP="
+      - "HEPLIFYSERVER_PROMTARGETNAME="
+    restart: unless-stopped
+    expose:
+      - 9096
+    depends_on:
+      - db
+    labels:
+      org.label-schema.group: "monitoring"
+
+  homer-webapp:
+    container_name: homer-webapp
+    image: sipcapture/homer-webapp
+    environment:
+      - "DB_HOST=db"
+      - "DB_USER=root"
+      - "DB_PASS="
+    expose:
+      - 80
+    volumes:
+      - ./docker-compose.yml:/homer-semaphore/.bootstrapped
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  telegraf:
+    image: telegraf:1.5-alpine
+    restart: unless-stopped
+    volumes:
+      - ./conf/telegraf.conf:/etc/telegraf/telegraf.conf
+    ports:
+      - "8092:8092/udp"
+      - "8125:8125/udp"
+    depends_on:
+      - heplify-server
+
+  influxdb:
+    image: influxdb:1.5-alpine
+    volumes:
+      - ./influx:/var/lib/influxdb
+    expose:
+      - 8086
+
+  chronograf:
+    image: chronograf:1.5-alpine
+    environment:
+      INFLUXDB_URL: http://influxdb:8086
+      KAPACITOR_URL: http://kapacitor:9092
+    expose:
+      - 8888
+    links:
+      - influxdb
+      - kapacitor
+
+  kapacitor:
+    image: kapacitor:1.5-alpine
+    environment:
+      KAPACITOR_HOSTNAME: kapacitor
+      KAPACITOR_INFLUXDB_0_URLS_0: http://influxdb:8086
+    links:
+      - influxdb
+    expose:
+      - 9092
+
+  provisioning:
+    image: alpine:latest
+    links:
+      - influxdb
+    volumes:
+      - ./conf/homer_dashboard.json:/tmp/homer_dashboard.json
+    command: 
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl;
+        echo Waiting for influxdb API ...;
+        while ! nc -z influxdb 8086;
+        do
+          sleep 1;
+        done;
+        echo InfluxDB Retention Policy push ...;
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE DATABASE homer'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE RETENTION POLICY "60s" ON "homer" DURATION 4w REPLICATION 1 DEFAULT'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE RETENTION POLICY "300s" ON "homer" DURATION 8w REPLICATION 1'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE RETENTION POLICY "3600s" ON "homer" DURATION 16w REPLICATION 1'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE RETENTION POLICY "86400s" ON "homer" DURATION 32w REPLICATION 1'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE CONTINUOUS QUERY cq_300s ON homer RESAMPLE EVERY 1m BEGIN SELECT mean(*) INTO homer."300s".:MEASUREMENT FROM homer."60s"./.*/ GROUP BY time(5m),* END'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE CONTINUOUS QUERY cq_3600s ON homer RESAMPLE EVERY 10m BEGIN SELECT mean(*) INTO homer."3600s".:MEASUREMENT FROM homer."60s"./.*/ GROUP BY time(1h),* END'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=CREATE CONTINUOUS QUERY cq_86400s ON homer RESAMPLE EVERY 1h BEGIN SELECT mean(*) INTO homer."86400s".:MEASUREMENT FROM homer."60s"./.*/ GROUP BY time(1d),* END'
+        curl -G http://influxdb:8086/query --data-urlencode 'q=drop retention policy "autogen" ON "homer"'
+        echo Chronograf Dashboard push ...;
+        curl -i -X POST -H "Content-Type: application/json" http://chronograf/chronograf/v1/dashboards -d @/tmp/homer_dashboard.json
+        echo Provisioning completed! Exiting ...;
+        poweroff;
+
