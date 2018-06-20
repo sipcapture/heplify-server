@@ -2,7 +2,10 @@ package elastic
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/negbie/heplify-server"
@@ -13,12 +16,14 @@ import (
 
 type Elasticsearch struct {
 	bulkClient *elastic.BulkProcessor
+	indexName  string
 }
 
 func (e *Elasticsearch) setup() error {
 	var err error
 	var client *elastic.Client
 	ctx := context.Background()
+	e.indexName = "heplify-server"
 	for {
 		client, err = elastic.NewClient(
 			elastic.SetURL(config.Setting.ESAddr),
@@ -34,7 +39,7 @@ func (e *Elasticsearch) setup() error {
 	e.bulkClient, err = client.BulkProcessor().
 		Name("ESBulkProcessor").
 		Workers(runtime.NumCPU()).
-		BulkActions(2000).
+		BulkActions(1000).
 		BulkSize(2 << 20).
 		FlushInterval(10 * time.Second).
 		Do(ctx)
@@ -42,13 +47,13 @@ func (e *Elasticsearch) setup() error {
 		return err
 	}
 	// Use the IndexExists service to check if a specified index exists.
-	exists, err := client.IndexExists("heplify-server").Do(ctx)
+	exists, err := client.IndexExists(e.indexName).Do(ctx)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		// Create a new index.
-		createIndex, err := client.CreateIndex("heplify-server").Do(ctx)
+		createIndex, err := client.CreateIndex(e.indexName).Do(ctx)
 		if err != nil {
 			return err
 		}
@@ -65,12 +70,21 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 		ok  bool
 	)
 
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
 	for {
-		pkt, ok = <-hCh
-		if !ok {
-			break
+		select {
+		case pkt, ok = <-hCh:
+			if !ok {
+				break
+			}
+			r := elastic.NewBulkIndexRequest().Index(e.indexName).Type("hep").Doc(pkt)
+			e.bulkClient.Add(r)
+
+		case <-c:
+			logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
+			e.bulkClient.Flush()
 		}
-		r := elastic.NewBulkIndexRequest().Index("heplify-server").Type("hep").Doc(pkt)
-		e.bulkClient.Add(r)
 	}
 }

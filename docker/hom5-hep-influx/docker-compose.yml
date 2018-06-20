@@ -40,6 +40,7 @@ services:
       - './heplify-server'
     environment:
       - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_ESADDR="
       - "HEPLIFYSERVER_DBDRIVER=mysql"
       - "HEPLIFYSERVER_DBADDR=db:3306"
       - "HEPLIFYSERVER_DBUSER=root"
