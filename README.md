@@ -25,6 +25,11 @@ You have 3 options to get **heplify-server** up and running:
 To setup a systemd service use the sample [service file](https://github.com/sipcapture/heplify-server/blob/master/example/) 
 and follow the instructions at the top.
 
+Since version 0.92 its possible to hot reload PromTargetIP and PromTargetName when you change them inside the configuration file.
+```
+killall -HUP heplify-server
+```
+
 ### Running
 ##### Stand-Alone
 ```
