@@ -178,7 +178,7 @@ func (h *HEP) parseHEP(packet []byte) error {
 }
 
 func (h *HEP) parseSIP() error {
-	h.SIP = sipparser.ParseMsg(h.Payload)
+	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs...)
 
 	if h.SIP.StartLine == nil {
 		h.SIP.StartLine = new(sipparser.StartLine)
