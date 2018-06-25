@@ -31,7 +31,7 @@ type HeplifyServer struct {
 	DBDropOnStart   bool     `default:"false"`
 	Dedup           bool     `default:"false"`
 	DiscardMethod   []string `default:""`
-	AlegID          string   `default:"x-cid"`
+	AlegIDs         []string `default:""`
 	LogDbg          string   `default:""`
 	LogLvl          string   `default:"info"`
 	LogStd          bool     `default:"false"`
@@ -69,7 +69,7 @@ func NewConfig() *HeplifyServer {
 		DBDropOnStart:   false,
 		Dedup:           false,
 		DiscardMethod:   nil,
-		AlegID:          "x-cid",
+		AlegIDs:         nil,
 		LogDbg:          "",
 		LogLvl:          "info",
 		LogStd:          false,
