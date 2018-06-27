@@ -57,7 +57,7 @@ func (s *SQLHomer7) setup() error {
 			return err
 		}
 	} else if config.Setting.DBDriver == "postgres" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil); err != nil {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
 			s.dbc.Close()
 			return err
 		}
@@ -250,31 +250,64 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		case "log":
 			query = "INSERT INTO hep_proto_100_logs_" + tableDate + values
 		}
+		_, err := s.dbs.Exec(query, rows...)
+		if err != nil {
+			logp.Err("%v", err)
+		}
 	} else if config.Setting.DBDriver == "postgres" {
 		switch query {
 		case "call":
-			query = "INSERT INTO hep_proto_1_call" + values
+			query = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "register":
-			query = "INSERT INTO hep_proto_1_register" + values
+			query = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "default":
-			query = "INSERT INTO hep_proto_1_default" + values
+			query = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "rtcp":
-			query = "INSERT INTO hep_proto_5_rtcp" + values
+			query = "COPY hep_proto_5_rtcp(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "report":
-			query = "INSERT INTO hep_proto_35_report" + values
+			query = "COPY hep_proto_35_report(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "dns":
-			query = "INSERT INTO hep_proto_53_dns" + values
+			query = "COPY hep_proto_53_dns(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "log":
-			query = "INSERT INTO hep_proto_100_logs" + values
+			query = "COPY hep_proto_100_logs(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+		}
+
+		tx, err := s.dbs.Begin()
+		if err != nil || tx == nil {
+			logp.Err("%v", err)
+			return
+		}
+
+		stmt, err := tx.Prepare(query)
+		if err != nil {
+			logp.Err("%v", err)
+			err := tx.Rollback()
+			if err != nil {
+				logp.Err("%v", err)
+			}
+			return
+		}
+
+		for i := 0; i < len(rows); i = i + 5 {
+			_, err = stmt.Exec(rows[i], rows[i+1], rows[i+2], rows[i+3], rows[i+4])
+			if err != nil {
+				logp.Err("%v", err)
+				continue
+			}
+		}
+
+		err = stmt.Close()
+		if err != nil {
+			logp.Err("%v", err)
+		}
+		err = tx.Commit()
+		if err != nil {
+			logp.Err("%v", err)
 		}
 	}
 
 	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 
-	_, err := s.dbs.Exec(query, rows...)
-	if err != nil {
-		logp.Err("%v", err)
-	}
 }
 
 func (s *SQLHomer7) createQueryValues(count int, values string) string {

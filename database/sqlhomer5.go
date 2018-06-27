@@ -114,7 +114,7 @@ func (s *SQLHomer5) setup() error {
 			return err
 		}
 	} else if config.Setting.DBDriver == "postgres" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, " host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass+" sslmode=disable", nil); err != nil {
+		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
 			s.dbc.Close()
 			return err
 		}
