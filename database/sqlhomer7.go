@@ -20,10 +20,11 @@ import (
 
 type SQLHomer7 struct {
 	//dbc     *sql.DB
-	dbc     *dbr.Connection
-	dbs     *dbr.Session
-	bulkCnt int
-	bulkVal string
+	dbc      *dbr.Connection
+	dbs      *dbr.Session
+	dbDriver string
+	bulkCnt  int
+	bulkVal  string
 }
 
 var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
@@ -32,16 +33,17 @@ var queryValCnt = 5
 func (s *SQLHomer7) setup() error {
 	var err error
 	var addr = strings.Split(config.Setting.DBAddr, ":")
+	s.dbDriver = config.Setting.DBDriver
 
 	if len(addr) != 2 {
 		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
 		return err
 	}
-	if addr[1] == "3306" && config.Setting.DBDriver == "postgres" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+	if addr[1] == "3306" && s.dbDriver == "postgres" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], s.dbDriver)
 		return err
-	} else if addr[1] == "5432" && config.Setting.DBDriver == "mysql" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+	} else if addr[1] == "5432" && s.dbDriver == "mysql" {
+		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], s.dbDriver)
 		return err
 	}
 
@@ -51,13 +53,13 @@ func (s *SQLHomer7) setup() error {
 		r.Rotate()
 	}
 
-	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
+	if s.dbDriver == "mysql" {
+		if s.dbc, err = dbr.Open(s.dbDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
 			s.dbc.Close()
 			return err
 		}
-	} else if config.Setting.DBDriver == "postgres" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
+	} else if s.dbDriver == "postgres" {
+		if s.dbc, err = dbr.Open(s.dbDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
 			s.dbc.Close()
 			return err
 		}
@@ -79,7 +81,7 @@ func (s *SQLHomer7) setup() error {
 
 	s.bulkVal = s.createQueryValues(s.bulkCnt, queryVal)
 
-	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
+	logp.Info("%s output address: %s, bulk size: %d\n", s.dbDriver, config.Setting.DBAddr, config.Setting.DBBulk)
 	return nil
 }
 
@@ -232,7 +234,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 }
 
 func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) {
-	if config.Setting.DBDriver == "mysql" {
+	if s.dbDriver == "mysql" {
 		tableDate := time.Now().UTC().Format("20060102")
 		switch query {
 		case "call":
@@ -254,7 +256,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		if err != nil {
 			logp.Err("%v", err)
 		}
-	} else if config.Setting.DBDriver == "postgres" {
+	} else if s.dbDriver == "postgres" {
 		switch query {
 		case "call":
 			query = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
@@ -296,6 +298,10 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 			}
 		}
 
+		_, err = stmt.Exec()
+		if err != nil {
+			logp.Err("%v", err)
+		}
 		err = stmt.Close()
 		if err != nil {
 			logp.Err("%v", err)
@@ -311,15 +317,12 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 }
 
 func (s *SQLHomer7) createQueryValues(count int, values string) string {
-	for i := 0; i < count; i++ {
-		if config.Setting.DBDriver == "mysql" {
+	if s.dbDriver == "mysql" {
+		for i := 0; i < count; i++ {
 			values += `(?,?,?,?,?),`
-		} else if config.Setting.DBDriver == "postgres" {
-			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d),",
-				i*queryValCnt+1, i*queryValCnt+2, i*queryValCnt+3, i*queryValCnt+4, i*queryValCnt+5)
 		}
+		values = values[:len(values)-1]
 	}
-	values = values[:len(values)-1]
 	return values
 }
 

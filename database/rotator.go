@@ -57,7 +57,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				break
 			}
 		} else if config.Setting.DBDriver == "postgres" {
-			db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+			db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -102,7 +102,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
 		if err != nil {
 			return err
 		}
@@ -129,7 +129,7 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix, 0, 0)
 		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (r *Rotator) DropTables(duration int) (err error) {
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
 		if err != nil {
 			return err
 		}
