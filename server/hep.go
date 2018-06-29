@@ -116,10 +116,14 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("hep input address: %s, hep workers: %d\n", h.addr, h.workers)
-	go h.logStats()
+	h.wg.Add(1)
+	go h.serveUDP()
 	go h.serveTLS()
+	go h.logStats()
+	logp.Info("hep input address: %s, hep workers: %d\n", h.addr, h.workers)
+}
 
+func (h *HEPInput) serveUDP() {
 	ua, err := net.ResolveUDPAddr("udp", h.addr)
 	if err != nil {
 		logp.Critical("%v", err)
@@ -129,10 +133,11 @@ func (h *HEPInput) Run() {
 	if err != nil {
 		logp.Critical("%v", err)
 	}
+	defer uc.Close()
+	defer h.wg.Done()
 	for {
 		select {
 		case <-h.ch:
-			uc.Close()
 			return
 		default:
 		}
@@ -216,7 +221,7 @@ func (h *HEPInput) closeConn() {
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
 	h.closeConn()
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)
 
