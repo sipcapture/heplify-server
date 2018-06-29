@@ -23,7 +23,6 @@ type HEPInput struct {
 	wg      *sync.WaitGroup
 	pool    chan chan struct{}
 	stats   HEPStats
-	isAlive bool
 	workers int
 }
 
@@ -59,23 +58,11 @@ func NewHEP() *HEPInput {
 		wg:      &sync.WaitGroup{},
 		workers: runtime.NumCPU() * 4,
 		pool:    make(chan chan struct{}, runtime.NumCPU()*1e2),
-		isAlive: true,
 	}
 	return h
 }
 
 func (h *HEPInput) Run() {
-	ua, err := net.ResolveUDPAddr("udp", h.addr)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-
-	uc, err := net.ListenUDP("udp", ua)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-	defer uc.Close()
-
 	for n := 0; n < h.workers; n++ {
 		go func() {
 			shut := make(chan struct{})
@@ -133,10 +120,25 @@ func (h *HEPInput) Run() {
 	go h.logStats()
 	go h.serveTLS()
 
-	for h.isAlive {
+	ua, err := net.ResolveUDPAddr("udp", h.addr)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
+
+	uc, err := net.ListenUDP("udp", ua)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
+	for {
+		select {
+		case <-h.ch:
+			uc.Close()
+			return
+		default:
+		}
 		uc.SetReadDeadline(time.Now().Add(1e9))
 		buf := hepBuffer.Get().([]byte)
-		n, _, err := uc.ReadFrom(buf)
+		n, err := uc.Read(buf)
 		if err != nil {
 			continue
 		} else if n > 8192 {
@@ -206,15 +208,14 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 	}
 }
 
-func (h *HEPInput) closeTLS() {
+func (h *HEPInput) closeConn() {
 	close(h.ch)
 	h.wg.Wait()
 }
 
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
-	h.isAlive = false
-	h.closeTLS()
+	h.closeConn()
 	time.Sleep(2 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)
