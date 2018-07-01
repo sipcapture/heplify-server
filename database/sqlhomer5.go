@@ -136,7 +136,7 @@ func (s *SQLHomer5) setup() error {
 	s.sipBulkVal = s.createSipQueryValues(s.bulkCnt, sipVal)
 	s.rtcBulkVal = s.createRtcQueryValues(s.bulkCnt, rtcVal)
 
-	logp.Info("%s output address: %s, bulk size: %d\n", config.Setting.DBDriver, config.Setting.DBAddr, config.Setting.DBBulk)
+	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
 }
 

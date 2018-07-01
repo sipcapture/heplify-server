@@ -81,7 +81,7 @@ func (s *SQLHomer7) setup() error {
 
 	s.bulkVal = s.createQueryValues(s.bulkCnt, queryVal)
 
-	logp.Info("%s output address: %s, bulk size: %d\n", s.dbDriver, config.Setting.DBAddr, config.Setting.DBBulk)
+	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
 }
 

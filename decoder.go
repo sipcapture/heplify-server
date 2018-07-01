@@ -83,7 +83,7 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	h.normPayload()
-	if h.ProtoType == 0 {
+	if h.Payload == "DUPLICATE" {
 		return nil
 	}
 
@@ -98,7 +98,7 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 64 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v\n%s\n\n", err, strconv.Quote(h.Payload))
+			logp.Warn("%v\n%s\nnodeID: %d, srcIP: %s, dstIP: %s\n", err, strconv.Quote(h.Payload), h.NodeID, h.SrcIP, h.DstIP)
 			return err
 		}
 		h.CID = h.SIP.CallID
@@ -106,7 +106,7 @@ func (h *HEP) parse(packet []byte) error {
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.Payload = ""
+					h.Payload = "DISCARD"
 				}
 			}
 		}
@@ -344,7 +344,7 @@ func (h *HEP) normPayload() {
 		hashVal := int64(xxhash.Sum64String(h.Payload))
 		_, err := dedup.GetInt(hashVal)
 		if err == nil {
-			h.ProtoType = 0
+			h.Payload = "DUPLICATE"
 			return
 		}
 		err = dedup.SetInt(hashVal, nil, 2)
