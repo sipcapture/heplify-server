@@ -18,13 +18,11 @@ import (
 )
 
 type HEPInput struct {
-	addr    string
-	ch      chan struct{}
-	wg      *sync.WaitGroup
-	pool    chan chan struct{}
-	stats   HEPStats
-	isAlive bool
-	workers int
+	addr   string
+	buffer *sync.Pool
+	quit   chan struct{}
+	stats  HEPStats
+	wg     *sync.WaitGroup
 }
 
 type HEPStats struct {
@@ -44,44 +42,21 @@ var (
 	mqCnt int
 	pmCnt int
 	esCnt int
-
-	hepBuffer = &sync.Pool{
-		New: func() interface{} {
-			return make([]byte, 8192)
-		},
-	}
 )
 
 func NewHEP() *HEPInput {
 	h := &HEPInput{
-		addr:    config.Setting.HEPAddr,
-		ch:      make(chan struct{}),
-		wg:      &sync.WaitGroup{},
-		workers: runtime.NumCPU() * 4,
-		pool:    make(chan chan struct{}, runtime.NumCPU()*1e2),
-		isAlive: true,
+		addr:   config.Setting.HEPAddr,
+		buffer: &sync.Pool{New: func() interface{} { return make([]byte, 8192) }},
+		quit:   make(chan struct{}),
+		wg:     &sync.WaitGroup{},
 	}
 	return h
 }
 
 func (h *HEPInput) Run() {
-	ua, err := net.ResolveUDPAddr("udp", h.addr)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-
-	uc, err := net.ListenUDP("udp", ua)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-	defer uc.Close()
-
-	for n := 0; n < h.workers; n++ {
-		go func() {
-			shut := make(chan struct{})
-			h.pool <- shut
-			h.hepWorker(shut)
-		}()
+	for n := 0; n < runtime.NumCPU()*4; n++ {
+		go h.hepWorker()
 	}
 
 	if config.Setting.DBAddr != "" {
@@ -129,14 +104,34 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	logp.Info("hep input address: %s, hep workers: %d\n", h.addr, h.workers)
-	go h.logStats()
+	h.wg.Add(1)
+	go h.serveUDP()
 	go h.serveTLS()
+	go h.logStats()
+	logp.Info("start heplify-server with %#v\n", config.Setting)
+}
 
-	for h.isAlive {
+func (h *HEPInput) serveUDP() {
+	ua, err := net.ResolveUDPAddr("udp", h.addr)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
+
+	uc, err := net.ListenUDP("udp", ua)
+	if err != nil {
+		logp.Critical("%v", err)
+	}
+	defer uc.Close()
+	defer h.wg.Done()
+	for {
+		select {
+		case <-h.quit:
+			return
+		default:
+		}
 		uc.SetReadDeadline(time.Now().Add(1e9))
-		buf := hepBuffer.Get().([]byte)
-		n, _, err := uc.ReadFrom(buf)
+		buf := h.buffer.Get().([]byte)
+		n, err := uc.Read(buf)
 		if err != nil {
 			continue
 		} else if n > 8192 {
@@ -144,8 +139,8 @@ func (h *HEPInput) Run() {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
-		atomic.AddUint64(&h.stats.PktCount, 1)
 		inCh <- buf[:n]
+		atomic.AddUint64(&h.stats.PktCount, 1)
 	}
 }
 
@@ -161,7 +156,7 @@ func (h *HEPInput) serveTLS() {
 
 	for {
 		select {
-		case <-h.ch:
+		case <-h.quit:
 			listener.Close()
 			return
 		default:
@@ -182,13 +177,13 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 	defer h.wg.Done()
 	for {
 		select {
-		case <-h.ch:
+		case <-h.quit:
 			return
 		default:
 		}
 
 		c.SetReadDeadline(time.Now().Add(1e9))
-		buf := hepBuffer.Get().([]byte)
+		buf := h.buffer.Get().([]byte)
 		n, err := c.Read(buf)
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
@@ -201,49 +196,40 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
-		atomic.AddUint64(&h.stats.PktCount, 1)
 		inCh <- buf[:n]
+		atomic.AddUint64(&h.stats.PktCount, 1)
 	}
 }
 
-func (h *HEPInput) closeTLS() {
-	close(h.ch)
+func (h *HEPInput) closeConn() {
+	close(h.quit)
 	h.wg.Wait()
 }
 
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
-	h.isAlive = false
-	h.closeTLS()
-	time.Sleep(2 * time.Second)
+	h.closeConn()
+	time.Sleep(1 * time.Second)
 	logp.Info("heplify-server has been stopped")
 	close(inCh)
-
-	/* 	for i := 0; i < config.Setting.HEPWorkers; i++ {
-		wQuit := <-h.pool
-		close(wQuit)
-	} */
-
 }
 
-func (h *HEPInput) hepWorker(shut chan struct{}) {
+func (h *HEPInput) hepWorker() {
 	var (
 		hepPkt *decoder.HEP
-		msg    = hepBuffer.Get().([]byte)
+		msg    = h.buffer.Get().([]byte)
 		err    error
 		ok     bool
 	)
 
-GO:
+OUT:
 	for {
-		hepBuffer.Put(msg[:8192])
+		h.buffer.Put(msg[:8192])
 
 		select {
-		case <-shut:
-			break GO
 		case msg, ok = <-inCh:
 			if !ok {
-				break GO
+				break OUT
 			}
 		}
 
@@ -251,10 +237,10 @@ GO:
 		if err != nil {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
-		} else if hepPkt.ProtoType == 0 {
+		} else if hepPkt.Payload == "DUPLICATE" {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
-		} else if hepPkt.Payload == "" {
+		} else if hepPkt.Payload == "DISCARD" {
 			continue
 		}
 
