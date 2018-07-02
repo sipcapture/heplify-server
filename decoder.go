@@ -68,7 +68,7 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if bytes.HasPrefix(packet, []byte("HEP3")) {
+	if bytes.HasPrefix(packet, []byte("HEP3")) && len(packet) > 32 {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
@@ -128,8 +128,8 @@ func (h *HEP) parseHEP(packet []byte) error {
 		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
 		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
 		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
-		if len(hepChunk) < int(chunkLength) {
-			return fmt.Errorf("HEP chunk overflow %d > %d", chunkLength, len(hepChunk))
+		if len(hepChunk) < int(chunkLength) || int(chunkLength) < 6 {
+			return fmt.Errorf("HEP chunkLength %d is wrong len hepChunk %d", chunkLength, len(hepChunk))
 		}
 		chunkBody := hepChunk[6:chunkLength]
 
