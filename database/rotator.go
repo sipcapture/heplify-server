@@ -64,13 +64,9 @@ func (r *Rotator) CreateDatabases() (err error) {
 				time.Sleep(5 * time.Second)
 			} else {
 				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBDataTable)
-				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBConfTable)
 				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
 				r.dbExec(db, "GRANT postgres to homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
-				r.dbExec(db, "CREATE TABLESPACE homer OWNER homer_user LOCATION '"+config.Setting.DBTableSpace+"';")
-				r.dbExec(db, "GRANT ALL ON TABLESPACE homer TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
 				db.Close()
@@ -128,16 +124,6 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix, 0, 0)
 		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix, 0, 0)
-	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBConfTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-		r.dbExec(db, "CREATE EXTENSION pgcrypto;")
-		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix, 0, 0)
-		r.dbExecFile(db, r.box.String("pgsql/idxconf.sql"), suffix, 0, 0)
-		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix, 0, 0)
 	}
 	return nil
 }

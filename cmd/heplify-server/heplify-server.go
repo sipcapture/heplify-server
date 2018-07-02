@@ -16,7 +16,7 @@ import (
 	"github.com/negbie/logp"
 )
 
-const version = "heplify-server 0.93"
+const version = "heplify-server 0.94"
 
 type server interface {
 	Run()
