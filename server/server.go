@@ -135,7 +135,7 @@ func (h *HEPInput) serveUDP() {
 		if err != nil {
 			continue
 		} else if n > 8192 {
-			logp.Warn("received to big packet with %d bytes", n)
+			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
@@ -192,7 +192,7 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 				return
 			}
 		} else if n > 8192 {
-			logp.Warn("received to big packet with %d bytes", n)
+			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}

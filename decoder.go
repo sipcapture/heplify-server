@@ -77,7 +77,7 @@ func (h *HEP) parse(packet []byte) error {
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {
-			logp.Warn("malformed packet which is neither hep nor protobuf encapsulated")
+			logp.Warn("malformed packet with length %d which is neither hep nor protobuf encapsulated", len(packet))
 			return err
 		}
 	}
@@ -125,6 +125,9 @@ func (h *HEP) parseHEP(packet []byte) error {
 
 	for currentByte < length {
 		hepChunk := packet[currentByte:]
+		if len(hepChunk) < 6 {
+			return fmt.Errorf("HEP chunk too small %d", len(hepChunk))
+		}
 		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
 		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
 		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
