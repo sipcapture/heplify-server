@@ -103,6 +103,8 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
+		// Set this connection to UTC time and create the partitions with it.
+		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), suffix, 0, 0)
 		r.dbExecFileLoop(db, r.box.String("pgsql/parlog.sql"), suffix, duration, r.logStep)
 		r.dbExecFileLoop(db, r.box.String("pgsql/parqos.sql"), suffix, duration, r.qosStep)
