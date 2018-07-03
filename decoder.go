@@ -77,7 +77,7 @@ func (h *HEP) parse(packet []byte) error {
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {
-			logp.Warn("malformed packet which is neither hep nor protobuf encapsulated")
+			logp.Warn("malformed packet with length %d which is neither hep nor protobuf encapsulated", len(packet))
 			return err
 		}
 	}
@@ -95,7 +95,7 @@ func (h *HEP) parse(packet []byte) error {
 		h.Timestamp = time.Now()
 	}
 
-	if h.ProtoType == 1 && len(h.Payload) > 64 {
+	if h.ProtoType == 1 && len(h.Payload) > 32 {
 		err = h.parseSIP()
 		if err != nil {
 			logp.Warn("%v\n%s\nnodeID: %d, srcIP: %s, dstIP: %s\n", err, strconv.Quote(h.Payload), h.NodeID, h.SrcIP, h.DstIP)
@@ -125,13 +125,31 @@ func (h *HEP) parseHEP(packet []byte) error {
 
 	for currentByte < length {
 		hepChunk := packet[currentByte:]
+		if len(hepChunk) < 6 {
+			return fmt.Errorf("HEP chunk must be >= 6 byte long but is %d", len(hepChunk))
+		}
 		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
 		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
 		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
 		if len(hepChunk) < int(chunkLength) || int(chunkLength) < 6 {
-			return fmt.Errorf("HEP chunkLength %d is wrong len hepChunk %d", chunkLength, len(hepChunk))
+			return fmt.Errorf("HEP chunk with %d byte < chunkLength %d or chunkLength < 6", len(hepChunk), chunkLength)
 		}
 		chunkBody := hepChunk[6:chunkLength]
+
+		switch chunkType {
+		case Version, Protocol, ProtoType:
+			if len(chunkBody) != 1 {
+				return fmt.Errorf("HEP chunkType %d should be 1 byte long but is %d", chunkType, len(chunkBody))
+			}
+		case SrcPort, DstPort, Vlan:
+			if len(chunkBody) != 2 {
+				return fmt.Errorf("HEP chunkType %d should be 2 byte long but is %d", chunkType, len(chunkBody))
+			}
+		case IP4SrcIP, IP4DstIP, IP6SrcIP, IP6DstIP, Tsec, Tmsec, NodeID:
+			if len(chunkBody) < 4 {
+				return fmt.Errorf("HEP chunkType %d should be >= 4 byte long but is %d", chunkType, len(chunkBody))
+			}
+		}
 
 		switch chunkType {
 		case Version:

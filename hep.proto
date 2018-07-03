@@ -11,6 +11,12 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 
+// For tests
+//option (gogoproto.testgen_all) = true;
+option (gogoproto.benchgen_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.populate_all) = true;
+
 // HEP represents HEP packet
 message HEP {
 	required uint32 Version = 1 [(gogoproto.nullable) = false];
@@ -30,7 +36,15 @@ message HEP {
 }
 
 
-/* 
+/*
+#
+curl -OL https://github.com/google/protobuf/releases/download/v3.6.0/protoc-3.6.0-linux-x86_64.zip
+unzip protoc-3.6.0-linux-x86_64.zip -d protoc3
+sudo mv protoc3/bin/* /usr/local/bin/
+sudo mv protoc3/include/* /usr/local/include/
+#
+protoc -I=. -I=$GOPATH/src -I=$GOPATH/src/github.com/gogo/protobuf/protobuf --gogoslick_out=. hep.proto
+#
 // HEP represents HEP packet
 type HEP struct {
 	Version   uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
