@@ -15,17 +15,16 @@ import (
 )
 
 type Elasticsearch struct {
+	client     *elastic.Client
 	bulkClient *elastic.BulkProcessor
-	indexName  string
+	ctx        context.Context
 }
 
 func (e *Elasticsearch) setup() error {
 	var err error
-	var client *elastic.Client
-	ctx := context.Background()
-	e.indexName = "heplify-server"
+	e.ctx = context.Background()
 	for {
-		client, err = elastic.NewClient(
+		e.client, err = elastic.NewClient(
 			elastic.SetURL(config.Setting.ESAddr),
 			elastic.SetSniff(false),
 		)
@@ -36,30 +35,20 @@ func (e *Elasticsearch) setup() error {
 			break
 		}
 	}
-	e.bulkClient, err = client.BulkProcessor().
+	e.bulkClient, err = e.client.BulkProcessor().
 		Name("ESBulkProcessor").
 		Workers(runtime.NumCPU()).
 		BulkActions(1000).
 		BulkSize(2 << 20).
 		FlushInterval(10 * time.Second).
-		Do(ctx)
+		Do(e.ctx)
 	if err != nil {
 		return err
 	}
-	// Use the IndexExists service to check if a specified index exists.
-	exists, err := client.IndexExists(e.indexName).Do(ctx)
+
+	err = e.createIndex(e.ctx, e.client)
 	if err != nil {
 		return err
-	}
-	if !exists {
-		// Create a new index.
-		createIndex, err := client.CreateIndex(e.indexName).Do(ctx)
-		if err != nil {
-			return err
-		}
-		if !createIndex.Acknowledged {
-			// Not acknowledged
-		}
 	}
 	return nil
 }
@@ -72,6 +61,7 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	ticker := time.NewTicker(12 * time.Hour)
 
 	for {
 		select {
@@ -79,12 +69,43 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 			if !ok {
 				break
 			}
-			r := elastic.NewBulkIndexRequest().Index(e.indexName).Type("hep").Doc(pkt)
+			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006-01-02")).Type("hep").Doc(pkt)
 			e.bulkClient.Add(r)
-
+		case <-ticker.C:
+			err := e.createIndex(e.ctx, e.client)
+			if err != nil {
+				logp.Warn("%v", err)
+			}
 		case <-c:
 			logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
 			e.bulkClient.Flush()
 		}
 	}
+}
+
+func (e *Elasticsearch) createIndex(ctx context.Context, client *elastic.Client) error {
+	var idx string
+	// Use the IndexExists service to check if a specified index exists.
+	for i := 0; i < 3; i++ {
+		t := time.Now().Add(time.Hour * time.Duration(24*i)).Format("2006-01-02")
+		idx = "heplify-server-" + t
+		exists, err := client.IndexExists(idx).Do(ctx)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			// Create a new index.
+			createIndex, err := client.CreateIndex(idx).Do(ctx)
+			if err != nil {
+				return err
+			}
+			if !createIndex.Acknowledged {
+				logp.Warn("creation of index %s not acknowledged", idx)
+			}
+			logp.Info("successfully created index %s", idx)
+		} else {
+			logp.Info("index %s already created", idx)
+		}
+	}
+	return nil
 }
