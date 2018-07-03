@@ -308,6 +308,14 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		}
 		err = tx.Commit()
 		if err != nil {
+			for i := 0; i < len(rows); i++ {
+				s, ok := rows[i].(string)
+				if ok {
+					if strings.Contains(s, "\x00") {
+						logp.Err("%s", strconv.Quote(s))
+					}
+				}
+			}
 			logp.Err("%v", err)
 		}
 	}
