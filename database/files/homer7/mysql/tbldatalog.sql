@@ -1,5 +1,5 @@
 -- name: create-logs-table
-CREATE TABLE IF NOT EXISTS `hep_proto_100_logs_{{date}}` (
+CREATE TABLE IF NOT EXISTS `hep_proto_100_default_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `sid` varchar(256) NOT NULL DEFAULT '',
   `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

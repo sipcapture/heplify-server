@@ -1,5 +1,5 @@
 -- name: create-report-table
-CREATE TABLE IF NOT EXISTS `hep_proto_35_report_{{date}}` (
+CREATE TABLE IF NOT EXISTS `hep_proto_35_default_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `sid` varchar(256) NOT NULL DEFAULT '',
   `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -15,7 +15,7 @@ PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
 );
 
 -- name: create-rtcp-table
-CREATE TABLE IF NOT EXISTS `hep_proto_5_rtcp_{{date}}` (
+CREATE TABLE IF NOT EXISTS `hep_proto_5_default_{{date}}` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `sid` varchar(256) NOT NULL DEFAULT '',
   `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
