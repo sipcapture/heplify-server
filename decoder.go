@@ -378,6 +378,8 @@ func (h *HEP) normPayload() {
 				if size == 1 {
 					continue
 				}
+			} else if r == '\x00' {
+				continue
 			}
 			v = append(v, r)
 		}

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_call (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw bytea NOT NULL DEFAULT ''
+  raw varchar NOT NULL
 ) PARTITION BY RANGE (create_date);
 
 -- name: create-hep_proto_1_register
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_register (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw bytea NOT NULL DEFAULT ''
+  raw varchar NOT NULL
 ) PARTITION BY RANGE (create_date);
 
 -- name: create-hep_proto_1_default
@@ -55,5 +55,5 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_default (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw bytea NOT NULL DEFAULT ''
+  raw varchar NOT NULL
 ) PARTITION BY RANGE (create_date);
