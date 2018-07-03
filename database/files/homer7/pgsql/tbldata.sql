@@ -1,5 +1,5 @@
--- name: create-hep_proto_100_logs
-CREATE TABLE IF NOT EXISTS hep_proto_100_logs (
+-- name: create-hep_proto_100_default
+CREATE TABLE IF NOT EXISTS hep_proto_100_default (
   id BIGSERIAL NOT NULL,
   sid varchar NOT NULL,
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS hep_proto_100_logs (
   raw varchar NOT NULL
 ) PARTITION BY RANGE (create_date);
 
--- name: create-hep_proto_35_report
-CREATE TABLE IF NOT EXISTS hep_proto_35_report (
+-- name: create-hep_proto_35_default
+CREATE TABLE IF NOT EXISTS hep_proto_35_default (
   id BIGSERIAL NOT NULL,
   sid varchar NOT NULL,
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS hep_proto_35_report (
   raw varchar NOT NULL
 ) PARTITION BY RANGE (create_date);
 
--- name: create-hep_proto_5_rtcp
-CREATE TABLE IF NOT EXISTS hep_proto_5_rtcp (
+-- name: create-hep_proto_5_default
+CREATE TABLE IF NOT EXISTS hep_proto_5_default (
   id BIGSERIAL NOT NULL,
   sid varchar NOT NULL,
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_call (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw varchar NOT NULL
+  raw bytea NOT NULL DEFAULT ''
 ) PARTITION BY RANGE (create_date);
 
 -- name: create-hep_proto_1_register
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_register (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw varchar NOT NULL
+  raw bytea NOT NULL DEFAULT ''
 ) PARTITION BY RANGE (create_date);
 
 -- name: create-hep_proto_1_default
@@ -55,5 +55,5 @@ CREATE TABLE IF NOT EXISTS hep_proto_1_default (
   create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   protocol_header jsonb NOT NULL,
   data_header jsonb NOT NULL,
-  raw varchar NOT NULL
+  raw bytea NOT NULL DEFAULT ''
 ) PARTITION BY RANGE (create_date);

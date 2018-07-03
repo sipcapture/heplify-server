@@ -244,13 +244,13 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		case "default":
 			query = "INSERT INTO hep_proto_1_default_" + tableDate + values
 		case "rtcp":
-			query = "INSERT INTO hep_proto_5_rtcp_" + tableDate + values
+			query = "INSERT INTO hep_proto_5_default_" + tableDate + values
 		case "report":
-			query = "INSERT INTO hep_proto_35_report_" + tableDate + values
+			query = "INSERT INTO hep_proto_35_default_" + tableDate + values
 		case "dns":
-			query = "INSERT INTO hep_proto_53_dns_" + tableDate + values
+			query = "INSERT INTO hep_proto_53_default_" + tableDate + values
 		case "log":
-			query = "INSERT INTO hep_proto_100_logs_" + tableDate + values
+			query = "INSERT INTO hep_proto_100_default_" + tableDate + values
 		}
 		_, err := s.dbs.Exec(query, rows...)
 		if err != nil {
@@ -265,13 +265,13 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		case "default":
 			query = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "rtcp":
-			query = "COPY hep_proto_5_rtcp(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "report":
-			query = "COPY hep_proto_35_report(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "dns":
-			query = "COPY hep_proto_53_dns(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		case "log":
-			query = "COPY hep_proto_100_logs(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		}
 
 		tx, err := s.dbs.Begin()
