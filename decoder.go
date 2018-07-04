@@ -98,7 +98,8 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 32 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v\n%s\nnodeID: %d, srcIP: %s, dstIP: %s\n", err, strconv.Quote(h.Payload), h.NodeID, h.SrcIP, h.DstIP)
+			logp.Warn("%v\n%s\nversion: %d, protocol: %d, srcIP: %s, dstIP: %s, protoType: %d, nodeID: %d,\n",
+				err, strconv.Quote(h.Payload), h.Version, h.Protocol, h.SrcIP, h.DstIP, h.ProtoType, h.NodeID)
 			return err
 		}
 		h.CID = h.SIP.CallID

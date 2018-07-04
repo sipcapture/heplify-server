@@ -2,7 +2,9 @@ package database
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"runtime"
 	"strconv"
@@ -11,7 +13,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
-	"github.com/gocraft/dbr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -19,9 +20,7 @@ import (
 )
 
 type SQLHomer7 struct {
-	//dbc     *sql.DB
-	dbc      *dbr.Connection
-	dbs      *dbr.Session
+	db       *sql.DB
 	dbDriver string
 	bulkCnt  int
 	bulkVal  string
@@ -54,24 +53,23 @@ func (s *SQLHomer7) setup() error {
 	}
 
 	if s.dbDriver == "mysql" {
-		if s.dbc, err = dbr.Open(s.dbDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
-			s.dbc.Close()
+		if s.db, err = sql.Open(s.dbDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
+			s.db.Close()
 			return err
 		}
 	} else if s.dbDriver == "postgres" {
-		if s.dbc, err = dbr.Open(s.dbDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
-			s.dbc.Close()
+		if s.db, err = sql.Open(s.dbDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass); err != nil {
+			s.db.Close()
 			return err
 		}
 	}
-	if err = s.dbc.Ping(); err != nil {
-		s.dbc.Close()
+	if err = s.db.Ping(); err != nil {
+		s.db.Close()
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(runtime.NumCPU() * 4)
-	s.dbc.SetMaxIdleConns(runtime.NumCPU())
-	s.dbs = s.dbc.NewSession(nil)
+	s.db.SetMaxOpenConns(runtime.NumCPU() * 4)
+	s.db.SetMaxIdleConns(runtime.NumCPU())
 
 	s.bulkCnt = config.Setting.DBBulk
 
@@ -107,7 +105,9 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 	if timer < 0 {
 		timer = 0
 	}
-	ticker := time.NewTicker(time.Duration(timer+1) * time.Second)
+	rand.Seed(time.Now().UTC().UnixNano())
+	tr := rand.Intn(timer+4-timer+1) + (timer + 1)
+	ticker := time.NewTicker(time.Duration(tr) * time.Second)
 	if timer == 0 {
 		ticker.Stop()
 	}
@@ -252,7 +252,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 		case "log":
 			query = "INSERT INTO hep_proto_100_default_" + tableDate + values
 		}
-		_, err := s.dbs.Exec(query, rows...)
+		_, err := s.db.Exec(query, rows...)
 		if err != nil {
 			logp.Err("%v", err)
 		}
@@ -274,7 +274,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 			query = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 		}
 
-		tx, err := s.dbs.Begin()
+		tx, err := s.db.Begin()
 		if err != nil || tx == nil {
 			logp.Err("%v", err)
 			return

@@ -58,8 +58,9 @@ func (p *Prometheus) setup() (err error) {
 			p.TargetEmpty = true
 			p.Cache = freecache.NewCache(60 * 1024 * 1024)
 		} else {
-			logp.Info("start prometheus with PromTargetIP: %#v", p.TargetIP)
-			logp.Info("start prometheus with PromTargetName: %#v", p.TargetName)
+			for i := range p.TargetName {
+				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
+			}
 		}
 	} else {
 		logp.Info("please give every PromTargetIP a unique IP and PromTargetName a unique name")

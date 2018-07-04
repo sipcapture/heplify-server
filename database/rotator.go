@@ -1,13 +1,13 @@
 package database
 
 import (
+	"database/sql"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
-	"github.com/gocraft/dbr"
 	"github.com/negbie/dotsql"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
@@ -42,7 +42,7 @@ func NewRotator(b *packr.Box) *Rotator {
 func (r *Rotator) CreateDatabases() (err error) {
 	for {
 		if config.Setting.DBDriver == "mysql" {
-			db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+			db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -57,7 +57,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				break
 			}
 		} else if config.Setting.DBDriver == "postgres" {
-			db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+			db, err := sql.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -80,7 +80,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 func (r *Rotator) CreateDataTables(duration int) (err error) {
 	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+		db, err := sql.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass)
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 func (r *Rotator) CreateConfTables(duration int) (err error) {
 	suffix := replaceCreateDay(duration)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
 			return err
 		}
@@ -133,14 +133,14 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 func (r *Rotator) DropTables(duration int) (err error) {
 	suffix := replaceDropDay(duration)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil)
+		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
 			return err
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil)
+		db, err := sql.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+r.addr[0]+" port="+r.addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass)
 		if err != nil {
 			return err
 		}
@@ -152,12 +152,12 @@ func (r *Rotator) DropTables(duration int) (err error) {
 	return nil
 }
 
-func (r *Rotator) dbExec(db *dbr.Connection, query string) {
+func (r *Rotator) dbExec(db *sql.DB, query string) {
 	_, err := db.Exec(query)
 	checkDBErr(err)
 }
 
-func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) error {
+func (r *Rotator) dbExecFile(db *sql.DB, file string, pattern strings.Replacer, d, p int) error {
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	tt := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	newMinTime := tt.Format("1504")
@@ -182,7 +182,7 @@ func (r *Rotator) dbExecFile(db *dbr.Connection, file string, pattern strings.Re
 	return lastErr
 }
 
-func (r *Rotator) dbExecFileLoop(db *dbr.Connection, file string, pattern strings.Replacer, d, p int) {
+func (r *Rotator) dbExecFileLoop(db *sql.DB, file string, pattern strings.Replacer, d, p int) {
 	dot, err := dotsql.LoadFromString(pattern.Replace(file))
 	if err != nil {
 		logp.Err("%s\n\n", err)
@@ -193,7 +193,7 @@ func (r *Rotator) dbExecFileLoop(db *dbr.Connection, file string, pattern string
 	}
 }
 
-func fileLoop(db *dbr.Connection, query string, d, p int) {
+func fileLoop(db *sql.DB, query string, d, p int) {
 	var newStartTime, newEndTime, newPartTime string
 	oriQuery := query
 
@@ -275,6 +275,7 @@ func (r *Rotator) createTables() {
 	}
 	if config.Setting.DBDropDays == 0 {
 		logp.Warn("don't schedule daily drop job because config.Setting.DBDropDays is 0\n")
+		logp.Warn("maybe you should set the option DBDropDays greater 0 otherwise old data won't be deleted\n")
 	}
 }
 

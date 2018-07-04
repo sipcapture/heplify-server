@@ -1,7 +1,9 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"runtime"
 	"strings"
@@ -9,7 +11,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
-	"github.com/gocraft/dbr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -78,9 +79,7 @@ var (
 )
 
 type SQLHomer5 struct {
-	//dbc     *sql.DB
-	dbc        *dbr.Connection
-	dbs        *dbr.Session
+	db         *sql.DB
 	bulkCnt    int
 	sipBulkVal string
 	rtcBulkVal string
@@ -109,24 +108,23 @@ func (s *SQLHomer5) setup() error {
 	}
 
 	if config.Setting.DBDriver == "mysql" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"), nil); err != nil {
-			s.dbc.Close()
+		if s.db, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
+			s.db.Close()
 			return err
 		}
 	} else if config.Setting.DBDriver == "postgres" {
-		if s.dbc, err = dbr.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass, nil); err != nil {
-			s.dbc.Close()
+		if s.db, err = sql.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass); err != nil {
+			s.db.Close()
 			return err
 		}
 	}
-	if err = s.dbc.Ping(); err != nil {
-		s.dbc.Close()
+	if err = s.db.Ping(); err != nil {
+		s.db.Close()
 		return err
 	}
 
-	s.dbc.SetMaxOpenConns(runtime.NumCPU() * 4)
-	s.dbc.SetMaxIdleConns(runtime.NumCPU())
-	s.dbs = s.dbc.NewSession(nil)
+	s.db.SetMaxOpenConns(runtime.NumCPU() * 4)
+	s.db.SetMaxIdleConns(runtime.NumCPU())
 
 	s.bulkCnt = config.Setting.DBBulk
 	if s.bulkCnt < 1 {
@@ -161,7 +159,9 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	if timer < 0 {
 		timer = 0
 	}
-	ticker := time.NewTicker(time.Duration(timer+1) * time.Second)
+	rand.Seed(time.Now().UTC().UnixNano())
+	tr := rand.Intn(timer+4-timer+1) + (timer + 1)
+	ticker := time.NewTicker(time.Duration(tr) * time.Second)
 	if timer == 0 {
 		ticker.Stop()
 	}
@@ -381,7 +381,7 @@ func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) 
 
 	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 
-	_, err := s.dbs.Exec(query, rows...)
+	_, err := s.db.Exec(query, rows...)
 	if err != nil {
 		logp.Err("%v", err)
 	}
