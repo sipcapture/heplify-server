@@ -237,7 +237,7 @@ OUT:
 		if err != nil {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
-		} else if hepPkt.Payload == "DUPLICATE" {
+		} else if hepPkt.ProtoType == 0 {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
 		} else if hepPkt.Payload == "DISCARD" {

@@ -21,6 +21,7 @@ func TestDecodeEncodeHEP(t *testing.T) {
 
 func BenchmarkEncodeHEP(b *testing.B) {
 	pkt, _ := DecodeHEP(hepPacket)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		val := EncodeHEP(pkt)
 		_ = val
@@ -36,6 +37,7 @@ func BenchmarkDecodeHEPSIP(b *testing.B) {
 
 func BenchmarkDecodeHEP(b *testing.B) {
 	hep := &HEP{}
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		hep.parseHEP(hepPacket)
 	}
