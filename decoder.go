@@ -83,7 +83,7 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	h.normPayload()
-	if h.Payload == "DUPLICATE" {
+	if h.ProtoType == 0 {
 		return nil
 	}
 
@@ -363,7 +363,7 @@ func (h *HEP) normPayload() {
 		hashVal := int64(xxhash.Sum64String(h.Payload))
 		_, err := dedup.GetInt(hashVal)
 		if err == nil {
-			h.Payload = "DUPLICATE"
+			h.ProtoType = 0
 			return
 		}
 		err = dedup.SetInt(hashVal, nil, 2)

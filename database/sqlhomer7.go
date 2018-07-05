@@ -106,9 +106,10 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		timer = 0
 	}
 	rand.Seed(time.Now().UTC().UnixNano())
-	tr := rand.Intn(timer+4-timer+1) + (timer + 1)
+	tr := rand.Intn(timer+4-3) + 3
 	ticker := time.NewTicker(time.Duration(tr) * time.Second)
 	if timer == 0 {
+		logp.Info("disable timed db inserts")
 		ticker.Stop()
 	}
 
