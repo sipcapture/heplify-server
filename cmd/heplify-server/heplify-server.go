@@ -80,7 +80,7 @@ func main() {
 	//go http.ListenAndServe(":8181", http.DefaultServeMux)
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	hep := input.NewHEP()
+	hep := input.NewHEPInput()
 	servers := []server{hep}
 
 	for _, srv := range servers {

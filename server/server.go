@@ -44,7 +44,7 @@ var (
 	esCnt int
 )
 
-func NewHEP() *HEPInput {
+func NewHEPInput() *HEPInput {
 	h := &HEPInput{
 		addr:   config.Setting.HEPAddr,
 		buffer: &sync.Pool{New: func() interface{} { return make([]byte, 8192) }},
@@ -166,6 +166,9 @@ func (h *HEPInput) serveTLS() {
 		if err != nil {
 			logp.Err("%v", err)
 			continue
+		}
+		if config.Setting.PipeAddr != "" {
+			go pipeConn(conn, config.Setting.PipeAddr)
 		}
 		h.wg.Add(1)
 		go h.handleTLS(conn)
