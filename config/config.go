@@ -5,6 +5,8 @@ var Setting HeplifyServer
 type HeplifyServer struct {
 	HEPAddr         string   `default:"0.0.0.0:9060"`
 	ESAddr          string   `default:""`
+	PipeAddr        string   `default:""`
+	PipeFilter      []string `default:""`
 	MQDriver        string   `default:""`
 	MQAddr          string   `default:""`
 	MQTopic         string   `default:""`
@@ -43,6 +45,8 @@ func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
 		HEPAddr:         "0.0.0.0:9060",
 		ESAddr:          "",
+		PipeAddr:        "",
+		PipeFilter:      nil,
 		MQDriver:        "",
 		MQAddr:          "",
 		MQTopic:         "",
