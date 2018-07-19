@@ -69,7 +69,7 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 			if !ok {
 				break
 			}
-			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006-01-02")).Type("hep").Doc(pkt)
+			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006.01.02")).Type("hep").Doc(pkt)
 			e.bulkClient.Add(r)
 		case <-ticker.C:
 			err := e.createIndex(e.ctx, e.client)
@@ -87,7 +87,7 @@ func (e *Elasticsearch) createIndex(ctx context.Context, client *elastic.Client)
 	var idx string
 	// Use the IndexExists service to check if a specified index exists.
 	for i := 0; i < 3; i++ {
-		t := time.Now().Add(time.Hour * time.Duration(24*i)).Format("2006-01-02")
+		t := time.Now().Add(time.Hour * time.Duration(24*i)).Format("2006.01.02")
 		idx = "heplify-server-" + t
 		exists, err := client.IndexExists(idx).Do(ctx)
 		if err != nil {
