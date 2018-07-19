@@ -91,8 +91,9 @@ func (h *HEP) parse(packet []byte) error {
 	t := time.Now()
 	d := t.Sub(h.Timestamp)
 	if d < 0 {
-		logp.Debug("hep", "packet with timestamp in the future with delta %v from nodeID %d", d, h.NodeID)
-		h.Timestamp = time.Now()
+		logp.Debug("heptime", "future packet timestamp: %d, now: %d, delta: %d from nodeID %d",
+			h.Timestamp.UnixNano(), t.UnixNano(), d, h.NodeID)
+		h.Timestamp = t
 	}
 
 	if h.ProtoType == 1 && len(h.Payload) > 32 {

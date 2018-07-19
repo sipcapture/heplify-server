@@ -71,7 +71,8 @@ func (p *Prometheus) setup() (err error) {
 	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
 	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
 
-	p.CvMethodResponse = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_method_response", Help: "SIP method and response counter"}, []string{"target_name", "direction", "response", "method"})
+	p.CvMethodResponse = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_method_response", Help: "SIP method and response counter"},
+		[]string{"target_name", "direction", "node_id", "response", "method"})
 	p.CvPacketsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_packets_total", Help: "Total packets by HEP type"}, []string{"type"})
 	p.GvPacketsSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_packets_size", Help: "Packet size by HEP type"}, []string{"type"})
 	p.GaugeVecMetrics["heplify_xrtp_cs"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_cs", Help: "XRTP call setup time"}, []string{"target_name"})
@@ -255,7 +256,8 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 							if pkt.DstIP == p.TargetIP[k] {
 								direction = "dst"
 							}
-							p.CvMethodResponse.WithLabelValues(tn, direction, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+							p.CvMethodResponse.WithLabelValues(
+								tn, direction, strconv.Itoa(int(pkt.NodeID)), pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 							if pkt.SIP.RTPStatVal != "" {
 								p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
@@ -272,7 +274,8 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 						logp.Warn("%v", err)
 					}
 
-					p.CvMethodResponse.WithLabelValues("", "", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+					p.CvMethodResponse.WithLabelValues(
+						"", "", strconv.Itoa(int(pkt.NodeID)), pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 					if pkt.SIP.RTPStatVal != "" {
 						p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
