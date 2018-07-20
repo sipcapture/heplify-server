@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -46,11 +46,16 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1527165245983,
+  "iteration": 1532083924615,
   "links": [],
   "panels": [
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "CS": "#0a437c",
+        "CS current": "#962d82",
+        "CS last day": "#aea2e0",
+        "CS last week": "#e5a8e2"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -58,7 +63,7 @@
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 1,
+      "fill": 0,
       "grid": {},
       "gridPos": {
         "h": 7,
@@ -88,7 +93,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "CS last week",
+          "fill": 2,
+          "linewidth": 0
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -98,9 +109,16 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "CS",
+          "legendFormat": "CS current",
           "refId": "A",
           "step": 2
+        },
+        {
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[5m] offset 1w))) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m] offset 1w)) or sum(up) * 0)) * \n160 * sum(rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m] offset 1w))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "CS last week",
+          "refId": "B"
         }
       ],
       "thresholds": [],
@@ -109,7 +127,7 @@
       "title": "Concurrent Sessions",
       "tooltip": {
         "msResolution": false,
-        "shared": false,
+        "shared": true,
         "sort": 0,
         "value_type": "cumulative"
       },
@@ -146,7 +164,10 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "CAPS per interface": "#f9934e",
+        "CPS per interface": "#65c5db"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -247,7 +268,10 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "RAPS per interface": "#629e51",
+        "RPS per interface": "rgb(230, 49, 119)"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -284,7 +308,12 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "RPS per interface",
+          "yaxis": 1
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -366,9 +395,9 @@
         "multi": true,
         "name": "tn",
         "options": [],
-        "query": "heplify_method_response",
+        "query": "label_values(heplify_method_response, target_name)",
         "refresh": 1,
-        "regex": "/.*target_name=\"([^\"]*).*/",
+        "regex": "",
         "sort": 0,
         "tagValuesQuery": "",
         "tags": [],
@@ -410,5 +439,5 @@
   "timezone": "browser",
   "title": "SIP Calls & Registers",
   "uid": "Sj2saAbez",
-  "version": 13
+  "version": 23
 }

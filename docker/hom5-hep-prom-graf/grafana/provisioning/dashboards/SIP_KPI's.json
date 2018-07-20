@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -46,11 +46,14 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1527165053464,
+  "iteration": 1532083872497,
   "links": [],
   "panels": [
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "SER (ASR) current": "#bf1b00",
+        "SER (ASR) last week": "#ea6460"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -58,10 +61,10 @@
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 1,
+      "fill": 0,
       "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
         "y": 0
@@ -87,19 +90,32 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "SER (ASR) last week",
+          "fill": 2,
+          "linewidth": 0
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)) <=100",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 4,
-          "legendFormat": "SER (ASR)",
+          "legendFormat": "SER (ASR) current",
           "refId": "A",
           "step": 10
+        },
+        {
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)) <=100",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "SER (ASR) last week",
+          "refId": "B"
         }
       ],
       "thresholds": [],
@@ -145,7 +161,10 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "SEER (NER) current": "#0a437c",
+        "SEER (NER) last week": "#447ebc"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -153,13 +172,13 @@
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 1,
+      "fill": 0,
       "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 8,
       "isNew": true,
@@ -182,17 +201,30 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "SEER (NER) last week",
+          "fill": 2,
+          "linewidth": 0
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)) <=100",
           "format": "time_series",
           "intervalFactor": 4,
-          "legendFormat": "SEER (NER)",
+          "legendFormat": "SEER (NER) current",
           "refId": "B"
+        },
+        {
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)) <=100",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "SEER (NER) last week",
+          "refId": "A"
         }
       ],
       "thresholds": [],
@@ -238,7 +270,10 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "SCR current": "#6d1f62",
+        "SCR last week": "#d683ce"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -246,13 +281,13 @@
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 1,
+      "fill": 0,
       "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 14
       },
       "id": 9,
       "isNew": true,
@@ -275,17 +310,30 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "SCR last week",
+          "fill": 2,
+          "linewidth": 0
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m]))) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))) <=100",
           "format": "time_series",
           "intervalFactor": 4,
-          "legendFormat": "SCR",
+          "legendFormat": "SCR current",
           "refId": "B"
+        },
+        {
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w))) <=100",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "SCR last week",
+          "refId": "A"
         }
       ],
       "thresholds": [],
@@ -342,10 +390,10 @@
       "fill": 1,
       "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 21
       },
       "hideTimeOverride": false,
       "id": 7,
@@ -375,7 +423,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[5m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[5m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[5m]))) <=100",
+          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[30m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[30m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[30m]))) <=100",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 4,
@@ -385,7 +433,7 @@
           "step": 10
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"408|500|503|504\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m]))) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"408|500|503|504\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))) <=100",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "ISA",
@@ -434,7 +482,7 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [
@@ -452,9 +500,9 @@
         "multi": false,
         "name": "tn",
         "options": [],
-        "query": "heplify_method_response",
+        "query": "label_values(heplify_method_response, target_name)",
         "refresh": 1,
-        "regex": "/.*target_name=\"([^\"]*).*/",
+        "regex": "",
         "sort": 0,
         "tagValuesQuery": "",
         "tags": [],
@@ -465,7 +513,7 @@
     ]
   },
   "time": {
-    "from": "now-12h",
+    "from": "now-2d",
     "to": "now"
   },
   "timepicker": {
@@ -496,5 +544,5 @@
   "timezone": "browser",
   "title": "SIP KPI's",
   "uid": "Vj1sdPGmz",
-  "version": 130
+  "version": 140
 }

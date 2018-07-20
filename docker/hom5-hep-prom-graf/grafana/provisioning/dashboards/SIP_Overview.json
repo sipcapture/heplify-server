@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1527164959440,
+  "iteration": 1532083640459,
   "links": [],
   "panels": [
     {
@@ -71,6 +71,7 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 200,
         "total": false,
         "values": true
       },
@@ -88,21 +89,21 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[15m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[15m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[15m])) or sum(up) * 0)) <=100",
           "format": "time_series",
           "intervalFactor": 3,
           "legendFormat": "ASR",
           "refId": "A"
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[5m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[5m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[5m])) or sum(up) * 0)) <=100",
+          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[15m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[15m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[15m])) or sum(up) * 0)) <=100",
           "format": "time_series",
           "intervalFactor": 3,
           "legendFormat": "NER",
           "refId": "B"
         },
         {
-          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[5m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[5m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[5m]))) <=100",
+          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[15m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[15m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[15m]))) <=100",
           "format": "time_series",
           "intervalFactor": 3,
           "legendFormat": "IRA",
@@ -150,7 +151,10 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "CPS": "#447ebc",
+        "RPS": "#e24d42"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -171,6 +175,7 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 200,
         "total": false,
         "values": true
       },
@@ -188,14 +193,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[1m])",
+          "expr": "sum without(direction,node_id)(rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "CPS",
           "refId": "A"
         },
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"200\"}[1m])",
+          "expr": "sum without(direction,node_id)(rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"200\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "RPS",
@@ -248,7 +253,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "decimals": 1,
+      "decimals": null,
       "fill": 0,
       "gridPos": {
         "h": 6,
@@ -265,6 +270,7 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 250,
         "total": false,
         "values": true
       },
@@ -282,7 +288,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=~\"INVITE|REGISTER\" ,response=~\"403|404|408|480|482\"}[2m])",
+          "expr": "sum without(direction,node_id)(rate(heplify_method_response{target_name=~\"$tn\", method=~\"INVITE|REGISTER\" ,response=~\"403|404|408|480|482\"}[2m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ method }} {{ response }}",
@@ -308,7 +314,7 @@
       },
       "yaxes": [
         {
-          "decimals": 1,
+          "decimals": null,
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -336,7 +342,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "decimals": 1,
+      "decimals": null,
       "fill": 0,
       "gridPos": {
         "h": 6,
@@ -353,6 +359,7 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sideWidth": 250,
         "total": false,
         "values": true
       },
@@ -370,7 +377,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\",method=~\"INVITE|REGISTER\", response=~\"50.*\"}[2m])",
+          "expr": "sum without(direction,node_id)(rate(heplify_method_response{target_name=~\"$tn\",method=~\"INVITE|REGISTER\", response=~\"50.*\"}[2m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ method }} {{ response }}",
@@ -396,7 +403,7 @@
       },
       "yaxes": [
         {
-          "decimals": 1,
+          "decimals": null,
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -419,7 +426,7 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [
@@ -437,9 +444,9 @@
         "multi": false,
         "name": "tn",
         "options": [],
-        "query": "heplify_method_response",
+        "query": "label_values(heplify_method_response, target_name)",
         "refresh": 1,
-        "regex": "/.*target_name=\"([^\"]*).*/",
+        "regex": "",
         "sort": 0,
         "tagValuesQuery": "",
         "tags": [],
@@ -481,5 +488,5 @@
   "timezone": "",
   "title": "SIP Overview",
   "uid": "bbTfIr7ik",
-  "version": 47
+  "version": 57
 }

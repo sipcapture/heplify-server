@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1527165287083,
+  "iteration": 1532083825036,
   "links": [],
   "panels": [
     {
@@ -94,7 +94,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\"}[10m])",
+          "expr": "sum without(direction,node_id) (rate(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\"}[10m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -191,7 +191,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\"}[10m])",
+          "expr": "sum without(direction,node_id) (rate(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\"}[2m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -290,7 +290,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(heplify_method_response{target_name=~\"$tn\", method!~\"REGISTER|INVITE\"}[10m])",
+          "expr": "sum without(direction,node_id) (rate(heplify_method_response{target_name=~\"$tn\", method!~\"REGISTER|INVITE\"}[10m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -361,9 +361,9 @@
         "multi": true,
         "name": "tn",
         "options": [],
-        "query": "heplify_method_response",
+        "query": "label_values(heplify_method_response, target_name)",
         "refresh": 1,
-        "regex": "/.*target_name=\"([^\"]*).*/",
+        "regex": "",
         "sort": 0,
         "tagValuesQuery": "",
         "tags": [],
@@ -405,5 +405,5 @@
   "timezone": "browser",
   "title": "SIP Methods & Responses",
   "uid": "Wj1saDGez",
-  "version": 28
+  "version": 35
 }
