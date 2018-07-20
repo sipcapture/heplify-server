@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -121,7 +121,8 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "node_time - node_boot_time",
+          "expr": "node_time_seconds - node_boot_time_seconds",
+          "format": "time_series",
           "interval": "30s",
           "intervalFactor": 1,
           "refId": "A",
@@ -207,7 +208,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(node_cpu{mode=\"idle\"}[1m])) * 100 / scalar(count(node_cpu{mode=\"user\"}))",
+          "expr": "sum(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100 / scalar(count(node_cpu_seconds_total{mode=\"user\"}))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 2,
@@ -295,7 +296,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(node_disk_bytes_written[1m]))",
+          "expr": "sum(rate(node_disk_written_bytes_total[1m]))",
           "format": "time_series",
           "intervalFactor": 4,
           "metric": "machine_cpu_cores",
@@ -382,7 +383,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "node_memory_MemAvailable",
+          "expr": "node_memory_MemAvailable_bytes",
           "format": "time_series",
           "interval": "30s",
           "intervalFactor": 2,
@@ -470,7 +471,8 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "node_memory_SwapFree",
+          "expr": "node_memory_SwapFree_bytes",
+          "format": "time_series",
           "interval": "30s",
           "intervalFactor": 2,
           "refId": "A",
@@ -556,7 +558,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "node_filesystem_free{device=\"/dev/mapper/storage-homer--maria\",fstype=\"ext4\",instance=\"nodeexporter:9100\",job=\"nodeexporter\",mountpoint=\"/rootfs/var/lib/mysql\"}",
+          "expr": "node_filesystem_free_bytes{device=\"/dev/mapper/storage-homer--maria\",fstype=\"ext4\",instance=\"nodeexporter:9100\",job=\"nodeexporter\",mountpoint=\"/rootfs/var/lib/mysql\"}",
           "format": "time_series",
           "interval": "30s",
           "intervalFactor": 1,
@@ -827,7 +829,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": " irate(node_intr[5m])",
+          "expr": " irate(node_intr_total[5m])",
+          "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
           "legendFormat": "interrupts",
@@ -899,7 +902,7 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": false,
+        "current": true,
         "max": true,
         "min": true,
         "rightSide": false,
@@ -922,7 +925,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "100 - (avg by (instance) (irate(node_cpu{job=\"nodeexporter\",mode=\"idle\"}[5m])) * 100)",
+          "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{job=\"nodeexporter\",mode=\"idle\"}[1m])) * 100)",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -1048,7 +1051,7 @@
         {
           "format": "short",
           "label": null,
-          "logBase": 1,
+          "logBase": 2,
           "max": null,
           "min": null,
           "show": true
@@ -1224,7 +1227,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_memory_MemTotal - (node_memory_MemFree + node_memory_Buffers + node_memory_Cached)",
+          "expr": "node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Used",
@@ -1232,7 +1235,7 @@
           "step": 1
         },
         {
-          "expr": "node_memory_MemFree",
+          "expr": "node_memory_MemFree_bytes",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Free",
@@ -1240,7 +1243,7 @@
           "step": 1
         },
         {
-          "expr": "node_memory_Buffers",
+          "expr": "node_memory_Buffers_bytes",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Buffers",
@@ -1248,7 +1251,7 @@
           "step": 1
         },
         {
-          "expr": "node_memory_Cached",
+          "expr": "node_memory_Cached_bytes",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Cached",
@@ -1355,7 +1358,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(node_disk_bytes_read[1m]))",
+          "expr": "sum(rate(node_disk_read_bytes_total[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1365,7 +1368,7 @@
           "step": 1
         },
         {
-          "expr": "sum(rate(node_disk_bytes_written[1m]))",
+          "expr": "sum(rate(node_disk_written_bytes_total[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "written",
@@ -1374,7 +1377,7 @@
           "step": 1
         },
         {
-          "expr": "sum(rate(node_disk_io_time_ms[1m]))",
+          "expr": "sum(rate(node_disk_io_time_seconds_total[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "io time",
@@ -1411,7 +1414,7 @@
           "show": true
         },
         {
-          "format": "ms",
+          "format": "s",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1477,7 +1480,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_memory_SwapTotal - node_memory_SwapFree",
+          "expr": "node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1486,7 +1489,7 @@
           "step": 10
         },
         {
-          "expr": "node_memory_SwapFree",
+          "expr": "node_memory_SwapFree_bytes",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1637,7 +1640,7 @@
       }
     }
   ],
-  "refresh": "10s",
+  "refresh": "30s",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [
@@ -1678,5 +1681,5 @@
   "timezone": "browser",
   "title": "Host Overview",
   "uid": "9WTaUaGiz",
-  "version": 25
+  "version": 39
 }

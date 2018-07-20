@@ -147,9 +147,13 @@ func (h *HEP) parseHEP(packet []byte) error {
 			if len(chunkBody) != 2 {
 				return fmt.Errorf("HEP chunkType %d should be 2 byte long but is %d", chunkType, len(chunkBody))
 			}
-		case IP4SrcIP, IP4DstIP, IP6SrcIP, IP6DstIP, Tsec, Tmsec, NodeID:
-			if len(chunkBody) < 4 {
-				return fmt.Errorf("HEP chunkType %d should be >= 4 byte long but is %d", chunkType, len(chunkBody))
+		case IP4SrcIP, IP4DstIP, Tsec, Tmsec, NodeID:
+			if len(chunkBody) != 4 {
+				return fmt.Errorf("HEP chunkType %d should be 4 byte long but is %d", chunkType, len(chunkBody))
+			}
+		case IP6SrcIP, IP6DstIP:
+			if len(chunkBody) != 16 {
+				return fmt.Errorf("HEP chunkType %d should be 16 byte long but is %d", chunkType, len(chunkBody))
 			}
 		}
 

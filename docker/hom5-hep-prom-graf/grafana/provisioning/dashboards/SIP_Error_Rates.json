@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -88,7 +88,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=~\"50.*\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2",
+          "expr": "(sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=~\"50.*\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2) > 1",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "{{target_name}}",
@@ -175,7 +175,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"403\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2",
+          "expr": "(sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"403\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2) > 0.05",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "{{target_name}}",
@@ -262,7 +262,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"404\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2",
+          "expr": "(sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"404\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2) > 1",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "{{target_name}}",
@@ -349,7 +349,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=~\"482\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2",
+          "expr": "(sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=~\"482\"}[10m])) / \nsum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) * 100 \nand sum by(target_name) (rate(heplify_method_response{method=\"INVITE\", response=\"INVITE\"}[10m])) > 0.2) > 0.2",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "{{target_name}}",
@@ -438,5 +438,5 @@
   "timezone": "",
   "title": "SIP Error Rates",
   "uid": "PrWT9MVik",
-  "version": 23
+  "version": 27
 }

@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "5.1.0"
+      "version": "5.2.0"
     },
     {
       "type": "panel",
@@ -50,14 +50,14 @@
   "panels": [
     {
       "aliasColors": {},
-      "bars": true,
+      "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 0,
+      "fill": 1,
       "grid": {},
       "gridPos": {
         "h": 6,
@@ -78,16 +78,18 @@
         "rightSide": true,
         "show": true,
         "sideWidth": 450,
+        "sort": "avg",
+        "sortDesc": false,
         "total": false,
         "values": true
       },
-      "lines": true,
+      "lines": false,
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
       "percentage": false,
-      "pointradius": 1,
-      "points": false,
+      "pointradius": 0.5,
+      "points": true,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
@@ -95,7 +97,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_mos{direction=\"inc\"}[30m]) < 3.8 and horaclifix_rtp_mos{direction=\"inc\"} > 0 and changes(horaclifix_rtp_mos{direction=\"inc\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_mos{direction=\"inc\"}[1h]) < 5 and changes(horaclifix_rtp_mos{direction=\"inc\"}[1m]) > 0 and horaclifix_rtp_mos{direction=\"inc\"} > 0",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -107,7 +109,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Incomming MOS <= 3.8",
+      "title": "Incomming MOS",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -150,14 +152,14 @@
     },
     {
       "aliasColors": {},
-      "bars": true,
+      "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
       "editable": true,
       "error": false,
-      "fill": 0,
+      "fill": 1,
       "grid": {},
       "gridPos": {
         "h": 6,
@@ -179,13 +181,13 @@
         "total": false,
         "values": true
       },
-      "lines": true,
+      "lines": false,
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
       "percentage": false,
-      "pointradius": 1,
-      "points": false,
+      "pointradius": 0.5,
+      "points": true,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
@@ -193,9 +195,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_mos{direction=\"out\"}[30m]) < 3.8 and horaclifix_rtp_mos{direction=\"out\"} > 0 and changes(horaclifix_rtp_mos{direction=\"out\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_mos{direction=\"out\"}[1h]) < 5 and changes(horaclifix_rtp_mos{direction=\"out\"}[1m]) > 0 and horaclifix_rtp_mos{direction=\"out\"} > 0",
           "format": "time_series",
           "hide": false,
+          "instant": false,
           "intervalFactor": 1,
           "legendFormat": "{{inc_realm}} <--> {{out_realm}}",
           "refId": "A",
@@ -205,7 +208,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Outgoing MOS <= 3.8",
+      "title": "Outgoing MOS",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -290,7 +293,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_avg_jitter{direction=\"inc\"}[30m]) > 50 and changes(horaclifix_rtp_avg_jitter{direction=\"inc\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_avg_jitter{direction=\"inc\"}[1h]) > 20 and changes(horaclifix_rtp_avg_jitter{direction=\"inc\"}[1m]) > 0",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -302,7 +305,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Incomming Jitter > 50 ms",
+      "title": "Incomming Jitter > 20 ms",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -323,7 +326,7 @@
           "decimals": 0,
           "format": "ms",
           "label": null,
-          "logBase": 2,
+          "logBase": 1,
           "max": null,
           "min": null,
           "show": true
@@ -387,7 +390,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_avg_jitter{direction=\"out\"}[30m]) > 50 and changes(horaclifix_rtp_avg_jitter{direction=\"out\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_avg_jitter{direction=\"out\"}[1h]) > 20 and changes(horaclifix_rtp_avg_jitter{direction=\"out\"}[1m]) > 0",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -399,7 +402,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Outgoing Jitter > 50 ms",
+      "title": "Outgoing Jitter > 20 ms",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -420,7 +423,7 @@
           "decimals": 0,
           "format": "ms",
           "label": null,
-          "logBase": 2,
+          "logBase": 1,
           "max": null,
           "min": null,
           "show": true
@@ -484,7 +487,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_lost_packets{direction=\"inc\"}[30m]) > 50 and changes(horaclifix_rtp_lost_packets{direction=\"inc\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_lost_packets{direction=\"inc\"}[1h]) > 20 and changes(horaclifix_rtp_lost_packets{direction=\"inc\"}[1m]) > 0",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -496,7 +499,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Stddev Incomming Packet Loss > 50",
+      "title": "Incomming Packet Loss > 20",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -582,7 +585,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg_over_time(horaclifix_rtp_lost_packets{direction=\"out\"}[30m]) > 50 and changes(horaclifix_rtp_lost_packets{direction=\"out\"}[1m]) > 0",
+          "expr": "avg_over_time(horaclifix_rtp_lost_packets{direction=\"out\"}[30m]) > 20 and changes(horaclifix_rtp_lost_packets{direction=\"out\"}[1m]) > 0",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -594,7 +597,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Stddev Outgoing Packet Loss > 50",
+      "title": "Outgoing Packet Loss > 20",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -691,7 +694,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Stddev Incomming Latency > 20 ms",
+      "title": "Incomming Latency > 20 ms",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -712,7 +715,7 @@
           "decimals": 0,
           "format": "ms",
           "label": null,
-          "logBase": 2,
+          "logBase": 1,
           "max": null,
           "min": null,
           "show": true
@@ -789,7 +792,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Stddev Outgoing Latency > 20 ms",
+      "title": "Outgoing Latency > 20 ms",
       "tooltip": {
         "msResolution": true,
         "shared": false,
@@ -810,7 +813,7 @@
           "decimals": null,
           "format": "ms",
           "label": null,
-          "logBase": 2,
+          "logBase": 1,
           "max": null,
           "min": null,
           "show": true
@@ -871,5 +874,5 @@
   "timezone": "browser",
   "title": "QOS Horaclifix",
   "uid": "Va2DhPSmt",
-  "version": 159
+  "version": 172
 }
