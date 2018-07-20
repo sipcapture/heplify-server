@@ -90,7 +90,7 @@ func (h *HEP) parse(packet []byte) error {
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 	t := time.Now()
 	d := t.Sub(h.Timestamp)
-	if d < 0 {
+	if d < 0 || h.Tsec == 0 && h.Tmsec == 0 {
 		logp.Debug("heptime", "future packet timestamp: %d, now: %d, delta: %d from nodeID %d",
 			h.Timestamp.UnixNano(), t.UnixNano(), d, h.NodeID)
 		h.Timestamp = t
