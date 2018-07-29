@@ -365,7 +365,7 @@ func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
 
 func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
-		hashVal := int64(xxhash.Sum64String(h.Payload))
+		hashVal := int64(xxhash.Sum64String(h.SrcIP)) + int64(h.SrcPort) + int64(xxhash.Sum64String(h.Payload))
 		_, err := dedup.GetInt(hashVal)
 		if err == nil {
 			h.ProtoType = 0
