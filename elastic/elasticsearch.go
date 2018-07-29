@@ -26,7 +26,7 @@ func (e *Elasticsearch) setup() error {
 	for {
 		e.client, err = elastic.NewClient(
 			elastic.SetURL(config.Setting.ESAddr),
-			elastic.SetSniff(false),
+			elastic.SetSniff(config.Setting.ESDiscovery),
 		)
 		if err != nil {
 			logp.Err("%v", err)
@@ -44,6 +44,11 @@ func (e *Elasticsearch) setup() error {
 		Do(e.ctx)
 	if err != nil {
 		return err
+	}
+
+	err = showNodes(e.client)
+	if err != nil {
+		logp.Err("nodes info failed: %v", err)
 	}
 
 	err = e.createIndex(e.ctx, e.client)
@@ -106,6 +111,19 @@ func (e *Elasticsearch) createIndex(ctx context.Context, client *elastic.Client)
 		} else {
 			logp.Info("index %s already created", idx)
 		}
+	}
+	return nil
+}
+
+func showNodes(client *elastic.Client) error {
+	ctx := context.Background()
+	info, err := client.NodesInfo().Do(ctx)
+	if err != nil {
+		return err
+	}
+	logp.Info("found cluster %q with following %d node(s)", info.ClusterName, len(info.Nodes))
+	for id, node := range info.Nodes {
+		logp.Info("node %s with IP %s", id, node.IP)
 	}
 	return nil
 }
