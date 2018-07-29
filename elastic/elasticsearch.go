@@ -123,7 +123,7 @@ func showNodes(client *elastic.Client) error {
 	}
 	logp.Info("found cluster %q with following %d node(s)", info.ClusterName, len(info.Nodes))
 	for id, node := range info.Nodes {
-		logp.Info("node %s with IP %s", id, node.IP)
+		logp.Info("%s, %s, %s", node.Name, id, node.TransportAddress)
 	}
 	return nil
 }
