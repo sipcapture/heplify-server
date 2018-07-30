@@ -23,7 +23,8 @@ cp -r homer-api/* /var/www/html/
 mv /var/www/html/api/preferences_example.php /var/www/html/api/preferences.php
 mv /var/www/html/api/configuration_example.php /var/www/html/api/configuration.php
 
-chown www-data:www-data /var/www/html/store/
+chown -R www-data:www-data /var/www/html/store/
+chmod -R 0775 /var/www/html/store/dashboard
 ```
 
 * remove everything inside /etc/nginx/sites-available/default 
