@@ -1,7 +1,9 @@
 package elastic
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -40,6 +42,7 @@ func (e *Elasticsearch) setup() error {
 		Workers(runtime.NumCPU()).
 		BulkActions(1000).
 		BulkSize(2 << 20).
+		Stats(true).
 		FlushInterval(10 * time.Second).
 		Do(e.ctx)
 	if err != nil {
@@ -55,6 +58,13 @@ func (e *Elasticsearch) setup() error {
 	if err != nil {
 		return err
 	}
+
+	go func(e *elastic.BulkProcessor) {
+		for range time.Tick(5 * time.Minute) {
+			printStats(e)
+		}
+	}(e.bulkClient)
+
 	return nil
 }
 
@@ -126,4 +136,18 @@ func showNodes(client *elastic.Client) error {
 		logp.Info("%s, %s, %s", node.Name, id, node.TransportAddress)
 	}
 	return nil
+}
+
+// printStats retrieves statistics from the BulkProcessor and logs them.
+func printStats(e *elastic.BulkProcessor) {
+	var buf bytes.Buffer
+	for i, w := range e.Stats().Workers {
+		if i > 0 {
+			buf.WriteString(" ")
+		}
+		buf.WriteString(fmt.Sprintf("%d=[%04d]", i, w.Queued))
+	}
+
+	logp.Info("Indexed: %05d, Succeeded: %05d, Failed: %05d, Worker Queues: %v",
+		e.Stats().Indexed, e.Stats().Succeeded, e.Stats().Failed, buf.String())
 }

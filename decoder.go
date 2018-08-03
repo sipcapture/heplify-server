@@ -91,7 +91,7 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if bytes.HasPrefix(packet, []byte("HEP3")) && len(packet) > 32 {
+	if bytes.HasPrefix(packet, hepVer) && len(packet) > 32 {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
@@ -113,7 +113,7 @@ func (h *HEP) parse(packet []byte) error {
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 	t := time.Now()
 	d := t.Sub(h.Timestamp)
-	if d < 0 || h.Tsec == 0 && h.Tmsec == 0 {
+	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
 		logp.Debug("heptime", "future packet timestamp: %d, now: %d, delta: %d from nodeID %d",
 			h.Timestamp.UnixNano(), t.UnixNano(), d, h.NodeID)
 		h.Timestamp = t
@@ -122,8 +122,8 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 32 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v\n%s\nversion: %d, protocol: %d, srcIP: %s, dstIP: %s, protoType: %d, nodeID: %d,\n",
-				err, strconv.Quote(h.Payload), h.Version, h.Protocol, h.SrcIP, h.DstIP, h.ProtoType, h.NodeID)
+			logp.Warn("%v\n%s\nnodeID: %d, protoType: %d, version: %d, protocol: %d, length: %d, flow: %s:%d->%s:%d\n\n",
+				err, strconv.Quote(h.Payload), h.NodeID, h.ProtoType, h.Version, h.Protocol, len(h.Payload), h.SrcIP, h.SrcPort, h.DstIP, h.DstPort)
 			return err
 		}
 		h.CID = h.SIP.CallID
