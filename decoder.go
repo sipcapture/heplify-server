@@ -126,7 +126,6 @@ func (h *HEP) parse(packet []byte) error {
 				err, strconv.Quote(h.Payload), h.NodeID, h.ProtoType, h.Version, h.Protocol, len(h.Payload), h.SrcIP, h.SrcPort, h.DstIP, h.DstPort)
 			return err
 		}
-		h.CID = h.SIP.CallID
 
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
@@ -254,6 +253,21 @@ func (h *HEP) parseSIP() error {
 		return errors.New("Could not find a valid CSeq in packet")
 	} else if len(h.SIP.CallID) < 1 {
 		return errors.New("Could not find a valid Call-ID in packet")
+	}
+
+	h.CID = h.SIP.CallID
+
+	if h.SIP.ContentType == "application/vq-rtcpxr" && len(h.SIP.Body) > 32 {
+		h.ProtoType = 38
+		if posCallID := strings.Index(h.SIP.Body, "CallID:"); posCallID > 0 {
+			restCallID := h.SIP.Body[posCallID:]
+			// Minimum length of "CallID:x" = 8
+			if posRestCallID := strings.IndexRune(restCallID, '\n'); posRestCallID >= 8 {
+				h.CID = restCallID[len("CallID:") : posRestCallID-1]
+			} else {
+				logp.Warn("no end or fishy RTCPXR CallID in '%s'", h.SIP.Body)
+			}
+		}
 	}
 
 	return nil
