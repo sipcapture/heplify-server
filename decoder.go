@@ -258,7 +258,7 @@ func (h *HEP) parseSIP() error {
 	h.CID = h.SIP.CallID
 
 	if h.SIP.ContentType == "application/vq-rtcpxr" && len(h.SIP.Body) > 32 {
-		h.ProtoType = 38
+		h.ProtoType = 35
 		if posCallID := strings.Index(h.SIP.Body, "CallID:"); posCallID > 0 {
 			restCallID := h.SIP.Body[posCallID:]
 			// Minimum length of "CallID:x" = 8
