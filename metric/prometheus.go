@@ -27,7 +27,6 @@ type Prometheus struct {
 	CvMethodResponse  *prometheus.CounterVec
 	CvPacketsTotal    *prometheus.CounterVec
 	GvPacketsSize     *prometheus.GaugeVec
-	GaugeMetrics      map[string]prometheus.Gauge
 	GaugeVecMetrics   map[string]*prometheus.GaugeVec
 	CounterVecMetrics map[string]*prometheus.CounterVec
 	Cache             *freecache.Cache
@@ -52,7 +51,7 @@ func (p *Prometheus) setup() (err error) {
 
 	if len(p.TargetIP) == len(p.TargetName) && p.TargetIP != nil && p.TargetName != nil {
 		if len(p.TargetIP[0]) == 0 || len(p.TargetName[0]) == 0 {
-			logp.Info("expose metrics with no or unbalanced targets")
+			logp.Info("expose metrics without or unbalanced targets")
 			p.TargetIP[0] = ""
 			p.TargetName[0] = ""
 			p.TargetEmpty = true
@@ -67,7 +66,6 @@ func (p *Prometheus) setup() (err error) {
 		return fmt.Errorf("faulty PromTargetIP or PromTargetName")
 	}
 
-	p.GaugeMetrics = map[string]prometheus.Gauge{}
 	p.GaugeVecMetrics = map[string]*prometheus.GaugeVec{}
 	p.CounterVecMetrics = map[string]*prometheus.CounterVec{}
 
@@ -83,27 +81,27 @@ func (p *Prometheus) setup() (err error) {
 	p.GaugeVecMetrics["heplify_xrtp_dle"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_dle", Help: "XRTP mean rtt"}, []string{"target_name"})
 	p.GaugeVecMetrics["heplify_xrtp_mos"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_mos", Help: "XRTP mos"}, []string{"target_name"})
 
-	p.GaugeMetrics["heplify_rtcp_fraction_lost"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcp_fraction_lost", Help: "RTCP fraction lost"})
-	p.GaugeMetrics["heplify_rtcp_packets_lost"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcp_packets_lost", Help: "RTCP packets lost"})
-	p.GaugeMetrics["heplify_rtcp_jitter"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcp_jitter", Help: "RTCP jitter"})
-	p.GaugeMetrics["heplify_rtcp_dlsr"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcp_dlsr", Help: "RTCP dlsr"})
+	p.GaugeVecMetrics["heplify_rtcp_fraction_lost"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcp_fraction_lost", Help: "RTCP fraction lost"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcp_packets_lost"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcp_packets_lost", Help: "RTCP packets lost"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcp_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcp_jitter", Help: "RTCP jitter"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcp_dlsr"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcp_dlsr", Help: "RTCP dlsr"}, []string{"node_id"})
 
-	p.GaugeMetrics["heplify_rtcpxr_fraction_lost"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_lost", Help: "RTCPXR fraction lost"})
-	p.GaugeMetrics["heplify_rtcpxr_fraction_discard"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_discard", Help: "RTCPXR fraction discard"})
-	p.GaugeMetrics["heplify_rtcpxr_burst_density"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_density", Help: "RTCPXR burst density"})
-	p.GaugeMetrics["heplify_rtcpxr_gap_density"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_density", Help: "RTCPXR gap density"})
-	p.GaugeMetrics["heplify_rtcpxr_burst_duration"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_duration", Help: "RTCPXR burst duration"})
-	p.GaugeMetrics["heplify_rtcpxr_gap_duration"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_duration", Help: "RTCPXR gap duration"})
-	p.GaugeMetrics["heplify_rtcpxr_round_trip_delay"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_round_trip_delay", Help: "RTCPXR round trip delay"})
-	p.GaugeMetrics["heplify_rtcpxr_end_system_delay"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtcpxr_end_system_delay", Help: "RTCPXR end system delay"})
+	p.GaugeVecMetrics["heplify_rtcpxr_fraction_lost"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_lost", Help: "RTCPXR fraction lost"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_fraction_discard"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_discard", Help: "RTCPXR fraction discard"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_burst_density"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_density", Help: "RTCPXR burst density"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_gap_density"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_density", Help: "RTCPXR gap density"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_burst_duration"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_duration", Help: "RTCPXR burst duration"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_gap_duration"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_duration", Help: "RTCPXR gap duration"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_round_trip_delay"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_round_trip_delay", Help: "RTCPXR round trip delay"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_end_system_delay"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_end_system_delay", Help: "RTCPXR end system delay"}, []string{"node_id"})
 
 	if config.Setting.RTPAgentStats {
-		p.GaugeMetrics["heplify_rtpagent_delta"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_delta", Help: "RTPAgent delta"})
-		p.GaugeMetrics["heplify_rtpagent_jitter"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_jitter", Help: "RTPAgent jitter"})
-		p.GaugeMetrics["heplify_rtpagent_mos"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_mos", Help: "RTPAgent mos"})
-		p.GaugeMetrics["heplify_rtpagent_packets_lost"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_packets_lost", Help: "RTPAgent packets lost"})
-		p.GaugeMetrics["heplify_rtpagent_rfactor"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_rfactor", Help: "RTPAgent rfactor"})
-		p.GaugeMetrics["heplify_rtpagent_skew"] = prometheus.NewGauge(prometheus.GaugeOpts{Name: "heplify_rtpagent_skew", Help: "RTPAgent skew"})
+		p.GaugeVecMetrics["heplify_rtpagent_delta"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_delta", Help: "RTPAgent delta"}, []string{"node_id"})
+		p.GaugeVecMetrics["heplify_rtpagent_jitter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_jitter", Help: "RTPAgent jitter"}, []string{"node_id"})
+		p.GaugeVecMetrics["heplify_rtpagent_mos"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_mos", Help: "RTPAgent mos"}, []string{"node_id"})
+		p.GaugeVecMetrics["heplify_rtpagent_packets_lost"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_packets_lost", Help: "RTPAgent packets lost"}, []string{"node_id"})
+		p.GaugeVecMetrics["heplify_rtpagent_rfactor"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_rfactor", Help: "RTPAgent rfactor"}, []string{"node_id"})
+		p.GaugeVecMetrics["heplify_rtpagent_skew"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_skew", Help: "RTPAgent skew"}, []string{"node_id"})
 
 		p.rtpPaths = [][]string{
 			[]string{"DELTA"},
@@ -196,9 +194,6 @@ func (p *Prometheus) setup() (err error) {
 	prometheus.MustRegister(p.CvPacketsTotal)
 	prometheus.MustRegister(p.GvPacketsSize)
 
-	for k := range p.GaugeMetrics {
-		prometheus.MustRegister(p.GaugeMetrics[k])
-	}
 	for k := range p.GaugeVecMetrics {
 		prometheus.MustRegister(p.GaugeVecMetrics[k])
 	}
@@ -230,6 +225,8 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 				break
 			}
 
+			nodeID := strconv.Itoa(int(pkt.NodeID))
+
 			if pkt.ProtoType == 1 {
 				p.CvPacketsTotal.WithLabelValues("sip").Inc()
 				p.GvPacketsSize.WithLabelValues("sip").Set(float64(len(pkt.Payload)))
@@ -257,7 +254,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 								direction = "dst"
 							}
 							p.CvMethodResponse.WithLabelValues(
-								tn, direction, strconv.Itoa(int(pkt.NodeID)), pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+								tn, direction, nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 							if pkt.SIP.RTPStatVal != "" {
 								p.dissectXRTPStats(tn, pkt.SIP.RTPStatVal)
@@ -275,16 +272,16 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 					}
 
 					p.CvMethodResponse.WithLabelValues(
-						"", "", strconv.Itoa(int(pkt.NodeID)), pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+						"", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 
 					if pkt.SIP.RTPStatVal != "" {
 						p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
 					}
 				}
 			} else if pkt.ProtoType == 5 {
-				p.dissectRTCPStats([]byte(pkt.Payload))
+				p.dissectRTCPStats(nodeID, []byte(pkt.Payload))
 			} else if pkt.ProtoType == 34 && config.Setting.RTPAgentStats {
-				p.dissectRTPStats([]byte(pkt.Payload))
+				p.dissectRTPStats(nodeID, []byte(pkt.Payload))
 			} else if pkt.ProtoType == 38 && config.Setting.HoraclifixStats {
 				p.dissectHoraclifixStats([]byte(pkt.Payload))
 			}
@@ -411,87 +408,87 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 
 }
 
-func (p *Prometheus) dissectRTCPStats(data []byte) {
+func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_fraction_lost"].Set(normMax(fractionLost))
+				p.GaugeVecMetrics["heplify_rtcp_fraction_lost"].WithLabelValues(nodeID).Set(normMax(fractionLost))
 			}
 		case 1:
 			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_packets_lost"].Set(normMax(packetsLost))
+				p.GaugeVecMetrics["heplify_rtcp_packets_lost"].WithLabelValues(nodeID).Set(normMax(packetsLost))
 			}
 		case 2:
 			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_jitter"].Set(normMax(iaJitter))
+				p.GaugeVecMetrics["heplify_rtcp_jitter"].WithLabelValues(nodeID).Set(normMax(iaJitter))
 			}
 		case 3:
 			if dlsr, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcp_dlsr"].Set(normMax(dlsr))
+				p.GaugeVecMetrics["heplify_rtcp_dlsr"].WithLabelValues(nodeID).Set(normMax(dlsr))
 			}
 		case 4:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_fraction_lost"].Set(fractionLost)
+				p.GaugeVecMetrics["heplify_rtcpxr_fraction_lost"].WithLabelValues(nodeID).Set(fractionLost)
 			}
 		case 5:
 			if fractionDiscard, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_fraction_discard"].Set(fractionDiscard)
+				p.GaugeVecMetrics["heplify_rtcpxr_fraction_discard"].WithLabelValues(nodeID).Set(fractionDiscard)
 			}
 		case 6:
 			if burstDensity, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_burst_density"].Set(burstDensity)
+				p.GaugeVecMetrics["heplify_rtcpxr_burst_density"].WithLabelValues(nodeID).Set(burstDensity)
 			}
 		case 7:
 			if gapDensity, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_gap_density"].Set(gapDensity)
+				p.GaugeVecMetrics["heplify_rtcpxr_gap_density"].WithLabelValues(nodeID).Set(gapDensity)
 			}
 		case 8:
 			if burstDuration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_burst_duration"].Set(burstDuration)
+				p.GaugeVecMetrics["heplify_rtcpxr_burst_duration"].WithLabelValues(nodeID).Set(burstDuration)
 			}
 		case 9:
 			if gapDuration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_gap_duration"].Set(gapDuration)
+				p.GaugeVecMetrics["heplify_rtcpxr_gap_duration"].WithLabelValues(nodeID).Set(gapDuration)
 			}
 		case 10:
 			if roundTripDelay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_round_trip_delay"].Set(roundTripDelay)
+				p.GaugeVecMetrics["heplify_rtcpxr_round_trip_delay"].WithLabelValues(nodeID).Set(roundTripDelay)
 			}
 		case 11:
 			if endSystemDelay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtcpxr_end_system_delay"].Set(endSystemDelay)
+				p.GaugeVecMetrics["heplify_rtcpxr_end_system_delay"].WithLabelValues(nodeID).Set(endSystemDelay)
 			}
 		}
 	}, p.rtcpPaths...)
 }
 
-func (p *Prometheus) dissectRTPStats(data []byte) {
+func (p *Prometheus) dissectRTPStats(nodeID string, data []byte) {
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
 			if delta, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_delta"].Set(delta)
+				p.GaugeVecMetrics["heplify_rtpagent_delta"].WithLabelValues(nodeID).Set(delta)
 			}
 		case 1:
 			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_jitter"].Set(iaJitter)
+				p.GaugeVecMetrics["heplify_rtpagent_jitter"].WithLabelValues(nodeID).Set(iaJitter)
 			}
 		case 2:
 			if mos, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_mos"].Set(mos)
+				p.GaugeVecMetrics["heplify_rtpagent_mos"].WithLabelValues(nodeID).Set(mos)
 			}
 		case 3:
 			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_packets_lost"].Set(packetsLost)
+				p.GaugeVecMetrics["heplify_rtpagent_packets_lost"].WithLabelValues(nodeID).Set(packetsLost)
 			}
 		case 4:
 			if rfactor, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_rfactor"].Set(rfactor)
+				p.GaugeVecMetrics["heplify_rtpagent_rfactor"].WithLabelValues(nodeID).Set(rfactor)
 			}
 		case 5:
 			if skew, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeMetrics["heplify_rtpagent_skew"].Set(skew)
+				p.GaugeVecMetrics["heplify_rtpagent_skew"].WithLabelValues(nodeID).Set(skew)
 			}
 		}
 	}, p.rtpPaths...)
