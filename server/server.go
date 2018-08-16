@@ -108,7 +108,7 @@ func (h *HEPInput) Run() {
 	go h.serveUDP()
 	go h.serveTLS()
 	go h.logStats()
-	logp.Info("start heplify-server with %#v\n", config.Setting)
+	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 }
 
 func (h *HEPInput) serveUDP() {
