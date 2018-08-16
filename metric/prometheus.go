@@ -216,6 +216,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 		pkt       *decoder.HEP
 		ok        bool
 		direction string
+		labelType string
 	)
 
 	for {
@@ -226,24 +227,10 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			}
 
 			nodeID := strconv.Itoa(int(pkt.NodeID))
+			labelType = setLabelType(pkt.ProtoType)
 
-			if pkt.ProtoType == 1 {
-				p.CvPacketsTotal.WithLabelValues("sip").Inc()
-				p.GvPacketsSize.WithLabelValues("sip").Set(float64(len(pkt.Payload)))
-			} else if pkt.ProtoType == 5 {
-				p.CvPacketsTotal.WithLabelValues("rtcp").Inc()
-				p.GvPacketsSize.WithLabelValues("rtcp").Set(float64(len(pkt.Payload)))
-			} else if pkt.ProtoType == 38 {
-				p.CvPacketsTotal.WithLabelValues("horaclifix").Inc()
-				p.GvPacketsSize.WithLabelValues("horaclifix").Set(float64(len(pkt.Payload)))
-			} else if pkt.ProtoType == 100 {
-				p.CvPacketsTotal.WithLabelValues("log").Inc()
-				p.GvPacketsSize.WithLabelValues("log").Set(float64(len(pkt.Payload)))
-			} else {
-				pt := strconv.Itoa(int(pkt.ProtoType))
-				p.CvPacketsTotal.WithLabelValues(pt).Inc()
-				p.GvPacketsSize.WithLabelValues(pt).Set(float64(len(pkt.Payload)))
-			}
+			p.CvPacketsTotal.WithLabelValues(labelType).Inc()
+			p.GvPacketsSize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
 
 			if pkt.SIP != nil && pkt.ProtoType == 1 {
 				if !p.TargetEmpty {
@@ -612,4 +599,26 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 			}
 		}
 	}, p.horaclifixPaths...)
+}
+
+func setLabelType(pktType uint32) (label string) {
+	switch pktType {
+	case 1:
+		label = "sip"
+	case 5:
+		label = "rtcp"
+	case 34:
+		label = "rtpagent"
+	case 35:
+		label = "rtcpxr"
+	case 38:
+		label = "horaclifix"
+	case 53:
+		label = "dns"
+	case 100:
+		label = "log"
+	default:
+		label = strconv.Itoa(int(pktType))
+	}
+	return label
 }

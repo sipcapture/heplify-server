@@ -16,8 +16,6 @@ import (
 	"github.com/negbie/logp"
 )
 
-const version = "heplify-server 0.95"
-
 type server interface {
 	Run()
 	End()
@@ -71,7 +69,7 @@ func tomlExists(f string) bool {
 
 func main() {
 	if config.Setting.Version {
-		fmt.Println(version)
+		fmt.Println(config.Version)
 		os.Exit(0)
 	}
 	var wg sync.WaitGroup

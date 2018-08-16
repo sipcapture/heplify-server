@@ -1,5 +1,7 @@
 package config
 
+const Version = "heplify-server 0.951"
+
 var Setting HeplifyServer
 
 type HeplifyServer struct {
