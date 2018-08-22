@@ -264,6 +264,11 @@ func (h *HEP) parseSIP() error {
 			// Minimum length of "CallID:x" = 8
 			if posRestCallID := strings.IndexRune(restCallID, '\n'); posRestCallID >= 8 {
 				h.CID = restCallID[len("CallID:") : posRestCallID-1]
+				i := 0
+				for i < len(h.CID) && (h.CID[i] == ' ' || h.CID[i] == '\t') {
+					i++
+				}
+				h.CID = h.CID[i:]
 			} else {
 				logp.Warn("no end or fishy RTCPXR CallID in '%s'", h.SIP.Body)
 			}
