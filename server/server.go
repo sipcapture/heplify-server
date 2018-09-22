@@ -163,9 +163,6 @@ func (h *HEPInput) serveTLS() {
 			logp.Err("%v", err)
 			continue
 		}
-		if config.Setting.PipeAddr != "" {
-			go pipeConn(conn, config.Setting.PipeAddr)
-		}
 		h.wg.Add(1)
 		go h.handleTLS(conn)
 	}
