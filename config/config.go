@@ -29,9 +29,9 @@ type HeplifyServer struct {
 	DBBulk          int      `default:"200"`
 	DBTimer         int      `default:"2"`
 	DBRotate        bool     `default:"true"`
-	DBPartLog       string   `default:"6h"`
-	DBPartSip       string   `default:"2h"`
-	DBPartQos       string   `default:"12h"`
+	DBPartLog       string   `default:"2h"`
+	DBPartSip       string   `default:"1h"`
+	DBPartQos       string   `default:"6h"`
 	DBDropDays      int      `default:"0"`
 	DBDropOnStart   bool     `default:"false"`
 	Dedup           bool     `default:"false"`

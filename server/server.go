@@ -33,15 +33,11 @@ type HEPStats struct {
 }
 
 var (
-	inCh  = make(chan []byte, 20000)
-	dbCh  = make(chan *decoder.HEP, 200000)
-	mqCh  = make(chan []byte, 20000)
-	pmCh  = make(chan *decoder.HEP, 20000)
-	esCh  = make(chan *decoder.HEP, 20000)
-	dbCnt int
-	mqCnt int
-	pmCnt int
-	esCnt int
+	inCh = make(chan []byte, 20000)
+	dbCh = make(chan *decoder.HEP, 200000)
+	mqCh = make(chan []byte, 20000)
+	pmCh = make(chan *decoder.HEP, 20000)
+	esCh = make(chan *decoder.HEP, 20000)
 )
 
 func NewHEPInput() *HEPInput {
@@ -223,6 +219,10 @@ func (h *HEPInput) hepWorker() {
 		msg    = h.buffer.Get().([]byte)
 		err    error
 		ok     bool
+		dbCnt  int
+		mqCnt  int
+		pmCnt  int
+		esCnt  int
 	)
 
 OUT:
