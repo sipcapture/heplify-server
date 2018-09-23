@@ -1,15 +1,15 @@
 package config
 
-const Version = "heplify-server 0.952"
+const Version = "heplify-server 0.960"
 
 var Setting HeplifyServer
 
 type HeplifyServer struct {
 	HEPAddr         string   `default:"0.0.0.0:9060"`
+	HEPTCPAddr      string   `default:""`
+	HEPTLSAddr      string   `default:"0.0.0.0:9060"`
 	ESAddr          string   `default:""`
 	ESDiscovery     bool     `default:"true"`
-	PipeAddr        string   `default:""`
-	PipeFilter      []string `default:""`
 	MQDriver        string   `default:""`
 	MQAddr          string   `default:""`
 	MQTopic         string   `default:""`
@@ -29,9 +29,9 @@ type HeplifyServer struct {
 	DBBulk          int      `default:"200"`
 	DBTimer         int      `default:"2"`
 	DBRotate        bool     `default:"true"`
-	DBPartLog       string   `default:"6h"`
-	DBPartSip       string   `default:"2h"`
-	DBPartQos       string   `default:"12h"`
+	DBPartLog       string   `default:"2h"`
+	DBPartSip       string   `default:"1h"`
+	DBPartQos       string   `default:"6h"`
 	DBDropDays      int      `default:"0"`
 	DBDropOnStart   bool     `default:"false"`
 	Dedup           bool     `default:"false"`
@@ -47,10 +47,10 @@ type HeplifyServer struct {
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
 		HEPAddr:         "0.0.0.0:9060",
+		HEPTCPAddr:      "",
+		HEPTLSAddr:      "0.0.0.0:9060",
 		ESAddr:          "",
 		ESDiscovery:     true,
-		PipeAddr:        "",
-		PipeFilter:      nil,
 		MQDriver:        "",
 		MQAddr:          "",
 		MQTopic:         "",

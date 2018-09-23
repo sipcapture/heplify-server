@@ -77,8 +77,15 @@ func (r *Rotator) CreateDatabases() (err error) {
 	return nil
 }
 
+func replaceDay(d int) strings.Replacer {
+	pn := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
+	return *strings.NewReplacer(
+		"{{date}}", pn,
+	)
+}
+
 func (r *Rotator) CreateDataTables(duration int) (err error) {
-	suffix := replaceCreateDay(duration)
+	suffix := replaceDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
@@ -117,7 +124,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
-	suffix := replaceCreateDay(duration)
+	suffix := replaceDay(duration)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBConfTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
@@ -131,7 +138,7 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 }
 
 func (r *Rotator) DropTables(duration int) (err error) {
-	suffix := replaceDropDay(duration)
+	suffix := replaceDay(duration * -1)
 	if config.Setting.DBDriver == "mysql" {
 		db, err := sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+r.addr[0]+":"+r.addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true"))
 		if err != nil {
@@ -277,20 +284,6 @@ func (r *Rotator) createTables() {
 		logp.Warn("don't schedule daily drop job because config.Setting.DBDropDays is 0\n")
 		logp.Warn("maybe you should set the option DBDropDays greater 0 otherwise old data won't be deleted\n")
 	}
-}
-
-func replaceCreateDay(d int) strings.Replacer {
-	pn := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
-	return *strings.NewReplacer(
-		"{{date}}", pn,
-	)
-}
-
-func replaceDropDay(d int) strings.Replacer {
-	pn := time.Now().Add(time.Hour * time.Duration(-24*d)).Format("20060102")
-	return *strings.NewReplacer(
-		"{{date}}", pn,
-	)
 }
 
 func setStep(name string) (step int) {

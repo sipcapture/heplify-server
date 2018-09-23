@@ -1,7 +1,10 @@
 package input
 
 import (
+	"bufio"
 	"crypto/tls"
+	"encoding/binary"
+	"io"
 	"net"
 	"runtime"
 	"sync"
@@ -18,7 +21,6 @@ import (
 )
 
 type HEPInput struct {
-	addr   string
 	buffer *sync.Pool
 	quit   chan struct{}
 	stats  HEPStats
@@ -33,21 +35,18 @@ type HEPStats struct {
 }
 
 var (
-	inCh  = make(chan []byte, 20000)
-	dbCh  = make(chan *decoder.HEP, 200000)
-	mqCh  = make(chan []byte, 20000)
-	pmCh  = make(chan *decoder.HEP, 20000)
-	esCh  = make(chan *decoder.HEP, 20000)
-	dbCnt int
-	mqCnt int
-	pmCnt int
-	esCnt int
+	inCh = make(chan []byte, 20000)
+	dbCh = make(chan *decoder.HEP, 200000)
+	mqCh = make(chan []byte, 20000)
+	pmCh = make(chan *decoder.HEP, 20000)
+	esCh = make(chan *decoder.HEP, 20000)
 )
+
+const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		addr:   config.Setting.HEPAddr,
-		buffer: &sync.Pool{New: func() interface{} { return make([]byte, 8192) }},
+		buffer: &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
 		quit:   make(chan struct{}),
 		wg:     &sync.WaitGroup{},
 	}
@@ -104,15 +103,22 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	h.wg.Add(1)
-	go h.serveUDP()
-	go h.serveTLS()
 	go h.logStats()
+	if config.Setting.HEPAddr != "" {
+		h.wg.Add(1)
+		go h.serveUDP()
+	}
+	if config.Setting.HEPTCPAddr != "" {
+		go h.serveTCP()
+	}
+	if config.Setting.HEPTLSAddr != "" {
+		go h.serveTLS()
+	}
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 }
 
 func (h *HEPInput) serveUDP() {
-	ua, err := net.ResolveUDPAddr("udp", h.addr)
+	ua, err := net.ResolveUDPAddr("udp", config.Setting.HEPAddr)
 	if err != nil {
 		logp.Critical("%v", err)
 	}
@@ -144,9 +150,73 @@ func (h *HEPInput) serveUDP() {
 	}
 }
 
+func (h *HEPInput) serveTCP() {
+	listener, err := net.Listen("tcp", config.Setting.HEPTCPAddr)
+	if err != nil {
+		logp.Err("%v", err)
+		return
+	}
+
+	for {
+		select {
+		case <-h.quit:
+			listener.Close()
+			return
+		default:
+		}
+
+		conn, err := listener.Accept()
+		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
+		if err != nil {
+			logp.Err("%v", err)
+			continue
+		}
+		h.wg.Add(1)
+		go h.handleTCP(conn)
+	}
+}
+
+func (h *HEPInput) handleTCP(c net.Conn) {
+	r := bufio.NewReader(c)
+	defer c.Close()
+	defer h.wg.Done()
+	for {
+		select {
+		case <-h.quit:
+			return
+		default:
+		}
+
+		c.SetReadDeadline(time.Now().Add(1e9))
+		buf := h.buffer.Get().([]byte)
+		hb, err := r.Peek(6)
+		if err != nil {
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				continue
+			} else {
+				return
+			}
+		} else {
+			size := binary.BigEndian.Uint16(hb[4:6])
+			if size > maxPktLen {
+				logp.Warn("unexpected packet, did you send TLS into plain TCP input?")
+				return
+			}
+			n, err := io.ReadFull(r, buf[:size])
+			if err != nil || n > maxPktLen {
+				logp.Warn("%v, unusal packet size with %d bytes", err, n)
+				atomic.AddUint64(&h.stats.ErrCount, 1)
+				continue
+			}
+			inCh <- buf[:n]
+			atomic.AddUint64(&h.stats.PktCount, 1)
+		}
+	}
+}
+
 func (h *HEPInput) serveTLS() {
 	ca := NewCertificateAuthority()
-	listener, err := tls.Listen("tcp", h.addr, &tls.Config{
+	listener, err := tls.Listen("tcp", config.Setting.HEPTLSAddr, &tls.Config{
 		GetCertificate: ca.GetCertificate,
 	})
 	if err != nil {
@@ -166,9 +236,6 @@ func (h *HEPInput) serveTLS() {
 		if err != nil {
 			logp.Err("%v", err)
 			continue
-		}
-		if config.Setting.PipeAddr != "" {
-			go pipeConn(conn, config.Setting.PipeAddr)
 		}
 		h.wg.Add(1)
 		go h.handleTLS(conn)
@@ -204,17 +271,12 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 	}
 }
 
-func (h *HEPInput) closeConn() {
-	close(h.quit)
-	h.wg.Wait()
-}
-
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
-	h.closeConn()
-	time.Sleep(1 * time.Second)
-	logp.Info("heplify-server has been stopped")
+	close(h.quit)
+	h.wg.Wait()
 	close(inCh)
+	logp.Info("heplify-server has been stopped")
 }
 
 func (h *HEPInput) hepWorker() {
@@ -223,11 +285,15 @@ func (h *HEPInput) hepWorker() {
 		msg    = h.buffer.Get().([]byte)
 		err    error
 		ok     bool
+		dbCnt  int
+		mqCnt  int
+		pmCnt  int
+		esCnt  int
 	)
 
 OUT:
 	for {
-		h.buffer.Put(msg[:8192])
+		h.buffer.Put(msg[:maxPktLen])
 
 		select {
 		case msg, ok = <-inCh:
