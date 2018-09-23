@@ -1,4 +1,6 @@
 HEPAddr         = "0.0.0.0:9060"
+HEPTCPAddr      = ""
+HEPTLSAddr      = "0.0.0.0:9060"
 ESAddr          = ""
 ESDiscovery     = true
 MQDriver        = ""

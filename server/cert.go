@@ -97,7 +97,7 @@ func CertificateAuthorityFromScratch() (*CertificateAuthority, error) {
 
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	// self sign the generated certificate
@@ -148,7 +148,7 @@ func (ca *CertificateAuthority) GetCertificate(h *tls.ClientHelloInfo) (*tls.Cer
 	if h.ServerName == "" {
 		h.ServerName = defaultServerName()
 	}
-	logp.Info("%s -> %s", h.Conn.RemoteAddr(), h.ServerName)
+	logp.Info("new TLS connection %s -> %s", h.Conn.RemoteAddr(), h.ServerName)
 
 	// fetch previously signed certificate from storage if it exists
 	if cert, ok := ca.store[h.ServerName]; ok {

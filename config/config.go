@@ -1,11 +1,13 @@
 package config
 
-const Version = "heplify-server 0.952"
+const Version = "heplify-server 0.960"
 
 var Setting HeplifyServer
 
 type HeplifyServer struct {
 	HEPAddr         string   `default:"0.0.0.0:9060"`
+	HEPTCPAddr      string   `default:""`
+	HEPTLSAddr      string   `default:"0.0.0.0:9060"`
 	ESAddr          string   `default:""`
 	ESDiscovery     bool     `default:"true"`
 	MQDriver        string   `default:""`
@@ -45,6 +47,8 @@ type HeplifyServer struct {
 func NewConfig() *HeplifyServer {
 	return &HeplifyServer{
 		HEPAddr:         "0.0.0.0:9060",
+		HEPTCPAddr:      "",
+		HEPTLSAddr:      "0.0.0.0:9060",
 		ESAddr:          "",
 		ESDiscovery:     true,
 		MQDriver:        "",
