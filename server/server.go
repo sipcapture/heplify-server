@@ -140,7 +140,7 @@ func (h *HEPInput) serveUDP() {
 		n, err := uc.Read(buf)
 		if err != nil {
 			continue
-		} else if n > 8192 {
+		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
@@ -261,7 +261,7 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 			} else {
 				return
 			}
-		} else if n > 8192 {
+		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
@@ -341,7 +341,7 @@ OUT:
 
 		if config.Setting.MQAddr != "" {
 			select {
-			case mqCh <- msg:
+			case mqCh <- append([]byte{}, msg...):
 			default:
 				mqCnt++
 				if mqCnt%1024 == 0 {
