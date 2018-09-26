@@ -64,9 +64,11 @@ func (r *Rotator) CreateDatabases() (err error) {
 				time.Sleep(5 * time.Second)
 			} else {
 				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBDataTable)
+				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBConfTable)
 				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
 				r.dbExec(db, "GRANT postgres to homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
 				db.Close()

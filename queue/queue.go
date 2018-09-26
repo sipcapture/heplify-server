@@ -2,7 +2,7 @@ package queue
 
 import (
 	"fmt"
-	"sync"
+	"runtime"
 
 	"github.com/negbie/heplify-server/config"
 )
@@ -31,7 +31,7 @@ func New(name string) *Queue {
 
 func (q *Queue) Run() error {
 	var (
-		wg  sync.WaitGroup
+		//wg  sync.WaitGroup
 		err error
 	)
 
@@ -44,14 +44,21 @@ func (q *Queue) Run() error {
 		return err
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		topic := q.Topic
-		q.QH.add(topic, q.Chan)
-	}()
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			topic := q.Topic
+			q.QH.add(topic, q.Chan)
+		}()
+	}
 
-	wg.Wait()
+	/* 	wg.Add(1)
+	   	go func() {
+	   		defer wg.Done()
+	   		topic := q.Topic
+	   		q.QH.add(topic, q.Chan)
+	   	}()
+	   	wg.Wait() */
+
 	return nil
 }
 

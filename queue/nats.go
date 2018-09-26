@@ -14,7 +14,7 @@ type NATS struct {
 func (n *NATS) setup() error {
 	var err error
 
-	n.connection, err = nats.Connect(config.Setting.MQAddr)
+	n.connection, err = nats.Connect("nats://" + config.Setting.MQAddr)
 	if err != nil {
 		logp.Err("%v", err)
 		return err
