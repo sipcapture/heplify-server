@@ -21,6 +21,10 @@ import (
 )
 
 type HEPInput struct {
+	useDB  bool
+	useMQ  bool
+	usePM  bool
+	useES  bool
 	buffer *sync.Pool
 	quit   chan struct{}
 	stats  HEPStats
@@ -50,6 +54,18 @@ func NewHEPInput() *HEPInput {
 		quit:   make(chan struct{}),
 		wg:     &sync.WaitGroup{},
 	}
+	if len(config.Setting.DBAddr) > 2 {
+		h.useDB = true
+	}
+	if len(config.Setting.MQAddr) > 2 && len(config.Setting.MQDriver) > 2 {
+		h.useMQ = true
+	}
+	if len(config.Setting.PromAddr) > 2 {
+		h.usePM = true
+	}
+	if len(config.Setting.ESAddr) > 2 {
+		h.useES = true
+	}
 	return h
 }
 
@@ -58,7 +74,7 @@ func (h *HEPInput) Run() {
 		go h.hepWorker()
 	}
 
-	if config.Setting.DBAddr != "" {
+	if h.useDB {
 		go func() {
 			d := database.New(config.Setting.DBDriver)
 			d.Chan = dbCh
@@ -69,7 +85,7 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	if config.Setting.MQAddr != "" && config.Setting.MQDriver != "" {
+	if h.useMQ {
 		go func() {
 			q := queue.New(config.Setting.MQDriver)
 			q.Topic = config.Setting.MQTopic
@@ -81,7 +97,7 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	if config.Setting.PromAddr != "" {
+	if h.usePM {
 		go func() {
 			m := metric.New("prometheus")
 			m.Chan = pmCh
@@ -92,7 +108,7 @@ func (h *HEPInput) Run() {
 		}()
 	}
 
-	if config.Setting.ESAddr != "" {
+	if h.useES {
 		go func() {
 			e := elastic.New("elasticsearch")
 			e.Chan = esCh
@@ -315,7 +331,7 @@ OUT:
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
 
-		if config.Setting.DBAddr != "" {
+		if h.useDB {
 			select {
 			case dbCh <- hepPkt:
 			default:
@@ -327,7 +343,7 @@ OUT:
 			}
 		}
 
-		if config.Setting.PromAddr != "" {
+		if h.usePM {
 			select {
 			case pmCh <- hepPkt:
 			default:
@@ -339,7 +355,7 @@ OUT:
 			}
 		}
 
-		if config.Setting.MQAddr != "" {
+		if h.useMQ {
 			select {
 			case mqCh <- append([]byte{}, msg...):
 			default:
@@ -351,7 +367,7 @@ OUT:
 			}
 		}
 
-		if config.Setting.ESAddr != "" {
+		if h.useES {
 			select {
 			case esCh <- hepPkt:
 			default:
