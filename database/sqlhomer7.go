@@ -260,19 +260,19 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 	} else if s.dbDriver == "postgres" {
 		switch query {
 		case "call":
-			query = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "register":
-			query = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "default":
-			query = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "rtcp":
-			query = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "report":
-			query = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "dns":
-			query = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		case "log":
-			query = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+			query = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN ENCODING 'WIN1252'"
 		}
 
 		tx, err := s.db.Begin()
