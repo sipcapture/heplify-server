@@ -120,11 +120,16 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
+			if pkt.SIP.StartLine == nil {
+				logp.Warn("received empty SIP startline inside packet: %v", pkt)
+				continue
+			}
+
 			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
 			pHeader = formProtocolHeader(pkt)
 			dHeader = formDataHeader(pkt, date)
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+			if pkt.ProtoType == 1 && pkt.Payload != "" {
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)

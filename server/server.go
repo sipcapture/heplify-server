@@ -386,8 +386,8 @@ func (h *HEPInput) logStats() {
 	for {
 		select {
 		case <-ticker.C:
-			logp.Info("Packet stats since last 5 minutes. Total: %d, HEP: %d, Duplicate: %d, Error: %d",
-				atomic.LoadUint64(&h.stats.PktCount),
+			logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Duplicate: %d, Error: %d",
+				atomic.LoadUint64(&h.stats.PktCount)/300,
 				atomic.LoadUint64(&h.stats.HEPCount),
 				atomic.LoadUint64(&h.stats.DupCount),
 				atomic.LoadUint64(&h.stats.ErrCount),
