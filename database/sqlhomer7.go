@@ -120,16 +120,11 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			if pkt.SIP.StartLine == nil {
-				logp.Warn("received empty SIP startline inside packet: %v", pkt)
-				continue
-			}
-
 			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-			pHeader = formProtocolHeader(pkt)
-			dHeader = formDataHeader(pkt, date)
+			pHeader = makeProtoHeader(pkt)
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" {
+			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+				dHeader = makeSIPDataHeader(pkt, date)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
@@ -157,6 +152,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
+				dHeader = makeRTCDataHeader(pkt, date)
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
@@ -340,7 +336,7 @@ func (s *SQLHomer7) createQueryValues(count int, values string) string {
 	return values
 }
 
-func formProtocolHeader(h *decoder.HEP) []byte {
+func makeProtoHeader(h *decoder.HEP) []byte {
 	var b bytes.Buffer
 	b.WriteString("{")
 	b.WriteString("\"protocolFamily\":")
@@ -369,38 +365,40 @@ func formProtocolHeader(h *decoder.HEP) []byte {
 	return b.Bytes()
 }
 
-func formDataHeader(h *decoder.HEP, date string) []byte {
+func makeRTCDataHeader(h *decoder.HEP, date string) []byte {
 	var b bytes.Buffer
-	if h.ProtoType == 1 {
-		b.WriteString("{")
-		b.WriteString("\"create_date\":\"")
-		b.WriteString(date)
-		b.WriteString("\",\"ruri_user\":\"")
-		b.WriteString(h.SIP.StartLine.URI.User)
-		b.WriteString("\",\"from_user\":\"")
-		b.WriteString(h.SIP.FromUser)
-		b.WriteString("\",\"to_user\":\"")
-		b.WriteString(h.SIP.ToUser)
-		b.WriteString("\",\"pid_user\":\"")
-		b.WriteString(h.SIP.PaiUser)
-		b.WriteString("\",\"auth_user\":\"")
-		b.WriteString(h.SIP.AuthUser)
-		b.WriteString("\",\"sid\":\"")
-		b.WriteString(h.CID)
-		b.WriteString("\",\"method\":\"")
-		b.WriteString(h.SIP.StartLine.Method)
-		b.WriteString("\",\"source_ip\":\"")
-		b.WriteString(h.SrcIP)
-		b.WriteString("\",\"destination_ip\":\"")
-		b.WriteString(h.DstIP)
-		b.WriteString("\"}")
-	} else {
-		b.WriteString("{")
-		b.WriteString("\"create_date\":\"")
-		b.WriteString(date)
-		b.WriteString("\",\"sid\":\"")
-		b.WriteString(h.CID)
-		b.WriteString("\"}")
-	}
+	b.WriteString("{")
+	b.WriteString("\"create_date\":\"")
+	b.WriteString(date)
+	b.WriteString("\",\"sid\":\"")
+	b.WriteString(h.CID)
+	b.WriteString("\"}")
+	return b.Bytes()
+}
+
+func makeSIPDataHeader(h *decoder.HEP, date string) []byte {
+	var b bytes.Buffer
+	b.WriteString("{")
+	b.WriteString("\"create_date\":\"")
+	b.WriteString(date)
+	b.WriteString("\",\"ruri_user\":\"")
+	b.WriteString(h.SIP.StartLine.URI.User)
+	b.WriteString("\",\"from_user\":\"")
+	b.WriteString(h.SIP.FromUser)
+	b.WriteString("\",\"to_user\":\"")
+	b.WriteString(h.SIP.ToUser)
+	b.WriteString("\",\"pid_user\":\"")
+	b.WriteString(h.SIP.PaiUser)
+	b.WriteString("\",\"auth_user\":\"")
+	b.WriteString(h.SIP.AuthUser)
+	b.WriteString("\",\"sid\":\"")
+	b.WriteString(h.CID)
+	b.WriteString("\",\"method\":\"")
+	b.WriteString(h.SIP.StartLine.Method)
+	b.WriteString("\",\"source_ip\":\"")
+	b.WriteString(h.SrcIP)
+	b.WriteString("\",\"destination_ip\":\"")
+	b.WriteString(h.DstIP)
+	b.WriteString("\"}")
 	return b.Bytes()
 }
