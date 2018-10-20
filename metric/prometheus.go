@@ -71,6 +71,7 @@ func (p *Prometheus) setup() (err error) {
 	p.CvMethodResponse = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_method_response", Help: "SIP method and response counter"},
 		[]string{"target_name", "direction", "node_id", "response", "method"})
 	p.CvPacketsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heplify_packets_total", Help: "Total packets by HEP type"}, []string{"type"})
+	p.CvPacketsGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_packets_gauge", Help: "Total packets by HEP type"}, []string{"type"})
 	p.GvPacketsSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_packets_size", Help: "Packet size by HEP type"}, []string{"type"})
 	p.GaugeVecMetrics["heplify_xrtp_cs"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_cs", Help: "XRTP call setup time"}, []string{"target_name"})
 	p.GaugeVecMetrics["heplify_xrtp_jir"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_xrtp_jir", Help: "XRTP received jitter"}, []string{"target_name"})
@@ -191,6 +192,7 @@ func (p *Prometheus) setup() (err error) {
 
 	prometheus.MustRegister(p.CvMethodResponse)
 	prometheus.MustRegister(p.CvPacketsTotal)
+	prometheus.MustRegister(p.CvPacketsGauge)
 	prometheus.MustRegister(p.GvPacketsSize)
 
 	for k := range p.GaugeVecMetrics {
@@ -229,6 +231,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			labelType = setLabelType(pkt.ProtoType)
 
 			p.CvPacketsTotal.WithLabelValues(labelType).Inc()
+			p.CvPacketsGauge.WithLabelValues(labelType).Inc()
 			p.GvPacketsSize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
 
 			if pkt.SIP != nil && pkt.ProtoType == 1 {
