@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/tls"
 	"encoding/binary"
-	"io"
 	"net"
 	"runtime"
 	"sync"
@@ -196,6 +195,17 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 	r := bufio.NewReader(c)
 	defer c.Close()
 	defer h.wg.Done()
+	readBytes := func(buffer []byte) (int, error) {
+		n := uint(0)
+		for n < uint(len(buffer)) {
+			nn, err := r.Read(buffer[n:])
+			n += uint(nn)
+			if err != nil {
+				return 0, err
+			}
+		}
+		return int(n), nil
+	}
 	for {
 		select {
 		case <-h.quit:
@@ -218,7 +228,7 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 				logp.Warn("unexpected packet, did you send TLS into plain TCP input?")
 				return
 			}
-			n, err := io.ReadFull(r, buf[:size])
+			n, err := readBytes(buf[:size])
 			if err != nil || n > maxPktLen {
 				logp.Warn("%v, unusal packet size with %d bytes", err, n)
 				atomic.AddUint64(&h.stats.ErrCount, 1)
