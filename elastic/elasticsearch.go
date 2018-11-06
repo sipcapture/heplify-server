@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/logp"
 	"github.com/olivere/elastic"
 )
 

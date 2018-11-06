@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/koding/multiconfig"
-	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 var pmCh = make(chan *decoder.HEP, 20000)

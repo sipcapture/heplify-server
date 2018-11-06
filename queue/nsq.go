@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/logp"
 	nsq "github.com/nsqio/go-nsq"
 )
 

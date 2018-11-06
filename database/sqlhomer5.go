@@ -12,9 +12,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
-	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcature/logp"
 )
 
 var (
