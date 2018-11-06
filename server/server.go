@@ -11,13 +11,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sipcapture/heplify-server""
+	"github.com/sipcapture/heplify-server"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 	"github.com/sipcapture/heplify-server/elastic"
 	"github.com/sipcapture/heplify-server/metric"
 	"github.com/sipcapture/heplify-server/queue"
-	"github.com/sipcapture/logp"
+	"github.com/negbie/logp"
 )
 
 type HEPInput struct {

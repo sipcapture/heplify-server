@@ -13,7 +13,7 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/sipcapture/heplify-server"
 	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcapture/logp"
+	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

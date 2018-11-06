@@ -5,8 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/sipcapture/logp"
-
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 )
 

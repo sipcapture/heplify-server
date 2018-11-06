@@ -12,7 +12,7 @@ import (
 
 	"github.com/sipcapture/heplify-server"
 	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcapture/logp"
+	"github.com/negbie/logp"
 	"github.com/olivere/elastic"
 )
 

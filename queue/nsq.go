@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcapture/logp"
+	"github.com/negbie/logp"
 	nsq "github.com/nsqio/go-nsq"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 // NSQ producer struct

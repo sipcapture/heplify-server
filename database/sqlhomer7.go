@@ -16,7 +16,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sipcapture/heplify-server"
 	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcature/logp"
+	"github.com/negbie/logp"
 )
 
 type SQLHomer7 struct {
