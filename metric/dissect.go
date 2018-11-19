@@ -17,101 +17,71 @@ func normMax(val float64) float64 {
 
 func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
-	cs, pr, ps, plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0
+	plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0.0, 0.0
 
 	p.CvPacketsTotal.WithLabelValues("xrtp").Inc()
 	p.GvPacketsSize.WithLabelValues("xrtp").Set(float64(len(stats)))
 
-	m := make(map[string]string)
-	sr := strings.Split(stats, ";")
-
-	for _, pair := range sr {
-		ss := strings.Split(pair, "=")
-		if len(ss) == 2 {
-			m[ss[0]] = ss[1]
-		}
+	cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64)
+	if err == nil {
+		p.GaugeVecMetrics["heplify_xrtp_cs"].WithLabelValues(tn).Set(cs / 1000)
+	} else {
+		logp.Err("%v", err)
 	}
 
-	if v, ok := m["CS"]; ok {
-		if len(v) >= 1 {
-			cs, err = strconv.Atoi(v)
+	if plt := extractXR("PL=", stats); len(plt) >= 1 {
+		if pl := strings.Split(plt, ","); len(pl) == 2 {
+			plr, err = strconv.Atoi(pl[0])
 			if err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_cs"].WithLabelValues(tn).Set(float64(cs / 1000))
+				p.GaugeVecMetrics["heplify_xrtp_plr"].WithLabelValues(tn).Set(float64(plr))
+			} else {
+				logp.Err("%v", err)
+			}
+			pls, err = strconv.Atoi(pl[1])
+			if err == nil {
+				p.GaugeVecMetrics["heplify_xrtp_pls"].WithLabelValues(tn).Set(float64(pls))
 			} else {
 				logp.Err("%v", err)
 			}
 		}
 	}
-	if v, ok := m["PR"]; ok {
-		if len(v) >= 1 {
-			pr, err = strconv.Atoi(v)
+
+	if jit := extractXR("JI=", stats); len(jit) >= 1 {
+		if ji := strings.Split(jit, ","); len(ji) == 2 {
+			jir, err = strconv.Atoi(ji[0])
 			if err == nil {
+				p.GaugeVecMetrics["heplify_xrtp_jir"].WithLabelValues(tn).Set(float64(jir))
 			} else {
 				logp.Err("%v", err)
 			}
-		}
-	}
-	if v, ok := m["PS"]; ok {
-		if len(v) >= 1 {
-			ps, err = strconv.Atoi(v)
+			jis, err = strconv.Atoi(ji[1])
 			if err == nil {
+				p.GaugeVecMetrics["heplify_xrtp_jis"].WithLabelValues(tn).Set(float64(jis))
 			} else {
 				logp.Err("%v", err)
-			}
-		}
-	}
-	if v, ok := m["PL"]; ok {
-		if len(v) >= 1 {
-			pl := strings.Split(v, ",")
-			if len(pl) == 2 {
-				plr, err = strconv.Atoi(pl[0])
-				if err == nil {
-					p.GaugeVecMetrics["heplify_xrtp_plr"].WithLabelValues(tn).Set(float64(plr))
-				} else {
-					logp.Err("%v", err)
-				}
-				pls, err = strconv.Atoi(pl[1])
-				if err == nil {
-					p.GaugeVecMetrics["heplify_xrtp_pls"].WithLabelValues(tn).Set(float64(pls))
-				} else {
-					logp.Err("%v", err)
-				}
-			}
-		}
-	}
-	if v, ok := m["JI"]; ok {
-		if len(v) >= 1 {
-			ji := strings.Split(v, ",")
-			if len(ji) == 2 {
-				jir, err = strconv.Atoi(ji[0])
-				if err == nil {
-					p.GaugeVecMetrics["heplify_xrtp_jir"].WithLabelValues(tn).Set(float64(jir))
-				} else {
-					logp.Err("%v", err)
-				}
-				jis, err = strconv.Atoi(ji[1])
-				if err == nil {
-					p.GaugeVecMetrics["heplify_xrtp_jis"].WithLabelValues(tn).Set(float64(jis))
-				} else {
-					logp.Err("%v", err)
-				}
-			}
-		}
-	}
-	if v, ok := m["DL"]; ok {
-		if len(v) >= 1 {
-			dl := strings.Split(v, ",")
-			if len(dl) == 3 {
-				dle, err = strconv.Atoi(dl[0])
-				if err == nil {
-					p.GaugeVecMetrics["heplify_xrtp_dle"].WithLabelValues(tn).Set(float64(dle))
-				} else {
-					logp.Err("%v", err)
-				}
 			}
 		}
 	}
 
+	if dlt := extractXR("DL=", stats); len(dlt) >= 1 {
+		if dl := strings.Split(dlt, ","); len(dl) == 3 {
+			dle, err = strconv.Atoi(dl[0])
+			if err == nil {
+				p.GaugeVecMetrics["heplify_xrtp_dle"].WithLabelValues(tn).Set(float64(dle))
+			} else {
+				logp.Err("%v", err)
+			}
+		}
+	}
+
+	pr, err := strconv.Atoi(extractXR("PR=", stats))
+	if err != nil {
+		logp.Err("%v", err)
+	}
+	ps, err := strconv.Atoi(extractXR("PS=", stats))
+	if err != nil {
+		logp.Err("%v", err)
+	}
 	if pr == 0 && ps == 0 {
 		pr, ps = 1, 1
 	}
@@ -131,7 +101,6 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 		mos = 1
 	}
 	p.GaugeVecMetrics["heplify_xrtp_mos"].WithLabelValues(tn).Set(mos)
-
 }
 
 func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
@@ -338,4 +307,13 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 			}
 		}
 	}, p.horaclifixPaths...)
+}
+
+func (p *Prometheus) dissectRTCPXRStats(nodeID string, data string) {
+	_, _ = strconv.ParseFloat(extractXR("JBN=", data), 64)
+	_, _ = strconv.ParseFloat(extractXR("NLR=", data), 64)
+	_, _ = strconv.ParseFloat(extractXR("JDR=", data), 64)
+	_, _ = strconv.ParseFloat(extractXR("IAJ=", data), 64)
+	_, _ = strconv.ParseFloat(extractXR("MOSLQ=", data), 64)
+	_, _ = strconv.ParseFloat(extractXR("MOSCQ=", data), 64)
 }
