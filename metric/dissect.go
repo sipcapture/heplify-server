@@ -15,6 +15,24 @@ func normMax(val float64) float64 {
 	return val
 }
 
+func (p *Prometheus) dissectRTCPXRStats(nodeID string, stats string) {
+	if nlr, err := strconv.ParseFloat(extractXR("NLR=", stats), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_nlr"].WithLabelValues(nodeID).Set(nlr)
+	}
+	if jdr, err := strconv.ParseFloat(extractXR("JDR=", stats), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_jdr"].WithLabelValues(nodeID).Set(jdr)
+	}
+	if iaj, err := strconv.ParseFloat(extractXR("IAJ=", stats), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_iaj"].WithLabelValues(nodeID).Set(iaj)
+	}
+	if moslq, err := strconv.ParseFloat(extractXR("MOSLQ=", stats), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_moslq"].WithLabelValues(nodeID).Set(moslq)
+	}
+	if moscq, err := strconv.ParseFloat(extractXR("MOSCQ=", stats), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_moscq"].WithLabelValues(nodeID).Set(moscq)
+	}
+}
+
 func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
 	plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0.0, 0.0
@@ -307,22 +325,4 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 			}
 		}
 	}, p.horaclifixPaths...)
-}
-
-func (p *Prometheus) dissectRTCPXRStats(nodeID string, data string) {
-	if nlr, err := strconv.ParseFloat(extractXR("NLR=", data), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_nlr"].WithLabelValues(nodeID).Set(nlr)
-	}
-	if jdr, err := strconv.ParseFloat(extractXR("JDR=", data), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_jdr"].WithLabelValues(nodeID).Set(jdr)
-	}
-	if iaj, err := strconv.ParseFloat(extractXR("IAJ=", data), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_iaj"].WithLabelValues(nodeID).Set(iaj)
-	}
-	if moslq, err := strconv.ParseFloat(extractXR("MOSLQ=", data), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_moslq"].WithLabelValues(nodeID).Set(moslq)
-	}
-	if moscq, err := strconv.ParseFloat(extractXR("MOSCQ=", data), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_moscq"].WithLabelValues(nodeID).Set(moscq)
-	}
 }

@@ -63,6 +63,19 @@ func BenchmarkWithTargetCollect(b *testing.B) {
 	}
 }
 
+func BenchmarkDissectRTCPXRStats(b *testing.B) {
+	hep, err := decoder.DecodeHEP(hepPacket)
+	if err != nil {
+		b.Error(err)
+	}
+	hep.ProtoType = 35
+	hep.SIP.Body = VQSessionReport
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pmCh <- hep
+	}
+}
+
 func BenchmarkDissectRTCPStats(b *testing.B) {
 	hep, err := decoder.DecodeHEP(hepPacket)
 	if err != nil {
@@ -83,19 +96,6 @@ func BenchmarkDissectXRTPStats(b *testing.B) {
 	}
 	hep.ProtoType = 1
 	hep.SIP.RTPStatVal = XRTPStat
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		pmCh <- hep
-	}
-}
-
-func BenchmarkDissectRTCPXRStats(b *testing.B) {
-	hep, err := decoder.DecodeHEP(hepPacket)
-	if err != nil {
-		b.Error(err)
-	}
-	hep.ProtoType = 35
-	hep.SIP.Body = VQSessionReport
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pmCh <- hep
