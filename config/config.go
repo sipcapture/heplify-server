@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 0.960"
+const Version = "heplify-server 0.970"
 
 var Setting HeplifyServer
 

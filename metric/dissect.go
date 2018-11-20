@@ -310,10 +310,19 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 }
 
 func (p *Prometheus) dissectRTCPXRStats(nodeID string, data string) {
-	_, _ = strconv.ParseFloat(extractXR("JBN=", data), 64)
-	_, _ = strconv.ParseFloat(extractXR("NLR=", data), 64)
-	_, _ = strconv.ParseFloat(extractXR("JDR=", data), 64)
-	_, _ = strconv.ParseFloat(extractXR("IAJ=", data), 64)
-	_, _ = strconv.ParseFloat(extractXR("MOSLQ=", data), 64)
-	_, _ = strconv.ParseFloat(extractXR("MOSCQ=", data), 64)
+	if nlr, err := strconv.ParseFloat(extractXR("NLR=", data), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_nlr"].WithLabelValues(nodeID).Set(nlr)
+	}
+	if jdr, err := strconv.ParseFloat(extractXR("JDR=", data), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_jdr"].WithLabelValues(nodeID).Set(jdr)
+	}
+	if iaj, err := strconv.ParseFloat(extractXR("IAJ=", data), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_iaj"].WithLabelValues(nodeID).Set(iaj)
+	}
+	if moslq, err := strconv.ParseFloat(extractXR("MOSLQ=", data), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_moslq"].WithLabelValues(nodeID).Set(moslq)
+	}
+	if moscq, err := strconv.ParseFloat(extractXR("MOSCQ=", data), 64); err == nil {
+		p.GaugeVecMetrics["heplify_vqrtcpxr_moscq"].WithLabelValues(nodeID).Set(moscq)
+	}
 }

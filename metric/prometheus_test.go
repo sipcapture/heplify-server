@@ -33,7 +33,7 @@ var VQSessionReport = `VQSessionReport: CallTerm
 						PacketLoss:NLR=0.0 JDR=0.0
 						BurstGapLoss:BLD=0.0 BD=0 GLD=0.0 GD=5930 GMIN=16
 						Delay:RTD=0 ESD=0 IAJ=0
-						QualityEst:MOSLQ=3.8	 MOSCQ=4.2`
+						QualityEst:MOSLQ=3.8 MOSCQ=4.2`
 
 func init() {
 	c := multiconfig.New()
