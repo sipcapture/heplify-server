@@ -7,13 +7,14 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
 	//"net"
 	//_ "net/http/pprof"
 
 	"github.com/koding/multiconfig"
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/server"
-	"github.com/negbie/logp"
 )
 
 type server interface {
