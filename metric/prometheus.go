@@ -88,11 +88,17 @@ func (p *Prometheus) setup() (err error) {
 	p.GaugeVecMetrics["heplify_rtcpxr_fraction_lost"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_lost", Help: "RTCPXR fraction lost"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_fraction_discard"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_fraction_discard", Help: "RTCPXR fraction discard"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_burst_density"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_density", Help: "RTCPXR burst density"}, []string{"node_id"})
-	p.GaugeVecMetrics["heplify_rtcpxr_gap_density"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_density", Help: "RTCPXR gap density"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_burst_duration"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_burst_duration", Help: "RTCPXR burst duration"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_rtcpxr_gap_density"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_density", Help: "RTCPXR gap density"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_gap_duration"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_gap_duration", Help: "RTCPXR gap duration"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_round_trip_delay"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_round_trip_delay", Help: "RTCPXR round trip delay"}, []string{"node_id"})
 	p.GaugeVecMetrics["heplify_rtcpxr_end_system_delay"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtcpxr_end_system_delay", Help: "RTCPXR end system delay"}, []string{"node_id"})
+
+	p.GaugeVecMetrics["heplify_vqrtcpxr_nlr"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_vqrtcpxr_nlr", Help: "VQ-RTCPXR network packet loss rate"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_vqrtcpxr_jdr"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_vqrtcpxr_jdr", Help: "VQ-RTCPXR jitter buffer discard rate"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_vqrtcpxr_iaj"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_vqrtcpxr_iaj", Help: "VQ-RTCPXR interarrival jitter"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_vqrtcpxr_moslq"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_vqrtcpxr_moslq", Help: "VQ-RTCPXR MOS listening voice quality"}, []string{"node_id"})
+	p.GaugeVecMetrics["heplify_vqrtcpxr_moscq"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_vqrtcpxr_moscq", Help: "VQ-RTCPXR MOS conversation voice quality"}, []string{"node_id"})
 
 	if config.Setting.RTPAgentStats {
 		p.GaugeVecMetrics["heplify_rtpagent_delta"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "heplify_rtpagent_delta", Help: "RTPAgent delta"}, []string{"node_id"})

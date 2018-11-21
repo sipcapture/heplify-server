@@ -1,0 +1,127 @@
+version: '3.1'
+
+networks:
+  monitor-net:
+    driver: bridge
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention=30d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    expose:
+      - 9090
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+  
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    volumes: 
+      - ./alertmanager/:/etc/alertmanager/
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    expose:
+      - 9093
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  nodeexporter:
+    image: prom/node-exporter:latest
+    container_name: nodeexporter
+    user: root
+    privileged: true
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    expose:
+      - 3000
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  caddy:
+    image: stefanprodan/caddy
+    container_name: caddy
+    ports:
+      - "3000:3000"
+      - "9090:9090"
+      - "9093:9093"
+    volumes:
+      - ./caddy/:/etc/caddy/
+    environment:
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  heplify-server:
+    image: sipcapture/heplify-server:latest
+    container_name: heplify-server
+    ports:
+      - "9060:9060"
+      - "9060:9060/udp"
+    command:
+      - './heplify-server'
+    environment:
+      - "HEPLIFYSERVER_HEPADDR=0.0.0.0:9060"
+      - "HEPLIFYSERVER_ESADDR=''"
+      - "HEPLIFYSERVER_DBADDR=''"
+      - "HEPLIFYSERVER_LOGLVL=info"
+      - "HEPLIFYSERVER_LOGSTD=true"
+      - "HEPLIFYSERVER_PROMADDR=0.0.0.0:9096"
+    restart: unless-stopped
+    expose:
+      - 9096
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"

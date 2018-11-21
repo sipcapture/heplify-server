@@ -1,0 +1,63 @@
+groups:
+- name: targets
+  rules:
+  - alert: monitor_service_down
+    expr: up == 0
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: "Monitor service non-operational"
+      description: "Service {{ $labels.instance }} is down."
+
+- name: host
+  rules:
+  - alert: high_cpu_load
+    expr: node_load1 > 10
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Server under high load"
+      description: "Docker host is under high load, the avg load 1m is at {{ $value}}. Reported by instance {{ $labels.instance }} of job {{ $labels.job }}."
+
+  - alert: high_memory_load
+    expr: (sum(node_memory_MemTotal) - sum(node_memory_MemFree + node_memory_Buffers + node_memory_Cached) ) / sum(node_memory_MemTotal) * 100 > 95
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Server memory is almost full"
+      description: "Docker host memory usage is {{ humanize $value}}%. Reported by instance {{ $labels.instance }} of job {{ $labels.job }}."
+
+  - alert: high_storage_load
+    expr: (node_filesystem_size{fstype="aufs"} - node_filesystem_free{fstype="aufs"}) / node_filesystem_size{fstype="aufs"}  * 100 > 85
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Server storage is almost full"
+      description: "Docker host storage usage is {{ humanize $value}}%. Reported by instance {{ $labels.instance }} of job {{ $labels.job }}."
+
+- name: heplify
+  rules:
+  - alert: heplify_down
+    expr: sum(rate(heplify_packets_total[1m])) < 10
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: "heplify down"
+      description: "heplify sends less than 10 pkt/s for 30 seconds."
+
+- name: heplify-server
+  rules:
+  - alert: sip_50x_error
+    expr: rate(heplify_method_response{method=~"INVITE|REGISTER", response=~"50.*"}[1m]) > 0.40
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "SIP server error rate"
+      description: 'Interface {{ $labels.target_name }} received {{ $value | printf "%.2f" }} {{ $labels.method }}:{{ $labels.response }} per second'
+

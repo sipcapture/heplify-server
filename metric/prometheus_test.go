@@ -33,7 +33,7 @@ var VQSessionReport = `VQSessionReport: CallTerm
 						PacketLoss:NLR=0.0 JDR=0.0
 						BurstGapLoss:BLD=0.0 BD=0 GLD=0.0 GD=5930 GMIN=16
 						Delay:RTD=0 ESD=0 IAJ=0
-						QualityEst:MOSLQ=3.8	 MOSCQ=4.2`
+						QualityEst:MOSLQ=3.8 MOSCQ=4.2`
 
 func init() {
 	c := multiconfig.New()
@@ -63,6 +63,19 @@ func BenchmarkWithTargetCollect(b *testing.B) {
 	}
 }
 
+func BenchmarkDissectRTCPXRStats(b *testing.B) {
+	hep, err := decoder.DecodeHEP(hepPacket)
+	if err != nil {
+		b.Error(err)
+	}
+	hep.ProtoType = 35
+	hep.SIP.Body = VQSessionReport
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pmCh <- hep
+	}
+}
+
 func BenchmarkDissectRTCPStats(b *testing.B) {
 	hep, err := decoder.DecodeHEP(hepPacket)
 	if err != nil {
@@ -83,19 +96,6 @@ func BenchmarkDissectXRTPStats(b *testing.B) {
 	}
 	hep.ProtoType = 1
 	hep.SIP.RTPStatVal = XRTPStat
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		pmCh <- hep
-	}
-}
-
-func BenchmarkDissectRTCPXRStats(b *testing.B) {
-	hep, err := decoder.DecodeHEP(hepPacket)
-	if err != nil {
-		b.Error(err)
-	}
-	hep.ProtoType = 35
-	hep.SIP.Body = VQSessionReport
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pmCh <- hep
