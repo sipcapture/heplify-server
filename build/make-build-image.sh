@@ -92,7 +92,7 @@ build_image() {
   BUILD_TIME="ARG_BUILDTIME=$(date '+%Y-%m-%d+%H:%M:%S')"
 
   local -r latest_tag="${image_tag}:latest"
-  local -r gitversiontag="${image_tag}:${CTI_CLOUD_DOCKER_VERSION}"
+  local -r gitversiontag="${image_tag}:${DOCKER_VERSION}"
 
 
   docker build --build-arg "$BUILD_TIME" --build-arg "TYPE=$type"  \
