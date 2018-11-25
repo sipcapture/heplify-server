@@ -1,20 +1,16 @@
-# sudo docker build -t sipcapture/heplify-server:latest .
+FROM golang:alpine as builder
 
-FROM golang:latest as builder
+WORKDIR /heplify-server
+COPY . /heplify-server
 
-RUN go get -u -d -v github.com/sipcapture/heplify-server/
-WORKDIR /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/
-RUN set -x && go get -u -d -v .
+RUN apk update && apk add --no-cache git
+RUN env GO111MODULE=off go get -u github.com/gobuffalo/packr/... && \
+    /go/bin/packr -i /heplify-server/database
 
-RUN go get -u -v github.com/gobuffalo/packr/...
-WORKDIR /go/bin/
-RUN ./packr -i /go/src/github.com/sipcapture/heplify-server/database
-
-WORKDIR /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w' -installsuffix cgo -o heplify-server .
-
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w' -installsuffix cgo -o heplify-server ./cmd/heplify-server
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+RUN apk update && apk --no-cache add ca-certificates
 WORKDIR /root/
-COPY --from=builder /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/heplify-server .
+COPY --from=builder /heplify-server/heplify-server .
+CMD ["./heplify-server"]

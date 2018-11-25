@@ -13,10 +13,9 @@ You have 3 options to get **heplify-server** up and running:
 * Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/hom5-hep-prom-graf)
 * Compile from sources:  
   
-  [install](https://golang.org/doc/install) Go > 1.10  
-  cd cmd/heplify-server  
-  go get -u -v -d  
-  go build  
+  [install](https://golang.org/doc/install) Go 1.11+
+
+  `go build cmd/heplify-server/heplify-server.go`
 
 
 ### Configuration

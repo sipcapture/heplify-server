@@ -11,8 +11,8 @@ import (
 	//_ "net/http/pprof"
 
 	"github.com/koding/multiconfig"
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/server"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/server"
 	"github.com/negbie/logp"
 )
 

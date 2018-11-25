@@ -2,7 +2,7 @@ package queue
 
 import (
 	"github.com/nats-io/go-nats"
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
 )
 
