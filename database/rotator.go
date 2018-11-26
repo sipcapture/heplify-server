@@ -9,7 +9,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	"github.com/negbie/dotsql"
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/robfig/cron"
 )

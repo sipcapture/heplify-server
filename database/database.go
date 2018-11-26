@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 type Database struct {

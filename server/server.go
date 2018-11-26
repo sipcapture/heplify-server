@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/heplify-server"
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/database"
-	"github.com/negbie/heplify-server/elastic"
-	"github.com/negbie/heplify-server/metric"
-	"github.com/negbie/heplify-server/queue"
+	"github.com/sipcapture/heplify-server"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/database"
+	"github.com/sipcapture/heplify-server/elastic"
+	"github.com/sipcapture/heplify-server/metric"
+	"github.com/sipcapture/heplify-server/queue"
 	"github.com/negbie/logp"
 )
 
