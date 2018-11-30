@@ -40,66 +40,42 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	p.CvPacketsTotal.WithLabelValues("xrtp").Inc()
 	p.GvPacketsSize.WithLabelValues("xrtp").Set(float64(len(stats)))
 
-	cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64)
-	if err == nil {
+	if cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64); err == nil {
 		p.GaugeVecMetrics["heplify_xrtp_cs"].WithLabelValues(tn).Set(cs / 1000)
-	} else {
-		logp.Err("%v", err)
 	}
 
 	if plt := extractXR("PL=", stats); len(plt) >= 1 {
 		if pl := strings.Split(plt, ","); len(pl) == 2 {
-			plr, err = strconv.Atoi(pl[0])
-			if err == nil {
+			if plr, err = strconv.Atoi(pl[0]); err == nil {
 				p.GaugeVecMetrics["heplify_xrtp_plr"].WithLabelValues(tn).Set(float64(plr))
-			} else {
-				logp.Err("%v", err)
 			}
-			pls, err = strconv.Atoi(pl[1])
-			if err == nil {
+			if pls, err = strconv.Atoi(pl[1]); err == nil {
 				p.GaugeVecMetrics["heplify_xrtp_pls"].WithLabelValues(tn).Set(float64(pls))
-			} else {
-				logp.Err("%v", err)
 			}
 		}
 	}
 
 	if jit := extractXR("JI=", stats); len(jit) >= 1 {
 		if ji := strings.Split(jit, ","); len(ji) == 2 {
-			jir, err = strconv.Atoi(ji[0])
-			if err == nil {
+			if jir, err = strconv.Atoi(ji[0]); err == nil {
 				p.GaugeVecMetrics["heplify_xrtp_jir"].WithLabelValues(tn).Set(float64(jir))
-			} else {
-				logp.Err("%v", err)
 			}
-			jis, err = strconv.Atoi(ji[1])
-			if err == nil {
+			if jis, err = strconv.Atoi(ji[1]); err == nil {
 				p.GaugeVecMetrics["heplify_xrtp_jis"].WithLabelValues(tn).Set(float64(jis))
-			} else {
-				logp.Err("%v", err)
 			}
 		}
 	}
 
 	if dlt := extractXR("DL=", stats); len(dlt) >= 1 {
 		if dl := strings.Split(dlt, ","); len(dl) == 3 {
-			dle, err = strconv.Atoi(dl[0])
-			if err == nil {
+			if dle, err = strconv.Atoi(dl[0]); err == nil {
 				p.GaugeVecMetrics["heplify_xrtp_dle"].WithLabelValues(tn).Set(float64(dle))
-			} else {
-				logp.Err("%v", err)
 			}
 		}
 	}
 
-	pr, err := strconv.Atoi(extractXR("PR=", stats))
-	if err != nil {
-		logp.Err("%v", err)
-	}
-	ps, err := strconv.Atoi(extractXR("PS=", stats))
-	if err != nil {
-		logp.Err("%v", err)
-	}
+	pr, _ := strconv.Atoi(extractXR("PR=", stats))
+	ps, _ := strconv.Atoi(extractXR("PS=", stats))
 	if pr == 0 && ps == 0 {
 		pr, ps = 1, 1
 	}
