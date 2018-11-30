@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS report_capture (
   family smallint DEFAULT NULL,
   type integer NOT NULL DEFAULT 0,
   node varchar(125) NOT NULL DEFAULT '',
-  msg varchar(1500) NOT NULL DEFAULT ''
+  msg varchar(3000) NOT NULL DEFAULT ''
 ) PARTITION BY RANGE (date);
 
 -- name: create-rtcp_capture
