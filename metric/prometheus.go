@@ -275,7 +275,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			} else if pkt.ProtoType == 34 && config.Setting.RTPAgentStats {
 				p.dissectRTPStats(nodeID, []byte(pkt.Payload))
 			} else if pkt.ProtoType == 35 {
-				p.dissectRTCPXRStats(nodeID, pkt.SIP.Body)
+				p.dissectRTCPXRStats(nodeID, pkt.Payload)
 			} else if pkt.ProtoType == 38 && config.Setting.HoraclifixStats {
 				p.dissectHoraclifixStats([]byte(pkt.Payload))
 			}
