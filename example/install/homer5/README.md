@@ -11,7 +11,7 @@ apt -y install vim dirmngr git wget php7.0-fpm php7.0-mysql php7.0-xml nginx tcp
 mysql -u root
 update mysql.user set plugin=' ' where User='root';flush privileges;exit;
 
-wget https://github.com/sipcapture/heplify-server/releases/download/0.94/heplify-server
+wget https://github.com/sipcapture/heplify-server/releases/download/0.98/heplify-server
 chmod +x heplify-server
 ./heplify-server &
 
