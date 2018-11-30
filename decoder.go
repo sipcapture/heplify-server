@@ -254,27 +254,7 @@ func (h *HEP) parseSIP() error {
 	} else if len(h.SIP.CallID) < 1 {
 		return errors.New("Could not find a valid Call-ID in packet")
 	}
-
 	h.CID = h.SIP.CallID
-
-	if h.SIP.ContentType == "application/vq-rtcpxr" && len(h.SIP.Body) > 32 {
-		h.ProtoType = 35
-		if posCallID := strings.Index(h.SIP.Body, "CallID:"); posCallID > 0 {
-			restCallID := h.SIP.Body[posCallID:]
-			// Minimum length of "CallID:x" = 8
-			if posRestCallID := strings.IndexRune(restCallID, '\n'); posRestCallID >= 8 {
-				h.CID = restCallID[len("CallID:") : posRestCallID-1]
-				i := 0
-				for i < len(h.CID) && (h.CID[i] == ' ' || h.CID[i] == '\t') {
-					i++
-				}
-				h.CID = h.CID[i:]
-			} else {
-				logp.Warn("no end or fishy RTCPXR CallID in '%s'", h.SIP.Body)
-			}
-		}
-	}
-
 	return nil
 }
 
