@@ -2,7 +2,7 @@ package database
 
 import (
 	"fmt"
-	"runtime"
+	"sync"
 
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
@@ -38,7 +38,7 @@ func New(name string) *Database {
 
 func (d *Database) Run() error {
 	var (
-		//wg  sync.WaitGroup
+		wg  sync.WaitGroup
 		err error
 	)
 
@@ -54,13 +54,14 @@ func (d *Database) Run() error {
 		return err
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go func() {
-			d.DBH.insert(d.Chan)
-		}()
-	}
-
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		d.DBH.insert(d.Chan)
+	}()
+	wg.Wait()
 	return nil
+
 }
 
 func (d *Database) End() {

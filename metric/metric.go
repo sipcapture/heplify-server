@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"runtime"
+	"sync"
 
 	"github.com/negbie/heplify-server"
 )
@@ -28,7 +28,7 @@ func New(name string) *Metric {
 
 func (m *Metric) Run() error {
 	var (
-		//wg  sync.WaitGroup
+		wg  sync.WaitGroup
 		err error
 	)
 
@@ -37,13 +37,14 @@ func (m *Metric) Run() error {
 		return err
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go func() {
-			m.MH.collect(m.Chan)
-		}()
-	}
-
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		m.MH.collect(m.Chan)
+	}()
+	wg.Wait()
 	return nil
+
 }
 
 func (m *Metric) End() {
