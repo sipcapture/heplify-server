@@ -21,6 +21,7 @@ DBConfTable     = "homer_config"
 DBTableSpace    = ""
 DBBulk          = 200
 DBTimer         = 2
+DBWorker        = 8
 DBRotate        = true
 DBPartLog       = "2h"
 DBPartSip       = "1h"
