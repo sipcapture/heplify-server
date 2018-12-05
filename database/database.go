@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/sipcapture/heplify-server"
 	"github.com/sipcapture/heplify-server/config"
@@ -38,7 +37,7 @@ func New(name string) *Database {
 
 func (d *Database) Run() error {
 	var (
-		wg  sync.WaitGroup
+		//wg  sync.WaitGroup
 		err error
 	)
 
@@ -54,12 +53,12 @@ func (d *Database) Run() error {
 		return err
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		d.DBH.insert(d.Chan)
-	}()
-	wg.Wait()
+	for i := 0; i < config.Setting.DBWorker; i++ {
+		go func() {
+			d.DBH.insert(d.Chan)
+		}()
+	}
+
 	return nil
 
 }
