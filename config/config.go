@@ -28,12 +28,13 @@ type HeplifyServer struct {
 	DBTableSpace    string   `default:""`
 	DBBulk          int      `default:"200"`
 	DBTimer         int      `default:"2"`
+	DBBuffer        int      `default:"400000"`
 	DBWorker        int      `default:"8"`
 	DBRotate        bool     `default:"true"`
 	DBPartLog       string   `default:"2h"`
 	DBPartSip       string   `default:"1h"`
 	DBPartQos       string   `default:"6h"`
-	DBDropDays      int      `default:"0"`
+	DBDropDays      int      `default:"14"`
 	DBDropOnStart   bool     `default:"false"`
 	Dedup           bool     `default:"false"`
 	DiscardMethod   []string `default:""`
@@ -70,12 +71,13 @@ func NewConfig() *HeplifyServer {
 		DBTableSpace:    "",
 		DBBulk:          200,
 		DBTimer:         2,
+		DBBuffer:        400000,
 		DBWorker:        8,
 		DBRotate:        true,
 		DBPartLog:       "6h",
 		DBPartSip:       "2h",
 		DBPartQos:       "12h",
-		DBDropDays:      0,
+		DBDropDays:      14,
 		DBDropOnStart:   false,
 		Dedup:           false,
 		DiscardMethod:   nil,
