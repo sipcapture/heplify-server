@@ -24,6 +24,11 @@ type HEPInput struct {
 	useMQ  bool
 	usePM  bool
 	useES  bool
+	inCh   chan []byte
+	dbCh   chan *decoder.HEP
+	mqCh   chan []byte
+	pmCh   chan *decoder.HEP
+	esCh   chan *decoder.HEP
 	buffer *sync.Pool
 	quit   chan struct{}
 	stats  HEPStats
@@ -37,34 +42,32 @@ type HEPStats struct {
 	PktCount uint64
 }
 
-var (
-	inCh = make(chan []byte, 20000)
-	dbCh = make(chan *decoder.HEP, 200000)
-	mqCh = make(chan []byte, 20000)
-	pmCh = make(chan *decoder.HEP, 20000)
-	esCh = make(chan *decoder.HEP, 20000)
-)
-
 const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
+		inCh:   make(chan []byte, 40000),
 		buffer: &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
 		quit:   make(chan struct{}),
 		wg:     &sync.WaitGroup{},
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
+		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
 	}
 	if len(config.Setting.MQAddr) > 2 && len(config.Setting.MQDriver) > 2 {
 		h.useMQ = true
+		h.mqCh = make(chan []byte, 40000)
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
+		h.pmCh = make(chan *decoder.HEP, 40000)
 	}
 	if len(config.Setting.ESAddr) > 2 {
 		h.useES = true
+		h.esCh = make(chan *decoder.HEP, 40000)
 	}
+
 	return h
 }
 
@@ -76,7 +79,7 @@ func (h *HEPInput) Run() {
 	if h.useDB {
 		go func() {
 			d := database.New(config.Setting.DBDriver)
-			d.Chan = dbCh
+			d.Chan = h.dbCh
 
 			if err := d.Run(); err != nil {
 				logp.Err("%v", err)
@@ -88,7 +91,7 @@ func (h *HEPInput) Run() {
 		go func() {
 			q := queue.New(config.Setting.MQDriver)
 			q.Topic = config.Setting.MQTopic
-			q.Chan = mqCh
+			q.Chan = h.mqCh
 
 			if err := q.Run(); err != nil {
 				logp.Err("%v", err)
@@ -99,7 +102,7 @@ func (h *HEPInput) Run() {
 	if h.usePM {
 		go func() {
 			m := metric.New("prometheus")
-			m.Chan = pmCh
+			m.Chan = h.pmCh
 
 			if err := m.Run(); err != nil {
 				logp.Err("%v", err)
@@ -110,7 +113,7 @@ func (h *HEPInput) Run() {
 	if h.useES {
 		go func() {
 			e := elastic.New("elasticsearch")
-			e.Chan = esCh
+			e.Chan = h.esCh
 
 			if err := e.Run(); err != nil {
 				logp.Err("%v", err)
@@ -160,7 +163,7 @@ func (h *HEPInput) serveUDP() {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
-		inCh <- buf[:n]
+		h.inCh <- buf[:n]
 		atomic.AddUint64(&h.stats.PktCount, 1)
 	}
 }
@@ -234,7 +237,7 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 				atomic.AddUint64(&h.stats.ErrCount, 1)
 				continue
 			}
-			inCh <- buf[:n]
+			h.inCh <- buf[:n]
 			atomic.AddUint64(&h.stats.PktCount, 1)
 		}
 	}
@@ -292,7 +295,7 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
-		inCh <- buf[:n]
+		h.inCh <- buf[:n]
 		atomic.AddUint64(&h.stats.PktCount, 1)
 	}
 }
@@ -301,7 +304,7 @@ func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
 	close(h.quit)
 	h.wg.Wait()
-	close(inCh)
+	close(h.inCh)
 	logp.Info("heplify-server has been stopped")
 }
 
@@ -311,10 +314,6 @@ func (h *HEPInput) hepWorker() {
 		msg    = h.buffer.Get().([]byte)
 		err    error
 		ok     bool
-		dbCnt  int
-		mqCnt  int
-		pmCnt  int
-		esCnt  int
 	)
 
 OUT:
@@ -322,7 +321,7 @@ OUT:
 		h.buffer.Put(msg[:maxPktLen])
 
 		select {
-		case msg, ok = <-inCh:
+		case msg, ok = <-h.inCh:
 			if !ok {
 				break OUT
 			}
@@ -343,49 +342,33 @@ OUT:
 
 		if h.useDB {
 			select {
-			case dbCh <- hepPkt:
+			case h.dbCh <- hepPkt:
 			default:
-				dbCnt++
-				if dbCnt%1024 == 0 {
-					dbCnt = 0
-					logp.Warn("overflowing db channel by 1024 packets")
-				}
+				logp.Warn("overflowing db channel, raise DBBuffer and DBWorker or lower DBPartSip setting")
 			}
 		}
 
 		if h.usePM {
 			select {
-			case pmCh <- hepPkt:
+			case h.pmCh <- hepPkt:
 			default:
-				pmCnt++
-				if pmCnt%1024 == 0 {
-					pmCnt = 0
-					logp.Warn("overflowing metric channel by 1024 packets")
-				}
+				logp.Warn("overflowing metric channel")
 			}
 		}
 
 		if h.useMQ {
 			select {
-			case mqCh <- append([]byte{}, msg...):
+			case h.mqCh <- append([]byte{}, msg...):
 			default:
-				mqCnt++
-				if mqCnt%1024 == 0 {
-					mqCnt = 0
-					logp.Warn("overflowing queue channel by 1024 packets")
-				}
+				logp.Warn("overflowing queue channel")
 			}
 		}
 
 		if h.useES {
 			select {
-			case esCh <- hepPkt:
+			case h.esCh <- hepPkt:
 			default:
-				esCnt++
-				if esCnt%1024 == 0 {
-					esCnt = 0
-					logp.Warn("overflowing elastic channel by 1024 packets")
-				}
+				logp.Warn("overflowing elastic channel")
 			}
 		}
 	}
