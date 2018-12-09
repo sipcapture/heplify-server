@@ -296,43 +296,43 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				}
 			}
 		case <-ticker.C:
-			if callCnt > 1 {
+			if callCnt > 0 {
 				l := len(callRows)
 				s.bulkInsert("call", callRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				callRows = []interface{}{}
 				callCnt = 0
 			}
-			if regCnt > 1 {
+			if regCnt > 0 {
 				l := len(regRows)
 				s.bulkInsert("register", regRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
-			if restCnt > 1 {
+			if restCnt > 0 {
 				l := len(restRows)
 				s.bulkInsert("rest", restRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
 				restRows = []interface{}{}
 				restCnt = 0
 			}
-			if rtcpCnt > 1 {
+			if rtcpCnt > 0 {
 				l := len(rtcpRows)
 				s.bulkInsert("rtcp", rtcpRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
-			if reportCnt > 1 {
+			if reportCnt > 0 {
 				l := len(reportRows)
 				s.bulkInsert("report", reportRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
-			if dnsCnt > 1 {
+			if dnsCnt > 0 {
 				l := len(dnsRows)
 				s.bulkInsert("dns", dnsRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
-			if logCnt > 1 {
+			if logCnt > 0 {
 				l := len(logRows)
 				s.bulkInsert("log", logRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
 				logRows = []interface{}{}

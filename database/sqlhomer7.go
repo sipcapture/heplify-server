@@ -189,43 +189,43 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				}
 			}
 		case <-ticker.C:
-			if callCnt > 1 {
+			if callCnt > 0 {
 				l := len(callRows)
 				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				callRows = []interface{}{}
 				callCnt = 0
 			}
-			if regCnt > 1 {
+			if regCnt > 0 {
 				l := len(regRows)
 				s.bulkInsert("register", regRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				regRows = []interface{}{}
 				regCnt = 0
 			}
-			if defCnt > 1 {
+			if defCnt > 0 {
 				l := len(defRows)
 				s.bulkInsert("default", defRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				defRows = []interface{}{}
 				defCnt = 0
 			}
-			if rtcpCnt > 1 {
+			if rtcpCnt > 0 {
 				l := len(rtcpRows)
 				s.bulkInsert("rtcp", rtcpRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
-			if reportCnt > 1 {
+			if reportCnt > 0 {
 				l := len(reportRows)
 				s.bulkInsert("report", reportRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
-			if dnsCnt > 1 {
+			if dnsCnt > 0 {
 				l := len(dnsRows)
 				s.bulkInsert("dns", dnsRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
-			if logCnt > 1 {
+			if logCnt > 0 {
 				l := len(logRows)
 				s.bulkInsert("log", logRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
 				logRows = []interface{}{}
