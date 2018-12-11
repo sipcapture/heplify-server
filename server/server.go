@@ -310,10 +310,11 @@ func (h *HEPInput) End() {
 
 func (h *HEPInput) hepWorker() {
 	var (
-		hepPkt *decoder.HEP
-		msg    = h.buffer.Get().([]byte)
-		err    error
-		ok     bool
+		lastWarn = time.Now()
+		hepPkt   *decoder.HEP
+		msg      = h.buffer.Get().([]byte)
+		err      error
+		ok       bool
 	)
 
 OUT:
@@ -344,7 +345,10 @@ OUT:
 			select {
 			case h.dbCh <- hepPkt:
 			default:
-				logp.Warn("overflowing db channel, raise DBBuffer and DBWorker or lower DBPartSip setting")
+				if time.Now().Sub(lastWarn) > 1e8 {
+					logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
+				}
+				lastWarn = time.Now()
 			}
 		}
 
