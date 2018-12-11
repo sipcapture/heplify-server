@@ -314,7 +314,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) 
 				s, ok := rows[i].(string)
 				if ok {
 					if strings.Contains(s, "\x00") {
-						logp.Err("%s", strconv.Quote(s))
+						logp.Err("%q", s)
 					}
 				}
 			}

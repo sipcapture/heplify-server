@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -121,8 +120,8 @@ func (h *HEP) parse(packet []byte) error {
 	if h.ProtoType == 1 && len(h.Payload) > 32 {
 		err = h.parseSIP()
 		if err != nil {
-			logp.Warn("%v\n%s\nnodeID: %d, protoType: %d, version: %d, protocol: %d, length: %d, flow: %s:%d->%s:%d\n\n",
-				err, strconv.Quote(h.Payload), h.NodeID, h.ProtoType, h.Version, h.Protocol, len(h.Payload), h.SrcIP, h.SrcPort, h.DstIP, h.DstPort)
+			logp.Warn("%v\n%q\nnodeID: %d, protoType: %d, version: %d, protocol: %d, length: %d, flow: %s:%d->%s:%d\n\n",
+				err, h.Payload, h.NodeID, h.ProtoType, h.Version, h.Protocol, len(h.Payload), h.SrcIP, h.SrcPort, h.DstIP, h.DstPort)
 			return err
 		}
 
