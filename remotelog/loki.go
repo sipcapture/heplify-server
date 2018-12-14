@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
+	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -36,7 +34,7 @@ type Loki struct {
 }
 
 func (l *Loki) setup() error {
-	l.BatchSize = config.Setting.LokiBulk
+	l.BatchSize = config.Setting.LokiBulk * 1024
 	l.BatchWait = time.Duration(config.Setting.LokiTimer) * time.Second
 	l.URL = config.Setting.LokiURL
 	l.quit = make(chan struct{})
@@ -46,13 +44,16 @@ func (l *Loki) setup() error {
 
 func (l *Loki) send(hCh chan *decoder.HEP) {
 	var (
-		pkt *decoder.HEP
-		ok  bool
+		pkt     *decoder.HEP
+		ok      bool
+		hepType string
+		nodeID  string
 	)
 
 	batch := map[model.Fingerprint]*logproto.Stream{}
 	batchSize := 0
-	maxWait := time.NewTimer(l.BatchWait)
+	//maxWait := time.NewTimer(l.BatchWait)
+	maxWait := time.NewTicker(l.BatchWait)
 
 	defer func() {
 		if err := l.sendBatch(batch); err != nil {
@@ -61,46 +62,71 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 		l.wg.Done()
 	}()
 
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	ticker := time.NewTicker(12 * time.Hour)
-
 	for {
 		select {
 		case pkt, ok = <-hCh:
 			if !ok {
 				break
 			}
+			nodeID = strconv.Itoa(int(pkt.NodeID))
+			hepType = toHepTypeString(pkt.ProtoType)
+			//maxWait.Reset(l.BatchWait)
+			switch {
+			case pkt.SIP != nil && pkt.ProtoType == 1:
+				l.entry = entry{
+					model.LabelSet{
+						"job":      model.LabelValue("heplify-server"),
+						"type":     model.LabelValue(hepType),
+						"node_id":  model.LabelValue(nodeID),
+						"response": model.LabelValue(pkt.SIP.StartLine.Method),
+						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
+					logproto.Entry{
+						Timestamp: pkt.Timestamp,
+						Line:      pkt.Payload,
+					}}
 
-			if pkt.SIP != nil && pkt.ProtoType == 1 {
+			case pkt.ProtoType == 100:
+				l.entry = entry{
+					model.LabelSet{
+						"job":     model.LabelValue("heplify-server"),
+						"type":    model.LabelValue(hepType),
+						"node_id": model.LabelValue(nodeID)},
+					logproto.Entry{
+						Timestamp: pkt.Timestamp,
+						Line:      pkt.Payload,
+					}}
+			default:
+				continue
 
-				maxWait.Reset(l.BatchWait)
-				l.entry = entry{model.LabelSet{"method": model.LabelValue(pkt.SIP.CseqVal)}, logproto.Entry{
-					Timestamp: pkt.Timestamp,
-					Line:      pkt.Payload,
-				}}
-
-				if batchSize+len(l.entry.Line) > l.BatchSize {
-					if err := l.sendBatch(batch); err != nil {
-						logp.Err("sendBatch %v", err)
-					}
-					batch = map[model.Fingerprint]*logproto.Stream{}
-				}
-
-				fp := l.entry.labels.FastFingerprint()
-				stream, ok := batch[fp]
-				if !ok {
-					stream = &logproto.Stream{
-						Labels: l.entry.labels.String(),
-					}
-					batch[fp] = stream
-				}
-				stream.Entries = append(stream.Entries, l.Entry)
 			}
-		case <-ticker.C:
 
-		case <-c:
-			logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
+			if batchSize+len(l.entry.Line) > l.BatchSize {
+				if err := l.sendBatch(batch); err != nil {
+					logp.Err("sendBatch %v", err)
+				}
+				batchSize = 0
+				batch = map[model.Fingerprint]*logproto.Stream{}
+			}
+
+			batchSize += len(l.entry.Line)
+			fp := l.entry.labels.FastFingerprint()
+			stream, ok := batch[fp]
+			if !ok {
+				stream = &logproto.Stream{
+					Labels: l.entry.labels.String(),
+				}
+				batch[fp] = stream
+			}
+			stream.Entries = append(stream.Entries, l.Entry)
+
+		case <-maxWait.C:
+			if len(batch) > 0 {
+				if err := l.sendBatch(batch); err != nil {
+					logp.Err("sendBatch %v", err)
+				}
+				batchSize = 0
+				batch = map[model.Fingerprint]*logproto.Stream{}
+			}
 
 		case <-l.quit:
 			return
@@ -142,4 +168,26 @@ func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
 func (l *Loki) Stop() {
 	close(l.quit)
 	l.wg.Wait()
+}
+
+func toHepTypeString(pktType uint32) (label string) {
+	switch pktType {
+	case 1:
+		label = "sip"
+	case 5:
+		label = "rtcp"
+	case 34:
+		label = "rtpagent"
+	case 35:
+		label = "rtcpxr"
+	case 38:
+		label = "horaclifix"
+	case 53:
+		label = "dns"
+	case 100:
+		label = "log"
+	default:
+		label = strconv.Itoa(int(pktType))
+	}
+	return label
 }

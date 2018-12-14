@@ -14,8 +14,8 @@ type HeplifyServer struct {
 	MQAddr          string   `default:""`
 	MQTopic         string   `default:""`
 	LokiURL         string   `default:""`
-	LokiBulk        int      `default:"200"`
-	LokiTimer       int      `default:"2"`
+	LokiBulk        int      `default:"1000"`
+	LokiTimer       int      `default:"10"`
 	PromAddr        string   `default:""`
 	PromTargetIP    string   `default:""`
 	PromTargetName  string   `default:""`
@@ -60,8 +60,8 @@ func NewConfig() *HeplifyServer {
 		MQAddr:          "",
 		MQTopic:         "",
 		LokiURL:         "",
-		LokiBulk:        1,
-		LokiTimer:       1,
+		LokiBulk:        1000,
+		LokiTimer:       10,
 		PromAddr:        "",
 		PromTargetIP:    "",
 		PromTargetName:  "",

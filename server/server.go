@@ -361,7 +361,7 @@ OUT:
 			select {
 			case h.dbCh <- hepPkt:
 			default:
-				if time.Now().Sub(lastWarn) > 1e8 {
+				if time.Now().Sub(lastWarn) > 5e8 {
 					logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 				}
 				lastWarn = time.Now()
@@ -372,7 +372,10 @@ OUT:
 			select {
 			case h.pmCh <- hepPkt:
 			default:
-				logp.Warn("overflowing metric channel")
+				if time.Now().Sub(lastWarn) > 5e8 {
+					logp.Warn("overflowing metric channel")
+				}
+				lastWarn = time.Now()
 			}
 		}
 
@@ -380,7 +383,10 @@ OUT:
 			select {
 			case h.mqCh <- append([]byte{}, msg...):
 			default:
-				logp.Warn("overflowing queue channel")
+				if time.Now().Sub(lastWarn) > 5e8 {
+					logp.Warn("overflowing queue channel")
+				}
+				lastWarn = time.Now()
 			}
 		}
 
@@ -388,7 +394,10 @@ OUT:
 			select {
 			case h.esCh <- hepPkt:
 			default:
-				logp.Warn("overflowing elastic channel")
+				if time.Now().Sub(lastWarn) > 5e8 {
+					logp.Warn("overflowing elasticsearch channel")
+				}
+				lastWarn = time.Now()
 			}
 		}
 
@@ -396,7 +405,10 @@ OUT:
 			select {
 			case h.lkCh <- hepPkt:
 			default:
-				logp.Warn("overflowing loki channel")
+				if time.Now().Sub(lastWarn) > 5e8 {
+					logp.Warn("overflowing loki channel")
+				}
+				lastWarn = time.Now()
 			}
 		}
 	}
