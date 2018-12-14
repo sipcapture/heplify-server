@@ -32,7 +32,7 @@ var (
 	hepLen10 = []byte{0x00, 0x0a}
 	chunck16 = []byte{0x00, 0x00}
 	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
-	dedup    = freecache.NewCache(1 * 1024 * 1024)
+	dedup    = freecache.NewCache(10 * 1024 * 1024)
 )
 
 // HEP chuncks

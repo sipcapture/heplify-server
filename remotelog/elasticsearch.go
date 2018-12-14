@@ -1,4 +1,4 @@
-package elastic
+package remotelog
 
 import (
 	"bytes"

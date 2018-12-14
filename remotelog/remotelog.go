@@ -1,4 +1,4 @@
-package elastic
+package remotelog
 
 import (
 	"sync"
@@ -19,6 +19,7 @@ type ElasticHandler interface {
 func New(name string) *Elastic {
 	var register = map[string]ElasticHandler{
 		"elasticsearch": new(Elasticsearch),
+		"loki":          new(Loki),
 	}
 
 	return &Elastic{

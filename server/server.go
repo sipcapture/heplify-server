@@ -13,9 +13,9 @@ import (
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
-	"github.com/negbie/heplify-server/elastic"
 	"github.com/negbie/heplify-server/metric"
 	"github.com/negbie/heplify-server/queue"
+	"github.com/negbie/heplify-server/remotelog"
 	"github.com/negbie/logp"
 )
 
@@ -24,11 +24,13 @@ type HEPInput struct {
 	useMQ  bool
 	usePM  bool
 	useES  bool
+	useLK  bool
 	inCh   chan []byte
 	dbCh   chan *decoder.HEP
 	mqCh   chan []byte
 	pmCh   chan *decoder.HEP
 	esCh   chan *decoder.HEP
+	lkCh   chan *decoder.HEP
 	buffer *sync.Pool
 	quit   chan struct{}
 	stats  HEPStats
@@ -66,6 +68,10 @@ func NewHEPInput() *HEPInput {
 	if len(config.Setting.ESAddr) > 2 {
 		h.useES = true
 		h.esCh = make(chan *decoder.HEP, 40000)
+	}
+	if len(config.Setting.LokiURL) > 2 {
+		h.useLK = true
+		h.lkCh = make(chan *decoder.HEP, 40000)
 	}
 
 	return h
@@ -112,10 +118,20 @@ func (h *HEPInput) Run() {
 
 	if h.useES {
 		go func() {
-			e := elastic.New("elasticsearch")
+			e := remotelog.New("elasticsearch")
 			e.Chan = h.esCh
 
 			if err := e.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+		}()
+	}
+
+	if h.useLK {
+		go func() {
+			l := remotelog.New("loki")
+			l.Chan = h.lkCh
+			if err := l.Run(); err != nil {
 				logp.Err("%v", err)
 			}
 		}()
@@ -373,6 +389,14 @@ OUT:
 			case h.esCh <- hepPkt:
 			default:
 				logp.Warn("overflowing elastic channel")
+			}
+		}
+
+		if h.useLK {
+			select {
+			case h.lkCh <- hepPkt:
+			default:
+				logp.Warn("overflowing loki channel")
 			}
 		}
 	}
