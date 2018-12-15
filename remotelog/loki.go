@@ -68,10 +68,11 @@ func (l *Loki) setup() error {
 
 func (l *Loki) send(hCh chan *decoder.HEP) {
 	var (
-		pkt     *decoder.HEP
-		ok      bool
-		hepType string
-		nodeID  string
+		pkt         *decoder.HEP
+		ok          bool
+		hepType     string
+		nodeID      string
+		lastPktTime time.Time
 	)
 
 	batch := map[model.Fingerprint]*logproto.Stream{}
@@ -94,6 +95,10 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			if !ok {
 				break
 			}
+			// guard against entry out of order errors
+			if lastPktTime.After(pkt.Timestamp) {
+				pkt.Timestamp = time.Now()
+			}
 			nodeID = strconv.Itoa(int(pkt.NodeID))
 			hepType = decoder.HEPTypeString(pkt.ProtoType)
 			//maxWait.Reset(l.BatchWait)
@@ -107,9 +112,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"response": model.LabelValue(pkt.SIP.StartLine.Method),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					logproto.Entry{
-						// TODO check Entry out of order errors
-						//Timestamp: pkt.Timestamp,
-						Timestamp: time.Now(),
+						Timestamp: pkt.Timestamp,
 						Line:      pkt.Payload,
 					}}
 
@@ -120,9 +123,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"type":    model.LabelValue(hepType),
 						"node_id": model.LabelValue(nodeID)},
 					logproto.Entry{
-						// TODO check Entry out of order errors
-						//Timestamp: pkt.Timestamp,
-						Timestamp: time.Now(),
+						Timestamp: pkt.Timestamp,
 						Line:      pkt.Payload,
 					}}
 			default:
@@ -162,6 +163,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			return
 
 		}
+		lastPktTime = pkt.Timestamp
 	}
 }
 
