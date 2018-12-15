@@ -232,7 +232,7 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			}
 
 			nodeID := strconv.Itoa(int(pkt.NodeID))
-			labelType = setLabelType(pkt.ProtoType)
+			labelType = decoder.HEPTypeString(pkt.ProtoType)
 
 			p.CvPacketsTotal.WithLabelValues(labelType).Inc()
 			p.GvPacketsSize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
@@ -281,26 +281,4 @@ func (p *Prometheus) collect(hCh chan *decoder.HEP) {
 			}
 		}
 	}
-}
-
-func setLabelType(pktType uint32) (label string) {
-	switch pktType {
-	case 1:
-		label = "sip"
-	case 5:
-		label = "rtcp"
-	case 34:
-		label = "rtpagent"
-	case 35:
-		label = "rtcpxr"
-	case 38:
-		label = "horaclifix"
-	case 53:
-		label = "dns"
-	case 100:
-		label = "log"
-	default:
-		label = strconv.Itoa(int(pktType))
-	}
-	return label
 }

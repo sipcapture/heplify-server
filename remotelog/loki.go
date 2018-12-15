@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +19,11 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-const contentType = "application/x-protobuf"
+const (
+	contentType = "application/x-protobuf"
+	postPath    = "/api/prom/push"
+	getPath     = "/api/prom/label"
+)
 
 type entry struct {
 	labels model.LabelSet
@@ -39,6 +45,24 @@ func (l *Loki) setup() error {
 	l.URL = config.Setting.LokiURL
 	l.quit = make(chan struct{})
 
+	u, err := url.Parse(l.URL)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(u.Path, postPath) {
+		u.Path = postPath
+		q := u.Query()
+		u.RawQuery = q.Encode()
+		l.URL = u.String()
+	}
+	u.Path = getPath
+	q := u.Query()
+	u.RawQuery = q.Encode()
+
+	_, err = http.Get(u.String())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -57,7 +81,9 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 
 	defer func() {
 		if err := l.sendBatch(batch); err != nil {
-			logp.Err("send %v", err)
+			logp.Info("heplify-server wants to stop flush remaining loki bulk index requests")
+			logp.Err("sendBatch: %v", err)
+
 		}
 		l.wg.Done()
 	}()
@@ -69,7 +95,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 				break
 			}
 			nodeID = strconv.Itoa(int(pkt.NodeID))
-			hepType = toHepTypeString(pkt.ProtoType)
+			hepType = decoder.HEPTypeString(pkt.ProtoType)
 			//maxWait.Reset(l.BatchWait)
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
@@ -81,7 +107,9 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"response": model.LabelValue(pkt.SIP.StartLine.Method),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					logproto.Entry{
-						Timestamp: pkt.Timestamp,
+						// TODO check Entry out of order errors
+						//Timestamp: pkt.Timestamp,
+						Timestamp: time.Now(),
 						Line:      pkt.Payload,
 					}}
 
@@ -92,7 +120,9 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"type":    model.LabelValue(hepType),
 						"node_id": model.LabelValue(nodeID)},
 					logproto.Entry{
-						Timestamp: pkt.Timestamp,
+						// TODO check Entry out of order errors
+						//Timestamp: pkt.Timestamp,
+						Timestamp: time.Now(),
 						Line:      pkt.Payload,
 					}}
 			default:
@@ -102,7 +132,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {
-					logp.Err("sendBatch %v", err)
+					logp.Err("sendBatch: %v", err)
 				}
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
@@ -122,7 +152,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 		case <-maxWait.C:
 			if len(batch) > 0 {
 				if err := l.sendBatch(batch); err != nil {
-					logp.Err("sendBatch %v", err)
+					logp.Err("sendBatch: %v", err)
 				}
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
@@ -159,8 +189,9 @@ func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
 	}
 
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("Error doing write: %d - %s", resp.StatusCode, resp.Status)
+		return fmt.Errorf("%d - %s", resp.StatusCode, resp.Status)
 	}
+	logp.Debug("loki", "%s", req)
 	return nil
 }
 
@@ -168,26 +199,4 @@ func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
 func (l *Loki) Stop() {
 	close(l.quit)
 	l.wg.Wait()
-}
-
-func toHepTypeString(pktType uint32) (label string) {
-	switch pktType {
-	case 1:
-		label = "sip"
-	case 5:
-		label = "rtcp"
-	case 34:
-		label = "rtpagent"
-	case 35:
-		label = "rtcpxr"
-	case 38:
-		label = "horaclifix"
-	case 53:
-		label = "dns"
-	case 100:
-		label = "log"
-	default:
-		label = strconv.Itoa(int(pktType))
-	}
-	return label
 }

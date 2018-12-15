@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -272,4 +273,26 @@ func (h *HEP) normPayload() {
 		}
 		h.Payload = string(v)
 	}
+}
+
+func HEPTypeString(pktType uint32) (label string) {
+	switch pktType {
+	case 1:
+		label = "sip"
+	case 5:
+		label = "rtcp"
+	case 34:
+		label = "rtpagent"
+	case 35:
+		label = "rtcpxr"
+	case 38:
+		label = "horaclifix"
+	case 53:
+		label = "dns"
+	case 100:
+		label = "log"
+	default:
+		label = strconv.Itoa(int(pktType))
+	}
+	return label
 }
