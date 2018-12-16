@@ -71,7 +71,7 @@ func NewHEPInput() *HEPInput {
 	}
 	if len(config.Setting.LokiURL) > 2 {
 		h.useLK = true
-		h.lkCh = make(chan *decoder.HEP, 40000)
+		h.lkCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
 	}
 
 	return h

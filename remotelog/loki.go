@@ -23,6 +23,7 @@ const (
 	contentType = "application/x-protobuf"
 	postPath    = "/api/prom/push"
 	getPath     = "/api/prom/label"
+	jobName     = model.LabelValue("heplify-server")
 )
 
 type entry struct {
@@ -116,10 +117,10 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			}
 
 			switch {
-			case pkt.SIP != nil && pkt.ProtoType == 1 && keep:
+			case keep && pkt.SIP != nil && pkt.ProtoType == 1:
 				l.entry = entry{
 					model.LabelSet{
-						"job":      model.LabelValue("heplify-server"),
+						"job":      jobName,
 						"type":     model.LabelValue(hepType),
 						"node_id":  model.LabelValue(nodeID),
 						"response": model.LabelValue(pkt.SIP.StartLine.Method),
@@ -129,10 +130,10 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						Line:      pkt.Payload,
 					}}
 
-			case pkt.ProtoType == 100 && keep:
+			case keep && pkt.ProtoType > 1:
 				l.entry = entry{
 					model.LabelSet{
-						"job":     model.LabelValue("heplify-server"),
+						"job":     jobName,
 						"type":    model.LabelValue(hepType),
 						"node_id": model.LabelValue(nodeID)},
 					logproto.Entry{
@@ -205,7 +206,7 @@ func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("%d - %s", resp.StatusCode, resp.Status)
 	}
-	logp.Debug("loki", "%s", req)
+	logp.Debug("loki", "entries: %s, count: %d", req, count)
 	return nil
 }
 
