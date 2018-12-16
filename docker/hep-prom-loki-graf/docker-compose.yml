@@ -129,6 +129,8 @@ services:
       - "HEPLIFYSERVER_LOKIBULK=1000"
       - "HEPLIFYSERVER_LOKIHEPFILTER=1,5,35,38,100"
     restart: unless-stopped
+    depends_on:
+      - loki
     expose:
       - 9090
     labels:
