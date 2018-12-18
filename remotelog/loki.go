@@ -73,6 +73,7 @@ func (l *Loki) setup() error {
 func (l *Loki) send(hCh chan *decoder.HEP) {
 	var (
 		pkt         *decoder.HEP
+		pktMeta     strings.Builder
 		ok          bool
 		keep        bool
 		hepType     string
@@ -108,6 +109,19 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			hepType = decoder.HEPTypeString(pkt.ProtoType)
 			//maxWait.Reset(l.BatchWait)
 
+			pktMeta.Reset()
+			pktMeta.WriteString(pkt.Payload)
+			pktMeta.WriteString(" SrcIP=")
+			pktMeta.WriteString(pkt.SrcIP)
+			pktMeta.WriteString(" SrcPort=")
+			pktMeta.WriteString(strconv.Itoa(int(pkt.SrcPort)))
+			pktMeta.WriteString(" DstIP=")
+			pktMeta.WriteString(pkt.DstIP)
+			pktMeta.WriteString(" DstPort=")
+			pktMeta.WriteString(strconv.Itoa(int(pkt.DstPort)))
+			pktMeta.WriteString(" CID=")
+			pktMeta.WriteString(pkt.CID)
+
 			for _, v := range l.HEPTypeFilter {
 				if pkt.ProtoType == uint32(v) {
 					keep = true
@@ -127,7 +141,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					logproto.Entry{
 						Timestamp: pkt.Timestamp,
-						Line:      pkt.Payload,
+						Line:      pktMeta.String(),
 					}}
 
 			case keep && pkt.ProtoType > 1:
@@ -138,7 +152,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"node_id": model.LabelValue(nodeID)},
 					logproto.Entry{
 						Timestamp: pkt.Timestamp,
-						Line:      pkt.Payload,
+						Line:      pktMeta.String(),
 					}}
 			default:
 				continue
