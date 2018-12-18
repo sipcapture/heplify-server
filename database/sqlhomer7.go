@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -68,8 +67,8 @@ func (s *SQLHomer7) setup() error {
 		return err
 	}
 
-	s.db.SetMaxOpenConns(runtime.NumCPU() * 4)
-	s.db.SetMaxIdleConns(runtime.NumCPU())
+	s.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
+	s.db.SetMaxIdleConns(config.Setting.DBWorker)
 
 	s.bulkCnt = config.Setting.DBBulk
 

@@ -81,8 +81,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 		lastPktTime time.Time
 		batch       = map[model.Fingerprint]*logproto.Stream{}
 		batchSize   = 0
-		maxWait     = time.NewTicker(l.BatchWait)
-		//maxWait = time.NewTimer(l.BatchWait)
+		maxWait     = time.NewTimer(l.BatchWait)
 	)
 
 	defer func() {
@@ -107,7 +106,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			lastPktTime = pkt.Timestamp
 			nodeID = strconv.Itoa(int(pkt.NodeID))
 			hepType = decoder.HEPTypeString(pkt.ProtoType)
-			//maxWait.Reset(l.BatchWait)
+			maxWait.Reset(l.BatchWait)
 
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
-	"runtime"
 	"strings"
 	"time"
 
@@ -123,8 +122,8 @@ func (s *SQLHomer5) setup() error {
 		return err
 	}
 
-	s.db.SetMaxOpenConns(runtime.NumCPU() * 4)
-	s.db.SetMaxIdleConns(runtime.NumCPU())
+	s.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
+	s.db.SetMaxIdleConns(config.Setting.DBWorker)
 
 	s.bulkCnt = config.Setting.DBBulk
 	if s.bulkCnt < 1 {
@@ -142,9 +141,8 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	var (
 		callCnt, regCnt, restCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
-		pkt        *decoder.HEP
-		ts         string
-		tsNano     int64
+		pkt *decoder.HEP
+
 		ok         bool
 		callRows   = make([]interface{}, 0, s.bulkCnt)
 		regRows    = make([]interface{}, 0, s.bulkCnt)
@@ -169,8 +167,8 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 
 	addSIPRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			ts,
-			tsNano,
+			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.Timestamp.UnixNano() / 1000,
 			short(pkt.SIP.StartLine.Method, 50),
 			short(pkt.SIP.StartLine.RespText, 100),
 			short(pkt.SIP.StartLine.URI.Raw, 200),
@@ -213,8 +211,8 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 
 	addRTCRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			ts,
-			tsNano,
+			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.Timestamp.UnixNano() / 1000,
 			pkt.CID,
 			pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 			pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
@@ -227,9 +225,6 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 			if !ok {
 				break
 			}
-
-			ts = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-			tsNano = pkt.Timestamp.UnixNano() / 1000
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				switch pkt.SIP.CseqMethod {
@@ -342,27 +337,28 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) {
+func (s *SQLHomer5) bulkInsert(kind string, rows []interface{}, values string) {
+	var query string
 	if config.Setting.DBDriver == "mysql" {
-		tableDate := time.Now().UTC().Format("20060102")
-		switch query {
+		dateVal := time.Now().UTC().Format("20060102") + values
+		switch kind {
 		case "call":
-			query = "INSERT INTO sip_capture_call_" + tableDate + values
+			query = "INSERT INTO sip_capture_call_" + dateVal
 		case "register":
-			query = "INSERT INTO sip_capture_registration_" + tableDate + values
+			query = "INSERT INTO sip_capture_registration_" + dateVal
 		case "rest":
-			query = "INSERT INTO sip_capture_rest_" + tableDate + values
+			query = "INSERT INTO sip_capture_rest_" + dateVal
 		case "rtcp":
-			query = "INSERT INTO rtcp_capture_all_" + tableDate + values
+			query = "INSERT INTO rtcp_capture_all_" + dateVal
 		case "report":
-			query = "INSERT INTO report_capture_all_" + tableDate + values
+			query = "INSERT INTO report_capture_all_" + dateVal
 		case "dns":
-			query = "INSERT INTO dns_capture_all_" + tableDate + values
+			query = "INSERT INTO dns_capture_all_" + dateVal
 		case "log":
-			query = "INSERT INTO logs_capture_all_" + tableDate + values
+			query = "INSERT INTO logs_capture_all_" + dateVal
 		}
 	} else if config.Setting.DBDriver == "postgres" {
-		switch query {
+		switch kind {
 		case "call":
 			query = "INSERT INTO sip_capture_call" + values
 		case "register":
@@ -380,7 +376,7 @@ func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) 
 		}
 	}
 
-	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
+	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 
 	_, err := s.db.Exec(query, rows...)
 	if err != nil {
