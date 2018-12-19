@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 type Queue struct {
