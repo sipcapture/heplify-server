@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"math/rand"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -22,8 +20,17 @@ type SQLHomer7 struct {
 	db       *sql.DB
 	dbDriver string
 	bulkCnt  int
-	bulkVal  string
 }
+
+const (
+	callCopy     = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	registerCopy = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	defaultCopy  = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	rtcpCopy     = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	reportCopy   = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	dnsCopy      = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+)
 
 var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
@@ -52,10 +59,7 @@ func (s *SQLHomer7) setup() error {
 	}
 
 	if s.dbDriver == "mysql" {
-		if s.db, err = sql.Open(s.dbDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
-			s.db.Close()
-			return err
-		}
+		return fmt.Errorf("homer7 has only postgres support")
 	} else if s.dbDriver == "postgres" {
 		if s.db, err = sql.Open(s.dbDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass); err != nil {
 			s.db.Close()
@@ -75,8 +79,6 @@ func (s *SQLHomer7) setup() error {
 	if s.bulkCnt < 1 {
 		s.bulkCnt = 1
 	}
-
-	s.bulkVal = s.createQueryValues(s.bulkCnt, queryVal)
 
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
@@ -98,19 +100,19 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 		logRows    = make([]interface{}, 0, s.bulkCnt)
 		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
 		reportRows = make([]interface{}, 0, s.bulkCnt)
-		timer      = config.Setting.DBTimer
+		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
 	)
 
-	if timer < 0 {
-		timer = 0
+	timer := time.NewTimer(maxWait)
+	stop := func() {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
-	tr := rand.Intn(timer+4-3) + 3
-	ticker := time.NewTicker(time.Duration(tr) * time.Second)
-	if timer == 0 {
-		logp.Info("disable timed db inserts")
-		ticker.Stop()
-	}
+	defer stop()
 
 	for {
 		select {
@@ -129,7 +131,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					callCnt++
 					if callCnt == s.bulkCnt {
-						s.bulkInsert("call", callRows, s.bulkVal)
+						s.bulkInsert(callCopy, callRows)
 						callRows = []interface{}{}
 						callCnt = 0
 					}
@@ -137,7 +139,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					regRows = append(regRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					regCnt++
 					if regCnt == s.bulkCnt {
-						s.bulkInsert("register", regRows, s.bulkVal)
+						s.bulkInsert(registerCopy, regRows)
 						regRows = []interface{}{}
 						regCnt = 0
 					}
@@ -145,7 +147,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					defCnt++
 					if defCnt == s.bulkCnt {
-						s.bulkInsert("default", defRows, s.bulkVal)
+						s.bulkInsert(defaultCopy, defRows)
 						defRows = []interface{}{}
 						defCnt = 0
 					}
@@ -157,23 +159,15 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					rtcpRows = append(rtcpRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					rtcpCnt++
 					if rtcpCnt == s.bulkCnt {
-						s.bulkInsert("rtcp", rtcpRows, s.bulkVal)
+						s.bulkInsert(rtcpCopy, rtcpRows)
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
-					}
-				case 34, 35, 38:
-					reportRows = append(reportRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
-					reportCnt++
-					if reportCnt == s.bulkCnt {
-						s.bulkInsert("report", reportRows, s.bulkVal)
-						reportRows = []interface{}{}
-						reportCnt = 0
 					}
 				case 53:
 					dnsRows = append(dnsRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					dnsCnt++
 					if dnsCnt == s.bulkCnt {
-						s.bulkInsert("dns", dnsRows, s.bulkVal)
+						s.bulkInsert(dnsCopy, dnsRows)
 						dnsRows = []interface{}{}
 						dnsCnt = 0
 					}
@@ -181,52 +175,63 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					logRows = append(logRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
 					logCnt++
 					if logCnt == s.bulkCnt {
-						s.bulkInsert("log", logRows, s.bulkVal)
+						s.bulkInsert(logCopy, logRows)
 						logRows = []interface{}{}
 						logCnt = 0
 					}
+				default:
+					stop()
+					timer.Reset(1e9)
+					reportRows = append(reportRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					reportCnt++
+					if reportCnt == s.bulkCnt {
+						s.bulkInsert(reportCopy, reportRows)
+						reportRows = []interface{}{}
+						reportCnt = 0
+					}
 				}
 			}
-		case <-ticker.C:
+		case <-timer.C:
+			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(callCopy, callRows[:l])
 				callRows = []interface{}{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
-				s.bulkInsert("register", regRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(registerCopy, regRows[:l])
 				regRows = []interface{}{}
 				regCnt = 0
 			}
 			if defCnt > 0 {
 				l := len(defRows)
-				s.bulkInsert("default", defRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(defaultCopy, defRows[:l])
 				defRows = []interface{}{}
 				defCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
-				s.bulkInsert("rtcp", rtcpRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(rtcpCopy, rtcpRows[:l])
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
-				s.bulkInsert("report", reportRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(reportCopy, reportRows[:l])
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
-				s.bulkInsert("dns", dnsRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(dnsCopy, dnsRows[:l])
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
-				s.bulkInsert("log", logRows[:l], s.createQueryValues(l/queryValCnt, queryVal))
+				s.bulkInsert(logCopy, logRows[:l])
 				logRows = []interface{}{}
 				logCnt = 0
 			}
@@ -234,105 +239,53 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQLHomer7) bulkInsert(query string, rows []interface{}, values string) {
-	if s.dbDriver == "mysql" {
-		tableDate := time.Now().UTC().Format("20060102")
-		switch query {
-		case "call":
-			query = "INSERT INTO hep_proto_1_call_" + tableDate + values
-		case "register":
-			query = "INSERT INTO hep_proto_1_register_" + tableDate + values
-		case "default":
-			query = "INSERT INTO hep_proto_1_default_" + tableDate + values
-		case "rtcp":
-			query = "INSERT INTO hep_proto_5_default_" + tableDate + values
-		case "report":
-			query = "INSERT INTO hep_proto_35_default_" + tableDate + values
-		case "dns":
-			query = "INSERT INTO hep_proto_53_default_" + tableDate + values
-		case "log":
-			query = "INSERT INTO hep_proto_100_default_" + tableDate + values
-		}
-		_, err := s.db.Exec(query, rows...)
-		if err != nil {
-			logp.Err("%v", err)
-		}
-	} else if s.dbDriver == "postgres" {
-		switch query {
-		case "call":
-			query = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "register":
-			query = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "default":
-			query = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "rtcp":
-			query = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "report":
-			query = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "dns":
-			query = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		case "log":
-			query = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-		}
+func (s *SQLHomer7) bulkInsert(query string, rows []interface{}) {
+	tx, err := s.db.Begin()
+	if err != nil || tx == nil {
+		logp.Err("%v", err)
+		return
+	}
 
-		tx, err := s.db.Begin()
-		if err != nil || tx == nil {
+	stmt, err := tx.Prepare(query)
+	if err != nil {
+		logp.Err("%v", err)
+		err := tx.Rollback()
+		if err != nil {
 			logp.Err("%v", err)
-			return
 		}
+		return
+	}
 
-		stmt, err := tx.Prepare(query)
+	for i := 0; i < len(rows); i = i + 5 {
+		_, err = stmt.Exec(rows[i], rows[i+1], rows[i+2], rows[i+3], rows[i+4])
 		if err != nil {
 			logp.Err("%v", err)
-			err := tx.Rollback()
-			if err != nil {
-				logp.Err("%v", err)
-			}
-			return
+			continue
 		}
+	}
 
-		for i := 0; i < len(rows); i = i + 5 {
-			_, err = stmt.Exec(rows[i], rows[i+1], rows[i+2], rows[i+3], rows[i+4])
-			if err != nil {
-				logp.Err("%v", err)
-				continue
-			}
-		}
-
-		_, err = stmt.Exec()
-		if err != nil {
-			logp.Err("%v", err)
-		}
-		err = stmt.Close()
-		if err != nil {
-			logp.Err("%v", err)
-		}
-		err = tx.Commit()
-		if err != nil {
-			for i := 0; i < len(rows); i++ {
-				s, ok := rows[i].(string)
-				if ok {
-					if strings.Contains(s, "\x00") {
-						logp.Err("%q", s)
-					}
+	_, err = stmt.Exec()
+	if err != nil {
+		logp.Err("%v", err)
+	}
+	err = stmt.Close()
+	if err != nil {
+		logp.Err("%v", err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		for i := 0; i < len(rows); i++ {
+			s, ok := rows[i].(string)
+			if ok {
+				if strings.Contains(s, "\x00") {
+					logp.Err("%q", s)
 				}
 			}
-			logp.Err("%v", err)
 		}
+		logp.Err("%v", err)
 	}
 
-	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
-
-}
-
-func (s *SQLHomer7) createQueryValues(count int, values string) string {
-	if s.dbDriver == "mysql" {
-		for i := 0; i < count; i++ {
-			values += `(?,?,?,?,?),`
-		}
-		values = values[:len(values)-1]
-	}
-	return values
+	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }
 
 func makeProtoHeader(h *decoder.HEP) []byte {
