@@ -3,9 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"net/url"
-	"runtime"
 	"strings"
 	"time"
 
@@ -18,7 +16,15 @@ import (
 )
 
 var (
-	sipVal = `(
+	callQuery     = []byte("INSERT INTO sip_capture_call_")
+	registerQuery = []byte("INSERT INTO sip_capture_registration_")
+	restQuery     = []byte("INSERT INTO sip_capture_rest_")
+	rtcpQuery     = []byte("INSERT INTO rtcp_capture_all_")
+	reportQuery   = []byte("INSERT INTO report_capture_all_")
+	dnsQuery      = []byte("INSERT INTO dns_capture_all_")
+	logQuery      = []byte("INSERT INTO logs_capture_all_")
+
+	sipVal = []byte(`(
 			date, 
 			micro_ts,
 			method, 
@@ -58,10 +64,9 @@ var (
 			node, 
 			correlation_id,
 			msg
-			) VALUES `
-	sipValCnt = 39
+			) VALUES `)
 
-	rtcVal = `(
+	rtcVal = []byte(`(
 			date,
 			micro_ts,
 			correlation_id,
@@ -74,15 +79,19 @@ var (
 			type,
 			node,
 			msg
-			) VALUES `
-	rtcValCnt = 12
+			) VALUES `)
+
+	sipPlaceholder = []byte("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),")
+	sipValCnt      = 39
+	rtcPlaceholder = []byte("(?,?,?,?,?,?,?,?,?,?,?,?),")
+	rtcValCnt      = 12
 )
 
 type SQLHomer5 struct {
 	db         *sql.DB
 	bulkCnt    int
-	sipBulkVal string
-	rtcBulkVal string
+	sipBulkVal []byte
+	rtcBulkVal []byte
 }
 
 func (s *SQLHomer5) setup() error {
@@ -112,27 +121,24 @@ func (s *SQLHomer5) setup() error {
 			s.db.Close()
 			return err
 		}
-	} else if config.Setting.DBDriver == "postgres" {
-		if s.db, err = sql.Open(config.Setting.DBDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass); err != nil {
-			s.db.Close()
-			return err
-		}
+	} else {
+		return fmt.Errorf("homer5 has only mysql support")
 	}
 	if err = s.db.Ping(); err != nil {
 		s.db.Close()
 		return err
 	}
 
-	s.db.SetMaxOpenConns(runtime.NumCPU() * 4)
-	s.db.SetMaxIdleConns(runtime.NumCPU())
+	s.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
+	s.db.SetMaxIdleConns(config.Setting.DBWorker)
 
 	s.bulkCnt = config.Setting.DBBulk
 	if s.bulkCnt < 1 {
 		s.bulkCnt = 1
 	}
 
-	s.sipBulkVal = s.createSipQueryValues(s.bulkCnt, sipVal)
-	s.rtcBulkVal = s.createRtcQueryValues(s.bulkCnt, rtcVal)
+	s.sipBulkVal = sipQueryVal(s.bulkCnt)
+	s.rtcBulkVal = rtcQueryVal(s.bulkCnt)
 
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
@@ -143,8 +149,6 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 		callCnt, regCnt, restCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
 		pkt        *decoder.HEP
-		ts         string
-		tsNano     int64
 		ok         bool
 		callRows   = make([]interface{}, 0, s.bulkCnt)
 		regRows    = make([]interface{}, 0, s.bulkCnt)
@@ -153,24 +157,24 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 		logRows    = make([]interface{}, 0, s.bulkCnt)
 		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
 		reportRows = make([]interface{}, 0, s.bulkCnt)
-		timer      = config.Setting.DBTimer
+		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
 	)
 
-	if timer < 0 {
-		timer = 0
+	timer := time.NewTimer(maxWait)
+	stop := func() {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
-	tr := rand.Intn(timer+4-3) + 3
-	ticker := time.NewTicker(time.Duration(tr) * time.Second)
-	if timer == 0 {
-		logp.Info("disable timed db inserts")
-		ticker.Stop()
-	}
+	defer stop()
 
 	addSIPRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			ts,
-			tsNano,
+			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.Timestamp.UnixNano() / 1000,
 			short(pkt.SIP.StartLine.Method, 50),
 			short(pkt.SIP.StartLine.RespText, 100),
 			short(pkt.SIP.StartLine.URI.Raw, 200),
@@ -213,8 +217,8 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 
 	addRTCRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			ts,
-			tsNano,
+			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.Timestamp.UnixNano() / 1000,
 			pkt.CID,
 			pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
 			pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
@@ -228,16 +232,13 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			ts = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-			tsNano = pkt.Timestamp.UnixNano() / 1000
-
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = addSIPRow(callRows)
 					callCnt++
 					if callCnt == s.bulkCnt {
-						s.bulkInsert("call", callRows, s.sipBulkVal)
+						s.bulkInsert(callQuery, s.sipBulkVal, callRows)
 						callRows = []interface{}{}
 						callCnt = 0
 					}
@@ -245,7 +246,7 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					regRows = addSIPRow(regRows)
 					regCnt++
 					if regCnt == s.bulkCnt {
-						s.bulkInsert("register", regRows, s.sipBulkVal)
+						s.bulkInsert(registerQuery, s.sipBulkVal, regRows)
 						regRows = []interface{}{}
 						regCnt = 0
 					}
@@ -253,35 +254,27 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					restRows = addSIPRow(restRows)
 					restCnt++
 					if restCnt == s.bulkCnt {
-						s.bulkInsert("rest", restRows, s.sipBulkVal)
+						s.bulkInsert(restQuery, s.sipBulkVal, restRows)
 						restRows = []interface{}{}
 						restCnt = 0
 					}
 
 				}
-			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
+			} else if pkt.ProtoType > 1 && pkt.Payload != "" && pkt.CID != "" {
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = addRTCRow(rtcpRows)
 					rtcpCnt++
 					if rtcpCnt == s.bulkCnt {
-						s.bulkInsert("rtcp", rtcpRows, s.rtcBulkVal)
+						s.bulkInsert(rtcpQuery, s.rtcBulkVal, rtcpRows)
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
-					}
-				case 34, 35, 38:
-					reportRows = addRTCRow(reportRows)
-					reportCnt++
-					if reportCnt == s.bulkCnt {
-						s.bulkInsert("report", reportRows, s.rtcBulkVal)
-						reportRows = []interface{}{}
-						reportCnt = 0
 					}
 				case 53:
 					dnsRows = addRTCRow(dnsRows)
 					dnsCnt++
 					if dnsCnt == s.bulkCnt {
-						s.bulkInsert("dns", dnsRows, s.rtcBulkVal)
+						s.bulkInsert(dnsQuery, s.rtcBulkVal, dnsRows)
 						dnsRows = []interface{}{}
 						dnsCnt = 0
 					}
@@ -289,52 +282,63 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					logRows = addRTCRow(logRows)
 					logCnt++
 					if logCnt == s.bulkCnt {
-						s.bulkInsert("log", logRows, s.rtcBulkVal)
+						s.bulkInsert(logQuery, s.rtcBulkVal, logRows)
 						logRows = []interface{}{}
 						logCnt = 0
 					}
+				default:
+					stop()
+					timer.Reset(1e9)
+					reportRows = addRTCRow(reportRows)
+					reportCnt++
+					if reportCnt == s.bulkCnt {
+						s.bulkInsert(reportQuery, s.rtcBulkVal, reportRows)
+						reportRows = []interface{}{}
+						reportCnt = 0
+					}
 				}
 			}
-		case <-ticker.C:
+		case <-timer.C:
+			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
-				s.bulkInsert("call", callRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert(callQuery, sipQueryVal(l/sipValCnt), callRows[:l])
 				callRows = []interface{}{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
-				s.bulkInsert("register", regRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert(registerQuery, sipQueryVal(l/sipValCnt), regRows[:l])
 				regRows = []interface{}{}
 				regCnt = 0
 			}
 			if restCnt > 0 {
 				l := len(restRows)
-				s.bulkInsert("rest", restRows[:l], s.createSipQueryValues(l/sipValCnt, sipVal))
+				s.bulkInsert(restQuery, sipQueryVal(l/sipValCnt), restRows[:l])
 				restRows = []interface{}{}
 				restCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
-				s.bulkInsert("rtcp", rtcpRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert(rtcpQuery, rtcQueryVal(l/rtcValCnt), rtcpRows[:l])
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
-				s.bulkInsert("report", reportRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert(reportQuery, rtcQueryVal(l/rtcValCnt), reportRows[:l])
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
-				s.bulkInsert("dns", dnsRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert(dnsQuery, rtcQueryVal(l/rtcValCnt), dnsRows[:l])
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
-				s.bulkInsert("log", logRows[:l], s.createRtcQueryValues(l/rtcValCnt, rtcVal))
+				s.bulkInsert(logQuery, rtcQueryVal(l/rtcValCnt), logRows[:l])
 				logRows = []interface{}{}
 				logCnt = 0
 			}
@@ -342,47 +346,11 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQLHomer5) bulkInsert(query string, rows []interface{}, values string) {
-	if config.Setting.DBDriver == "mysql" {
-		tableDate := time.Now().UTC().Format("20060102")
-		switch query {
-		case "call":
-			query = "INSERT INTO sip_capture_call_" + tableDate + values
-		case "register":
-			query = "INSERT INTO sip_capture_registration_" + tableDate + values
-		case "rest":
-			query = "INSERT INTO sip_capture_rest_" + tableDate + values
-		case "rtcp":
-			query = "INSERT INTO rtcp_capture_all_" + tableDate + values
-		case "report":
-			query = "INSERT INTO report_capture_all_" + tableDate + values
-		case "dns":
-			query = "INSERT INTO dns_capture_all_" + tableDate + values
-		case "log":
-			query = "INSERT INTO logs_capture_all_" + tableDate + values
-		}
-	} else if config.Setting.DBDriver == "postgres" {
-		switch query {
-		case "call":
-			query = "INSERT INTO sip_capture_call" + values
-		case "register":
-			query = "INSERT INTO sip_capture_registration" + values
-		case "rest":
-			query = "INSERT INTO sip_capture_rest" + values
-		case "rtcp":
-			query = "INSERT INTO rtcp_capture" + values
-		case "report":
-			query = "INSERT INTO report_capture" + values
-		case "dns":
-			query = "INSERT INTO dns_capture" + values
-		case "log":
-			query = "INSERT INTO logs_capture" + values
-		}
-	}
-
-	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
-
-	_, err := s.db.Exec(query, rows...)
+func (s *SQLHomer5) bulkInsert(q, v []byte, rows []interface{}) {
+	tblDate := time.Now().In(time.UTC).AppendFormat(q, "20060102")
+	query := make([]byte, 0, len(tblDate)+len(v))
+	query = append(tblDate, v...)
+	_, err := s.db.Exec(string(query), rows...)
 	if err != nil {
 		logp.Err("%v", err)
 	}
@@ -395,32 +363,22 @@ func short(s string, i int) string {
 	return s
 }
 
-func (s *SQLHomer5) createSipQueryValues(count int, values string) string {
-	for i := 0; i < count; i++ {
-		if config.Setting.DBDriver == "mysql" {
-			values += `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
-		} else if config.Setting.DBDriver == "postgres" {
-			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
-				i*sipValCnt+1, i*sipValCnt+2, i*sipValCnt+3, i*sipValCnt+4, i*sipValCnt+5, i*sipValCnt+6, i*sipValCnt+7, i*sipValCnt+8, i*sipValCnt+9, i*sipValCnt+10, i*sipValCnt+11, i*sipValCnt+12,
-				i*sipValCnt+13, i*sipValCnt+14, i*sipValCnt+15, i*sipValCnt+16, i*sipValCnt+17, i*sipValCnt+18, i*sipValCnt+19, i*sipValCnt+20, i*sipValCnt+21,
-				i*sipValCnt+22, i*sipValCnt+23, i*sipValCnt+24, i*sipValCnt+25, i*sipValCnt+26, i*sipValCnt+27, i*sipValCnt+28, i*sipValCnt+29, i*sipValCnt+30,
-				i*sipValCnt+31, i*sipValCnt+32, i*sipValCnt+33, i*sipValCnt+34, i*sipValCnt+35, i*sipValCnt+36, i*sipValCnt+37, i*sipValCnt+38, i*sipValCnt+39)
-		}
+func sipQueryVal(c int) []byte {
+	out := make([]byte, 0, c*len(sipPlaceholder)+len(sipVal)-1)
+	for i := 0; i < c; i++ {
+		out = append(out, sipPlaceholder...)
 	}
-	values = values[:len(values)-1]
-	return values
+	out = append(sipVal, out...)
+	out = out[:len(out)-1]
+	return out
 }
 
-func (s *SQLHomer5) createRtcQueryValues(count int, values string) string {
-	for i := 0; i < count; i++ {
-		if config.Setting.DBDriver == "mysql" {
-			values += `(?,?,?,?,?,?,?,?,?,?,?,?),`
-		} else if config.Setting.DBDriver == "postgres" {
-			values += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),",
-				i*rtcValCnt+1, i*rtcValCnt+2, i*rtcValCnt+3, i*rtcValCnt+4, i*rtcValCnt+5, i*rtcValCnt+6,
-				i*rtcValCnt+7, i*rtcValCnt+8, i*rtcValCnt+9, i*rtcValCnt+10, i*rtcValCnt+11, i*rtcValCnt+12)
-		}
+func rtcQueryVal(c int) []byte {
+	out := make([]byte, 0, c*len(rtcPlaceholder)+len(rtcVal)-1)
+	for i := 0; i < c; i++ {
+		out = append(out, rtcPlaceholder...)
 	}
-	values = values[:len(values)-1]
-	return values
+	out = append(rtcVal, out...)
+	out = out[:len(out)-1]
+	return out
 }

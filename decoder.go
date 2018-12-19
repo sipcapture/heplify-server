@@ -258,20 +258,22 @@ func (h *HEP) normPayload() {
 			logp.Warn("%v", err)
 		}
 	}
-	if !utf8.ValidString(h.Payload) {
-		v := make([]rune, 0, len(h.Payload))
-		for i, r := range h.Payload {
-			if r == utf8.RuneError {
-				_, size := utf8.DecodeRuneInString(h.Payload[i:])
-				if size == 1 {
+	if h.ProtoType == 1 {
+		if !utf8.ValidString(h.Payload) {
+			v := make([]rune, 0, len(h.Payload))
+			for i, r := range h.Payload {
+				if r == utf8.RuneError {
+					_, size := utf8.DecodeRuneInString(h.Payload[i:])
+					if size == 1 {
+						continue
+					}
+				} else if r == '\x00' {
 					continue
 				}
-			} else if r == '\x00' {
-				continue
+				v = append(v, r)
 			}
-			v = append(v, r)
+			h.Payload = string(v)
 		}
-		h.Payload = string(v)
 	}
 }
 
