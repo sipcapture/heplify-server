@@ -3,8 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"net/url"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -95,18 +93,8 @@ type SQLHomer5 struct {
 }
 
 func (s *SQLHomer5) setup() error {
-	var err error
-	addr := strings.Split(config.Setting.DBAddr, ":")
-
-	if len(addr) != 2 {
-		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
-		return err
-	}
-	if addr[1] == "3306" && config.Setting.DBDriver == "postgres" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
-		return err
-	} else if addr[1] == "5432" && config.Setting.DBDriver == "mysql" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+	cs, err := ConnectString(config.Setting.DBDataTable)
+	if err != nil {
 		return err
 	}
 
@@ -117,7 +105,7 @@ func (s *SQLHomer5) setup() error {
 	}
 
 	if config.Setting.DBDriver == "mysql" {
-		if s.db, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
+		if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
 			s.db.Close()
 			return err
 		}

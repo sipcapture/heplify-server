@@ -327,9 +327,7 @@ func (h *HEPInput) End() {
 func (h *HEPInput) hepWorker() {
 	var (
 		lastWarn = time.Now()
-		hepPkt   *decoder.HEP
 		msg      = h.buffer.Get().([]byte)
-		err      error
 		ok       bool
 	)
 
@@ -344,7 +342,7 @@ OUT:
 			}
 		}
 
-		hepPkt, err = decoder.DecodeHEP(msg)
+		hepPkt, err := decoder.DecodeHEP(msg)
 		if err != nil {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue

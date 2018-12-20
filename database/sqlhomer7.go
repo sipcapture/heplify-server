@@ -17,9 +17,8 @@ import (
 )
 
 type SQLHomer7 struct {
-	db       *sql.DB
-	dbDriver string
-	bulkCnt  int
+	db      *sql.DB
+	bulkCnt int
 }
 
 const (
@@ -36,19 +35,8 @@ var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
-	var err error
-	var addr = strings.Split(config.Setting.DBAddr, ":")
-	s.dbDriver = config.Setting.DBDriver
-
-	if len(addr) != 2 {
-		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
-		return err
-	}
-	if addr[1] == "3306" && s.dbDriver == "postgres" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], s.dbDriver)
-		return err
-	} else if addr[1] == "5432" && s.dbDriver == "mysql" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], s.dbDriver)
+	cs, err := ConnectString(config.Setting.DBDataTable)
+	if err != nil {
 		return err
 	}
 
@@ -58,10 +46,10 @@ func (s *SQLHomer7) setup() error {
 		r.Rotate()
 	}
 
-	if s.dbDriver == "mysql" {
+	if config.Setting.DBDriver == "mysql" {
 		return fmt.Errorf("homer7 has only postgres support")
-	} else if s.dbDriver == "postgres" {
-		if s.db, err = sql.Open(s.dbDriver, "sslmode=disable connect_timeout=2 host="+addr[0]+" port="+addr[1]+" dbname="+config.Setting.DBDataTable+" user="+config.Setting.DBUser+" password="+config.Setting.DBPass); err != nil {
+	} else if config.Setting.DBDriver == "postgres" {
+		if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
 			s.db.Close()
 			return err
 		}
