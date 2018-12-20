@@ -7,7 +7,7 @@ import (
 
 	"github.com/negbie/logp"
 
-	"github.com/sipcapture/heplify-server/config"
+	"github.com/negbie/heplify-server/config"
 )
 
 func cutSpace(str string) string {

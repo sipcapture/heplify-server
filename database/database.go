@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
-	"github.com/sipcapture/heplify-server"
-	"github.com/sipcapture/heplify-server/config"
+	"github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/config"
 )
 
 type Database struct {

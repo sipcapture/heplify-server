@@ -3,7 +3,7 @@ package metric
 import (
 	"sync"
 
-	"github.com/sipcapture/heplify-server"
+	"github.com/negbie/heplify-server"
 )
 
 type Metric struct {
