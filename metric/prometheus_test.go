@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/koding/multiconfig"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 )
@@ -36,10 +35,6 @@ var VQSessionReport = `VQSessionReport: CallTerm
 						QualityEst:MOSLQ=3.8 MOSCQ=4.2`
 
 func init() {
-	c := multiconfig.New()
-	cfg := new(config.HeplifyServer)
-	c.MustLoad(cfg)
-	config.Setting = *cfg
 	config.Setting.PromAddr = ":9999"
 	config.Setting.PromTargetName = "test1,test2"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
@@ -52,7 +47,7 @@ func init() {
 	}()
 }
 
-func BenchmarkWithTargetCollect(b *testing.B) {
+func BenchmarkExpose(b *testing.B) {
 	hep, err := decoder.DecodeHEP(hepPacket)
 	if err != nil {
 		b.Error(err)

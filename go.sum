@@ -282,6 +282,7 @@ github.com/nats-io/nuid v1.0.0 h1:44QGdhbiANq8ZCbUkdn6W5bqtg+mHuDE4wOUuxxndFs=
 github.com/nats-io/nuid v1.0.0/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
 github.com/negbie/dotsql v0.1.0 h1:ho3jBc645NS5Rv2+YKx8wyWx8IcDbx34GWIQz3X6u9s=
 github.com/negbie/dotsql v0.1.0/go.mod h1:3unOCXkaNXP4Yg6zoz/Skiqu6DeFX9P4kz3QWwHtaig=
+github.com/negbie/heplify-server v0.0.0-20181220125256-70c22570a953 h1:reH6UzVyKMHzrjrcsjNDoZi06hU7kmRgAqR3EJ13wRc=
 github.com/negbie/logp v0.0.0-20181018124411-1d803349a741 h1:wElbd5Pw1mg/mlE9rABTI1370wL469yNL02YxJoCKqk=
 github.com/negbie/logp v0.0.0-20181018124411-1d803349a741/go.mod h1:xTKf9aKLuVL0r9wxWouR+/4ctK2ywm0rTPFY2klrnOg=
 github.com/negbie/sipparser v0.0.0-20181210144641-dea894d68155 h1:EL/sF5yIaMzMuMLQ/fSc/7ZFpXFzpbDRNUIM7ClEEuQ=
