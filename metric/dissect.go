@@ -17,19 +17,19 @@ func normMax(val float64) float64 {
 
 func (p *Prometheus) dissectRTCPXRStats(nodeID string, stats string) {
 	if nlr, err := strconv.ParseFloat(extractXR("NLR=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_nlr"].WithLabelValues(nodeID).Set(nlr)
+		vqrtcpxrNLR.WithLabelValues(nodeID).Set(nlr)
 	}
 	if jdr, err := strconv.ParseFloat(extractXR("JDR=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_jdr"].WithLabelValues(nodeID).Set(jdr)
+		vqrtcpxrJDR.WithLabelValues(nodeID).Set(jdr)
 	}
 	if iaj, err := strconv.ParseFloat(extractXR("IAJ=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_iaj"].WithLabelValues(nodeID).Set(iaj)
+		vqrtcpxrIAJ.WithLabelValues(nodeID).Set(iaj)
 	}
 	if moslq, err := strconv.ParseFloat(extractXR("MOSLQ=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_moslq"].WithLabelValues(nodeID).Set(moslq)
+		vqrtcpxrMOSLQ.WithLabelValues(nodeID).Set(moslq)
 	}
 	if moscq, err := strconv.ParseFloat(extractXR("MOSCQ=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_vqrtcpxr_moscq"].WithLabelValues(nodeID).Set(moscq)
+		vqrtcpxrMOSCQ.WithLabelValues(nodeID).Set(moscq)
 	}
 }
 
@@ -41,16 +41,16 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	packetsBySize.WithLabelValues("xrtp").Set(float64(len(stats)))
 
 	if cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64); err == nil {
-		p.GaugeVecMetrics["heplify_xrtp_cs"].WithLabelValues(tn).Set(cs / 1000)
+		xrtpCS.WithLabelValues(tn).Set(cs / 1000)
 	}
 
 	if plt := extractXR("PL=", stats); len(plt) >= 1 {
 		if pl := strings.Split(plt, ","); len(pl) == 2 {
 			if plr, err = strconv.Atoi(pl[0]); err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_plr"].WithLabelValues(tn).Set(float64(plr))
+				xrtpPLR.WithLabelValues(tn).Set(float64(plr))
 			}
 			if pls, err = strconv.Atoi(pl[1]); err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_pls"].WithLabelValues(tn).Set(float64(pls))
+				xrtpPLS.WithLabelValues(tn).Set(float64(pls))
 			}
 		}
 	}
@@ -58,10 +58,10 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	if jit := extractXR("JI=", stats); len(jit) >= 1 {
 		if ji := strings.Split(jit, ","); len(ji) == 2 {
 			if jir, err = strconv.Atoi(ji[0]); err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_jir"].WithLabelValues(tn).Set(float64(jir))
+				xrtpJIR.WithLabelValues(tn).Set(float64(jir))
 			}
 			if jis, err = strconv.Atoi(ji[1]); err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_jis"].WithLabelValues(tn).Set(float64(jis))
+				xrtpJIS.WithLabelValues(tn).Set(float64(jis))
 			}
 		}
 	}
@@ -69,7 +69,7 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	if dlt := extractXR("DL=", stats); len(dlt) >= 1 {
 		if dl := strings.Split(dlt, ","); len(dl) == 3 {
 			if dle, err = strconv.Atoi(dl[0]); err == nil {
-				p.GaugeVecMetrics["heplify_xrtp_dle"].WithLabelValues(tn).Set(float64(dle))
+				xrtpDLE.WithLabelValues(tn).Set(float64(dle))
 			}
 		}
 	}
@@ -94,7 +94,7 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	if mos < 1 || mos > 5 {
 		mos = 1
 	}
-	p.GaugeVecMetrics["heplify_xrtp_mos"].WithLabelValues(tn).Set(mos)
+	xrtpMOS.WithLabelValues(tn).Set(mos)
 }
 
 func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
@@ -102,51 +102,51 @@ func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
 		switch idx {
 		case 0:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcp_fraction_lost"].WithLabelValues(nodeID).Set(normMax(fractionLost))
+				rtcpFractionLost.WithLabelValues(nodeID).Set(normMax(fractionLost))
 			}
 		case 1:
 			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcp_packets_lost"].WithLabelValues(nodeID).Set(normMax(packetsLost))
+				rtcpPacketsLost.WithLabelValues(nodeID).Set(normMax(packetsLost))
 			}
 		case 2:
 			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcp_jitter"].WithLabelValues(nodeID).Set(normMax(iaJitter))
+				rtcpJitter.WithLabelValues(nodeID).Set(normMax(iaJitter))
 			}
 		case 3:
 			if dlsr, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcp_dlsr"].WithLabelValues(nodeID).Set(normMax(dlsr))
+				rtcpDLSR.WithLabelValues(nodeID).Set(normMax(dlsr))
 			}
 		case 4:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_fraction_lost"].WithLabelValues(nodeID).Set(fractionLost)
+				rtcpxrFractionLost.WithLabelValues(nodeID).Set(fractionLost)
 			}
 		case 5:
 			if fractionDiscard, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_fraction_discard"].WithLabelValues(nodeID).Set(fractionDiscard)
+				rtcpxrFractionDiscard.WithLabelValues(nodeID).Set(fractionDiscard)
 			}
 		case 6:
 			if burstDensity, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_burst_density"].WithLabelValues(nodeID).Set(burstDensity)
+				rtcpxrBurstDensity.WithLabelValues(nodeID).Set(burstDensity)
 			}
 		case 7:
 			if gapDensity, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_gap_density"].WithLabelValues(nodeID).Set(gapDensity)
+				rtcpxrGapDensity.WithLabelValues(nodeID).Set(gapDensity)
 			}
 		case 8:
 			if burstDuration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_burst_duration"].WithLabelValues(nodeID).Set(burstDuration)
+				rtcpxrBurstDuration.WithLabelValues(nodeID).Set(burstDuration)
 			}
 		case 9:
 			if gapDuration, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_gap_duration"].WithLabelValues(nodeID).Set(gapDuration)
+				rtcpxrGapDuration.WithLabelValues(nodeID).Set(gapDuration)
 			}
 		case 10:
 			if roundTripDelay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_round_trip_delay"].WithLabelValues(nodeID).Set(roundTripDelay)
+				rtcpxrRoundTripDelay.WithLabelValues(nodeID).Set(roundTripDelay)
 			}
 		case 11:
 			if endSystemDelay, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtcpxr_end_system_delay"].WithLabelValues(nodeID).Set(endSystemDelay)
+				rtcpxrEndSystemDelay.WithLabelValues(nodeID).Set(endSystemDelay)
 			}
 		}
 	}, p.rtcpPaths...)
@@ -157,27 +157,19 @@ func (p *Prometheus) dissectRTPStats(nodeID string, data []byte) {
 		switch idx {
 		case 0:
 			if delta, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_delta"].WithLabelValues(nodeID).Set(delta)
+				rtpagentDelta.WithLabelValues(nodeID).Set(delta)
 			}
 		case 1:
 			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_jitter"].WithLabelValues(nodeID).Set(iaJitter)
+				rtpagentJitter.WithLabelValues(nodeID).Set(iaJitter)
 			}
 		case 2:
 			if mos, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_mos"].WithLabelValues(nodeID).Set(mos)
+				rtpagentMOS.WithLabelValues(nodeID).Set(mos)
 			}
 		case 3:
 			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_packets_lost"].WithLabelValues(nodeID).Set(packetsLost)
-			}
-		case 4:
-			if rfactor, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_rfactor"].WithLabelValues(nodeID).Set(rfactor)
-			}
-		case 5:
-			if skew, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["heplify_rtpagent_skew"].WithLabelValues(nodeID).Set(skew)
+				rtpagentPacketsLost.WithLabelValues(nodeID).Set(packetsLost)
 			}
 		}
 	}, p.rtpPaths...)
@@ -205,99 +197,99 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 			}
 		case 3:
 			if incMos, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_mos"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incMos / 100)
+				horaclifixRtpMOS.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incMos / 100)
 			}
 		case 4:
 			if incRval, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_rval"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRval / 100)
+				horaclifixRtpRVAL.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRval / 100)
 			}
 		case 5:
 			if incRtpPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_packets"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpPackets)
+				horaclifixRtpPackets.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpPackets)
 			}
 		case 6:
 			if incRtpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_lost_packets"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpLostPackets)
+				horaclifixRtpLostPackets.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpLostPackets)
 			}
 		case 7:
 			if incRtpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_avg_jitter"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpAvgJitter)
+				horaclifixRtpAvgJitter.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpAvgJitter)
 			}
 		case 8:
 			if incRtpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_max_jitter"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpMaxJitter)
+				horaclifixRtpMaxJitter.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtpMaxJitter)
 			}
 		case 9:
 			if incRtcpPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_packets"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpPackets)
+				horaclifixRtcpPackets.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpPackets)
 			}
 		case 10:
 			if incRtcpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_lost_packets"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpLostPackets)
+				horaclifixRtcpLostPackets.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpLostPackets)
 			}
 		case 11:
 			if incRtcpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_avg_jitter"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpAvgJitter)
+				horaclifixRtcpAvgJitter.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpAvgJitter)
 			}
 		case 12:
 			if incRtcpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_max_jitter"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpMaxJitter)
+				horaclifixRtcpMaxJitter.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpMaxJitter)
 			}
 		case 13:
 			if incRtcpAvgLat, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_avg_lat"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpAvgLat)
+				horaclifixRtcpAvgLAT.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpAvgLat)
 			}
 		case 14:
 			if incRtcpMaxLat, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_max_lat"].WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpMaxLat)
+				horaclifixRtcpMaxLAT.WithLabelValues(sbcName, "inc", incRealm, outRealm).Set(incRtcpMaxLat)
 			}
 		case 15:
 			if outMos, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_mos"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outMos / 100)
+				horaclifixRtpMOS.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outMos / 100)
 			}
 		case 16:
 			if outRval, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_rval"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRval / 100)
+				horaclifixRtpRVAL.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRval / 100)
 			}
 		case 17:
 			if outRtpPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_packets"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpPackets)
+				horaclifixRtpPackets.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpPackets)
 			}
 		case 18:
 			if outRtpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_lost_packets"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpLostPackets)
+				horaclifixRtpLostPackets.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpLostPackets)
 			}
 		case 19:
 			if outRtpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_avg_jitter"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpAvgJitter)
+				horaclifixRtpAvgJitter.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpAvgJitter)
 			}
 		case 20:
 			if outRtpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtp_max_jitter"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpMaxJitter)
+				horaclifixRtpMaxJitter.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtpMaxJitter)
 			}
 		case 21:
 			if outRtcpPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_packets"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpPackets)
+				horaclifixRtcpPackets.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpPackets)
 			}
 		case 22:
 			if outRtcpLostPackets, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_lost_packets"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpLostPackets)
+				horaclifixRtcpLostPackets.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpLostPackets)
 			}
 		case 23:
 			if outRtcpAvgJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_avg_jitter"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpAvgJitter)
+				horaclifixRtcpAvgJitter.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpAvgJitter)
 			}
 		case 24:
 			if outRtcpMaxJitter, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_max_jitter"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpMaxJitter)
+				horaclifixRtcpMaxJitter.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpMaxJitter)
 			}
 		case 25:
 			if outRtcpAvgLat, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_avg_lat"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpAvgLat)
+				horaclifixRtcpAvgLAT.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpAvgLat)
 			}
 		case 26:
 			if outRtcpMaxLat, err := jsonparser.ParseFloat(value); err == nil {
-				p.GaugeVecMetrics["horaclifix_rtcp_max_lat"].WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpMaxLat)
+				horaclifixRtcpMaxLAT.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpMaxLat)
 			}
 		}
 	}, p.horaclifixPaths...)

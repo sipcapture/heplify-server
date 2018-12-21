@@ -38,19 +38,20 @@ func New(name string) *Database {
 }
 
 func (d *Database) Run() error {
-	var (
-		//wg  sync.WaitGroup
-		err error
-	)
-
 	if config.Setting.DBDriver != "mysql" && config.Setting.DBDriver != "postgres" {
-		return fmt.Errorf("Invalid database driver: %s, please use mysql or postgres", config.Setting.DBDriver)
+		return fmt.Errorf("Invalid DBDriver: %s, please use mysql or postgres", config.Setting.DBDriver)
 	}
 	if config.Setting.DBShema != "homer5" && config.Setting.DBShema != "homer7" {
 		return fmt.Errorf("Invalid DBShema: %s, please use homer5 or homer7", config.Setting.DBShema)
 	}
+	if config.Setting.DBShema == "homer5" && config.Setting.DBDriver != "mysql" {
+		return fmt.Errorf("homer5 has only mysql support")
+	}
+	if config.Setting.DBShema == "homer7" && config.Setting.DBDriver != "postgres" {
+		return fmt.Errorf("homer7 has only postgres support")
+	}
 
-	err = d.DBH.setup()
+	err := d.DBH.setup()
 	if err != nil {
 		return err
 	}
@@ -60,16 +61,14 @@ func (d *Database) Run() error {
 			d.DBH.insert(d.Chan)
 		}()
 	}
-
 	return nil
-
 }
 
 func (d *Database) End() {
 	close(d.Chan)
 }
 
-func ConnectString(dbName string) (string, error) {
+func connectString(dbName string) (string, error) {
 	var dsn string
 	addr := strings.Split(config.Setting.DBAddr, ":")
 	if len(addr) != 2 {
@@ -100,6 +99,5 @@ func ConnectString(dbName string) (string, error) {
 			" user=" + config.Setting.DBUser +
 			" password=" + config.Setting.DBPass
 	}
-
 	return dsn, nil
 }

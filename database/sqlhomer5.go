@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -93,7 +92,7 @@ type SQLHomer5 struct {
 }
 
 func (s *SQLHomer5) setup() error {
-	cs, err := ConnectString(config.Setting.DBDataTable)
+	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
 	}
@@ -104,14 +103,11 @@ func (s *SQLHomer5) setup() error {
 		r.Rotate()
 	}
 
-	if config.Setting.DBDriver == "mysql" {
-		if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
-			s.db.Close()
-			return err
-		}
-	} else {
-		return fmt.Errorf("homer5 has only mysql support")
+	if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
+		s.db.Close()
+		return err
 	}
+
 	if err = s.db.Ping(); err != nil {
 		s.db.Close()
 		return err

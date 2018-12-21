@@ -21,20 +21,20 @@ const (
 )
 
 type Rotator struct {
-	rawAddr  string
-	confAddr string
-	dataAddr string
-	logStep  int
-	qosStep  int
-	sipStep  int
-	box      *packr.Box
+	rootDBAddr string
+	confDBAddr string
+	dataDBAddr string
+	logStep    int
+	qosStep    int
+	sipStep    int
+	box        *packr.Box
 }
 
 func NewRotator(b *packr.Box) *Rotator {
 	r := &Rotator{}
-	r.rawAddr, _ = ConnectString("")
-	r.confAddr, _ = ConnectString(config.Setting.DBConfTable)
-	r.dataAddr, _ = ConnectString(config.Setting.DBDataTable)
+	r.rootDBAddr, _ = connectString("")
+	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
+	r.dataDBAddr, _ = connectString(config.Setting.DBDataTable)
 	r.logStep = setStep(config.Setting.DBPartLog)
 	r.qosStep = setStep(config.Setting.DBPartQos)
 	r.sipStep = setStep(config.Setting.DBPartSip)
@@ -45,7 +45,7 @@ func NewRotator(b *packr.Box) *Rotator {
 func (r *Rotator) CreateDatabases() (err error) {
 	for {
 		if config.Setting.DBDriver == "mysql" {
-			db, err := sql.Open(config.Setting.DBDriver, r.rawAddr)
+			db, err := sql.Open(config.Setting.DBDriver, r.rootDBAddr)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -60,7 +60,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				break
 			}
 		} else if config.Setting.DBDriver == "postgres" {
-			db, err := sql.Open(config.Setting.DBDriver, r.rawAddr)
+			db, err := sql.Open(config.Setting.DBDriver, r.rootDBAddr)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -92,7 +92,7 @@ func replaceDay(d int) strings.Replacer {
 func (r *Rotator) CreateDataTables(duration int) (err error) {
 	suffix := replaceDay(duration)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataAddr)
+		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataAddr)
+		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 func (r *Rotator) CreateConfTables(duration int) (err error) {
 	suffix := replaceDay(duration)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.confAddr)
+		db, err := sql.Open(config.Setting.DBDriver, r.confDBAddr)
 		if err != nil {
 			return err
 		}
@@ -145,14 +145,14 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 func (r *Rotator) DropTables(duration int) (err error) {
 	suffix := replaceDay(duration * -1)
 	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataAddr)
+		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataAddr)
+		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}

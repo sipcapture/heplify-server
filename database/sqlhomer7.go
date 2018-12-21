@@ -3,7 +3,6 @@ package database
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -35,7 +34,7 @@ var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
-	cs, err := ConnectString(config.Setting.DBDataTable)
+	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
 	}
@@ -46,14 +45,11 @@ func (s *SQLHomer7) setup() error {
 		r.Rotate()
 	}
 
-	if config.Setting.DBDriver == "mysql" {
-		return fmt.Errorf("homer7 has only postgres support")
-	} else if config.Setting.DBDriver == "postgres" {
-		if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
-			s.db.Close()
-			return err
-		}
+	if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
+		s.db.Close()
+		return err
 	}
+
 	if err = s.db.Ping(); err != nil {
 		s.db.Close()
 		return err
