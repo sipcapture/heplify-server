@@ -151,9 +151,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					dt, ok := p.TargetMap[pkt.DstIP]
 					if ok {
 						methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
-						if pkt.SIP.RTPStatVal != "" {
-							p.dissectXRTPStats(dt, pkt.SIP.RTPStatVal)
-						}
 					}
 				} else {
 					_, err := p.Cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))

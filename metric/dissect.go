@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -8,14 +9,12 @@ import (
 	"github.com/negbie/logp"
 )
 
-func normMax(val float64) float64 {
-	if val > 10000000 {
-		return 0
-	}
-	return val
-}
+var (
+	errNoComma  = fmt.Errorf("no comma in string")
+	errNoTwoVal = fmt.Errorf("no two values in string")
+)
 
-func (p *Prometheus) dissectRTCPXRStats(nodeID string, stats string) {
+func (p *Prometheus) dissectRTCPXRStats(nodeID, stats string) {
 	if nlr, err := strconv.ParseFloat(extractXR("NLR=", stats), 64); err == nil {
 		vqrtcpxrNLR.WithLabelValues(nodeID).Set(nlr)
 	}
@@ -44,33 +43,23 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 		xrtpCS.WithLabelValues(tn).Set(cs / 1000)
 	}
 
-	if plt := extractXR("PL=", stats); len(plt) >= 1 {
-		if pl := strings.Split(plt, ","); len(pl) == 2 {
-			if plr, err = strconv.Atoi(pl[0]); err == nil {
-				xrtpPLR.WithLabelValues(tn).Set(float64(plr))
-			}
-			if pls, err = strconv.Atoi(pl[1]); err == nil {
-				xrtpPLS.WithLabelValues(tn).Set(float64(pls))
-			}
+	if plt := extractXR("PL=", stats); len(plt) > 1 {
+		if plr, pls, err = splitCommaInt(plt); err == nil {
+			xrtpPLR.WithLabelValues(tn).Set(float64(plr))
+			xrtpPLS.WithLabelValues(tn).Set(float64(pls))
 		}
 	}
 
-	if jit := extractXR("JI=", stats); len(jit) >= 1 {
-		if ji := strings.Split(jit, ","); len(ji) == 2 {
-			if jir, err = strconv.Atoi(ji[0]); err == nil {
-				xrtpJIR.WithLabelValues(tn).Set(float64(jir))
-			}
-			if jis, err = strconv.Atoi(ji[1]); err == nil {
-				xrtpJIS.WithLabelValues(tn).Set(float64(jis))
-			}
+	if jit := extractXR("JI=", stats); len(jit) > 1 {
+		if jir, jis, err = splitCommaInt(jit); err == nil {
+			xrtpJIR.WithLabelValues(tn).Set(float64(jir))
+			xrtpJIS.WithLabelValues(tn).Set(float64(jis))
 		}
 	}
 
-	if dlt := extractXR("DL=", stats); len(dlt) >= 1 {
-		if dl := strings.Split(dlt, ","); len(dl) == 3 {
-			if dle, err = strconv.Atoi(dl[0]); err == nil {
-				xrtpDLE.WithLabelValues(tn).Set(float64(dle))
-			}
+	if dlt := extractXR("DL=", stats); len(dlt) > 1 {
+		if dle, _, err = splitCommaInt(dlt); err == nil || dle > 0 {
+			xrtpDLE.WithLabelValues(tn).Set(float64(dle))
 		}
 	}
 
@@ -293,4 +282,32 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 			}
 		}
 	}, p.horaclifixPaths...)
+}
+
+func normMax(val float64) float64 {
+	if val > 10000000 {
+		return 0
+	}
+	return val
+}
+
+func splitCommaInt(str string) (int, int, error) {
+	var err error
+	var one, two int
+	sp := strings.IndexRune(str, ',')
+	if sp == -1 {
+		return one, two, errNoComma
+	}
+
+	if one, err = strconv.Atoi(str[0:sp]); err != nil {
+		return one, two, err
+	}
+	if len(str)-1 >= sp+1 {
+		if two, err = strconv.Atoi(str[sp+1:]); err != nil {
+			return one, two, err
+		}
+	} else {
+		return one, two, errNoTwoVal
+	}
+	return one, two, nil
 }
