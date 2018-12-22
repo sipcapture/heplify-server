@@ -95,6 +95,10 @@ func connectString(dbName string) (string, error) {
 		if dbName == "" {
 			dbName = "''"
 		}
+		if addr[0] == "unix" {
+			addr[0] = addr[1]
+			addr[1] = "''"
+		}
 		dsn = "sslmode=disable connect_timeout=2" +
 			" host=" + addr[0] +
 			" port=" + addr[1] +
