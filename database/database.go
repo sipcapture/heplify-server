@@ -92,6 +92,9 @@ func connectString(dbName string) (string, error) {
 				"?" + url.QueryEscape("charset=utf8mb4&parseTime=true")
 		}
 	} else {
+		if dbName == "" {
+			dbName = "''"
+		}
 		dsn = "sslmode=disable connect_timeout=2" +
 			" host=" + addr[0] +
 			" port=" + addr[1] +
