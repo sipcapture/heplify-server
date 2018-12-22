@@ -138,6 +138,15 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 		defer db.Close()
 		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix, 0, 0)
 		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix, 0, 0)
+	} else if config.Setting.DBDriver == "postgres" {
+		db, err := sql.Open(config.Setting.DBDriver, r.confDBAddr)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		r.dbExecFile(db, r.box.String("pgsql/idxconf.sql"), suffix, 0, 0)
+		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix, 0, 0)
+		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix, 0, 0)
 	}
 	return nil
 }
