@@ -1,4 +1,4 @@
-module heplify-server
+module github.com/negbie/heplify-server
 
 require (
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23
@@ -12,7 +12,7 @@ require (
 	github.com/gobuffalo/packr v1.21.9
 	github.com/gogo/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
-	github.com/grafana/loki v0.0.0-20181220115606-f66d9e93d256
+	github.com/grafana/loki v0.0.0-20181220172923-22f5968d0dcd
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lib/pq v1.0.0
 	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329 // indirect
@@ -29,6 +29,6 @@ require (
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/stretchr/testify v1.2.2
-	google.golang.org/appengine v1.3.0 // indirect
+	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 )
