@@ -3,7 +3,7 @@ package metric
 import (
 	"sync"
 
-	"github.com/sipcapture/heplify-server"
+	"github.com/negbie/heplify-server"
 )
 
 type Metric struct {
@@ -13,7 +13,7 @@ type Metric struct {
 
 type MetricHandler interface {
 	setup() error
-	collect(chan *decoder.HEP)
+	expose(chan *decoder.HEP)
 }
 
 func New(name string) *Metric {
@@ -40,7 +40,7 @@ func (m *Metric) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		m.MH.collect(m.Chan)
+		m.MH.expose(m.Chan)
 	}()
 	wg.Wait()
 	return nil

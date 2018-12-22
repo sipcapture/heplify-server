@@ -2,16 +2,13 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
-	"net/url"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
-	"github.com/sipcapture/heplify-server"
-	"github.com/sipcapture/heplify-server/config"
+	"github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 )
 
@@ -95,18 +92,8 @@ type SQLHomer5 struct {
 }
 
 func (s *SQLHomer5) setup() error {
-	var err error
-	addr := strings.Split(config.Setting.DBAddr, ":")
-
-	if len(addr) != 2 {
-		err = fmt.Errorf("faulty database address: %v, format should be localhost:3306", config.Setting.DBAddr)
-		return err
-	}
-	if addr[1] == "3306" && config.Setting.DBDriver == "postgres" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
-		return err
-	} else if addr[1] == "5432" && config.Setting.DBDriver == "mysql" {
-		err = fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], config.Setting.DBDriver)
+	cs, err := connectString(config.Setting.DBDataTable)
+	if err != nil {
 		return err
 	}
 
@@ -116,14 +103,11 @@ func (s *SQLHomer5) setup() error {
 		r.Rotate()
 	}
 
-	if config.Setting.DBDriver == "mysql" {
-		if s.db, err = sql.Open(config.Setting.DBDriver, config.Setting.DBUser+":"+config.Setting.DBPass+"@tcp("+addr[0]+":"+addr[1]+")/"+config.Setting.DBDataTable+"?"+url.QueryEscape("charset=utf8mb4&parseTime=true")); err != nil {
-			s.db.Close()
-			return err
-		}
-	} else {
-		return fmt.Errorf("homer5 has only mysql support")
+	if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
+		s.db.Close()
+		return err
 	}
+
 	if err = s.db.Ping(); err != nil {
 		s.db.Close()
 		return err

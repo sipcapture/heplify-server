@@ -7,7 +7,7 @@ import (
 
 	"github.com/negbie/logp"
 
-	"github.com/sipcapture/heplify-server/config"
+	"github.com/negbie/heplify-server/config"
 )
 
 func cutSpace(str string) string {
@@ -51,6 +51,10 @@ func (p *Prometheus) loadPromConf() {
 		p.TargetIP = fsTargetIP
 		p.TargetName = fsTargetName
 		p.TargetEmpty = false
+		p.TargetMap = make(map[string]string)
+		for i := 0; i < len(p.TargetName); i++ {
+			p.TargetMap[p.TargetIP[i]] = p.TargetName[i]
+		}
 		p.TargetConf.Unlock()
 		logp.Info("successfully reloaded PromTargetIP: %#v", fsTargetIP)
 		logp.Info("successfully reloaded PromTargetName: %#v", fsTargetName)
