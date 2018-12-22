@@ -29,5 +29,25 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     CONSTRAINT "users_username_unique" UNIQUE ("username")
 ) WITH (oids = false);
 
-
+-- name: create-mapping_schema
+CREATE TABLE "public"."mapping_schema" (
+    "id" integer DEFAULT nextval('mapping_schema_id_seq') NOT NULL,
+    "guid" uuid,
+    "profile" character varying(100) DEFAULT 'default' NOT NULL,
+    "hepid" integer NOT NULL,
+    "hep_alias" character varying(100),
+    "partid" integer DEFAULT '10' NOT NULL,
+    "version" integer NOT NULL,
+    "retention" integer DEFAULT '14' NOT NULL,
+    "partition_step" integer DEFAULT '3600' NOT NULL,
+    "create_index" json,
+    "create_table" text,
+    "correlation_mapping" json,
+    "fields_mapping" json,
+    "mapping_settings" json,
+    "schema_mapping" json,
+    "schema_settings" json,
+    "create_date" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT "mapping_schema_pkey" PRIMARY KEY ("id")
+) WITH (oids = false);
 
