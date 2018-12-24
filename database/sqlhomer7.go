@@ -106,9 +106,9 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			}
 
 			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-			pHeader = makeProtoHeader(pkt)
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+				pHeader = makeProtoHeader(pkt, pkt.SIP.XCallID)
 				dHeader = makeSIPDataHeader(pkt, date)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
@@ -137,6 +137,7 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
+				pHeader = makeProtoHeader(pkt, "")
 				dHeader = makeRTCDataHeader(pkt, date)
 				switch pkt.ProtoType {
 				case 5:
@@ -272,7 +273,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}) {
 	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }
 
-func makeProtoHeader(h *decoder.HEP) []byte {
+func makeProtoHeader(h *decoder.HEP, corrID string) []byte {
 	var b bytes.Buffer
 	b.WriteString("{")
 	b.WriteString("\"protocolFamily\":")
@@ -297,6 +298,10 @@ func makeProtoHeader(h *decoder.HEP) []byte {
 	b.WriteString(strconv.Itoa(int(h.NodeID)))
 	b.WriteString(",\"capturePass\":\"")
 	b.WriteString(h.NodePW)
+	if corrID != "" {
+		b.WriteString("\",\"correlation_id\":\"")
+		b.WriteString(corrID)
+	}
 	b.WriteString("\"}")
 	return b.Bytes()
 }
