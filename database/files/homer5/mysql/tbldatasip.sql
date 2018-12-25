@@ -58,7 +58,7 @@ CREATE TABLE `sip_capture_call_{{date}}` (
   KEY `method` (`method`),
   KEY `source_ip` (`source_ip`),
   KEY `destination_ip` (`destination_ip`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
@@ -123,7 +123,7 @@ CREATE TABLE `sip_capture_registration_{{date}}` (
   KEY `method` (`method`),
   KEY `source_ip` (`source_ip`),
   KEY `destination_ip` (`destination_ip`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
@@ -188,7 +188,7 @@ CREATE TABLE `sip_capture_rest_{{date}}` (
   KEY `method` (`method`),
   KEY `source_ip` (`source_ip`),
   KEY `destination_ip` (`destination_ip`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );

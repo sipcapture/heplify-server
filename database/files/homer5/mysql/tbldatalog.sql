@@ -16,7 +16,7 @@ CREATE TABLE `logs_capture_all_{{date}}` (
   PRIMARY KEY (`id`,`date`),
   KEY `date` (`date`),
   KEY `correlationid` (`correlation_id`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );

@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/negbie/heplify-server"
@@ -84,12 +83,12 @@ func connectString(dbName string) (string, error) {
 			// user:password@unix(/tmp/mysql.sock)/dbname?loc=Local
 			dsn = config.Setting.DBUser + ":" + config.Setting.DBPass +
 				"@unix(" + addr[1] + ")/" + dbName +
-				"?" + url.QueryEscape("charset=utf8mb4&parseTime=true")
+				"?collation=utf8mb4_unicode_ci&parseTime=true"
 		} else {
 			// user:password@tcp(localhost:5555)/dbname?tls=skip-verify&autocommit=true
 			dsn = config.Setting.DBUser + ":" + config.Setting.DBPass +
 				"@tcp(" + addr[0] + ":" + addr[1] + ")/" + dbName +
-				"?" + url.QueryEscape("charset=utf8mb4&parseTime=true")
+				"?collation=utf8mb4_unicode_ci&parseTime=true"
 		}
 	} else {
 		if dbName == "" {

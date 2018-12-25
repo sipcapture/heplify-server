@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `hep_proto_1_call_{{date}}` (
   PRIMARY KEY (`id`,`create_date`),
   KEY `create_date` (`create_date`),
   KEY `sid` (`sid`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `hep_proto_1_register_{{date}}` (
   PRIMARY KEY (`id`,`create_date`),
   KEY `create_date` (`create_date`),
   KEY `sid` (`sid`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 );
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `hep_proto_1_default_{{date}}` (
   PRIMARY KEY (`id`,`create_date`),
   KEY `create_date` (`create_date`),
   KEY `sid` (`sid`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 PARTITION BY RANGE ( UNIX_TIMESTAMP(`create_date`) ) (
     PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
 
