@@ -6,7 +6,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
-	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
@@ -332,8 +331,9 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 
 func (s *SQLHomer5) bulkInsert(q, v []byte, rows []interface{}) {
 	tblDate := time.Now().In(time.UTC).AppendFormat(q, "20060102")
-	query := make([]byte, 0, len(tblDate)+len(v))
-	query = append(tblDate, v...)
+	query := make([]byte, len(tblDate)+len(v))
+	tdl := copy(query, tblDate)
+	copy(query[tdl:], v)
 	_, err := s.db.Exec(string(query), rows...)
 	if err != nil {
 		logp.Err("%v", err)
@@ -348,21 +348,21 @@ func short(s string, i int) string {
 }
 
 func sipQueryVal(c int) []byte {
-	out := make([]byte, 0, c*len(sipPlaceholder)+len(sipVal)-1)
+	out := make([]byte, c*len(sipPlaceholder)+len(sipVal)-1)
+	bs := copy(out, sipVal)
 	for i := 0; i < c; i++ {
-		out = append(out, sipPlaceholder...)
+		bp := i * len(sipPlaceholder)
+		copy(out[bs+bp:], sipPlaceholder)
 	}
-	out = append(sipVal, out...)
-	out = out[:len(out)-1]
 	return out
 }
 
 func rtcQueryVal(c int) []byte {
-	out := make([]byte, 0, c*len(rtcPlaceholder)+len(rtcVal)-1)
+	out := make([]byte, c*len(rtcPlaceholder)+len(rtcVal)-1)
+	bs := copy(out, rtcVal)
 	for i := 0; i < c; i++ {
-		out = append(out, rtcPlaceholder...)
+		bp := i * len(rtcPlaceholder)
+		copy(out[bs+bp:], rtcPlaceholder)
 	}
-	out = append(rtcVal, out...)
-	out = out[:len(out)-1]
 	return out
 }

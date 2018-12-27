@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
