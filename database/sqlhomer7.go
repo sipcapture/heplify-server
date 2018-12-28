@@ -11,6 +11,7 @@ import (
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
+	"github.com/valyala/bytebufferpool"
 )
 
 type SQLHomer7 struct {
@@ -99,10 +100,12 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			}
 
 			date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
+			bpp := bytebufferpool.Get()
+			bpd := bytebufferpool.Get()
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-				pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID)
-				dHeader := makeSIPDataHeader(pkt, date)
+				pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID, bpp)
+				dHeader := makeSIPDataHeader(pkt, date, bpd)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
@@ -130,8 +133,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
-				pHeader := makeProtoHeader(pkt, "")
-				dHeader := makeRTCDataHeader(pkt, date)
+				pHeader := makeProtoHeader(pkt, "", bpp)
+				dHeader := makeRTCDataHeader(pkt, date, bpd)
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
@@ -169,6 +172,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			}
+			bytebufferpool.Put(bpp)
+			bytebufferpool.Put(bpd)
 		case <-timer.C:
 			timer.Reset(maxWait)
 			if callCnt > 0 {
@@ -263,8 +268,7 @@ func (s *SQLHomer7) bulkInsert(query string, rows []string) {
 	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }
 
-func makeProtoHeader(h *decoder.HEP, corrID string) string {
-	var sb strings.Builder
+func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"protocolFamily\":")
 	sb.WriteString(strconv.Itoa(int(h.Version)))
@@ -296,8 +300,7 @@ func makeProtoHeader(h *decoder.HEP, corrID string) string {
 	return sb.String()
 }
 
-func makeRTCDataHeader(h *decoder.HEP, date string) string {
-	var sb strings.Builder
+func makeRTCDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"create_date\":\"")
 	sb.WriteString(date)
@@ -307,8 +310,7 @@ func makeRTCDataHeader(h *decoder.HEP, date string) string {
 	return sb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, date string) string {
-	var sb strings.Builder
+func makeSIPDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"create_date\":\"")
 	sb.WriteString(date)

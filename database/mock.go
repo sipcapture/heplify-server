@@ -2,10 +2,10 @@ package database
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/valyala/bytebufferpool"
 )
 
 type Mock struct {
@@ -85,12 +85,14 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 			}
 
 			date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-
+			bpp := bytebufferpool.Get()
+			bpd := bytebufferpool.Get()
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				//pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID)
 				//dHeader := makeSIPDataHeader(pkt, date)
-				pHeader := makeProtoHeaderString(pkt, pkt.SIP.XCallID)
-				dHeader := makeSIPDataHeaderString(pkt, date)
+
+				pHeader := makeProtoHeaderString(pkt, pkt.SIP.XCallID, bpp)
+				dHeader := makeSIPDataHeaderString(pkt, date, bpd)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE":
 					callRows = addSIPRow(callRows)
@@ -116,6 +118,8 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			}
+			bytebufferpool.Put(bpp)
+			bytebufferpool.Put(bpd)
 		}
 	}
 }
@@ -128,8 +132,7 @@ func (m *Mock) bulkInsertString(query string, rows []string) {
 	m.db[query] = rows
 }
 
-func makeProtoHeaderString(h *decoder.HEP, corrID string) string {
-	var sb strings.Builder
+func makeProtoHeaderString(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"protocolFamily\":")
 	sb.WriteString(strconv.Itoa(int(h.Version)))
@@ -161,8 +164,7 @@ func makeProtoHeaderString(h *decoder.HEP, corrID string) string {
 	return sb.String()
 }
 
-func makeSIPDataHeaderString(h *decoder.HEP, date string) string {
-	var sb strings.Builder
+func makeSIPDataHeaderString(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"create_date\":\"")
 	sb.WriteString(date)

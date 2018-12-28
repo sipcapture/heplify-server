@@ -29,6 +29,7 @@ require (
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/stretchr/testify v1.2.2
+	github.com/valyala/bytebufferpool v1.0.0
 	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 )
