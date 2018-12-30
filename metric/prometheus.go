@@ -148,17 +148,14 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
 
 			if pkt.SIP != nil && pkt.ProtoType == 1 {
-				//p.trackTime(pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
-
+				var st, dt string
 				if !p.TargetEmpty {
-					st, ok := p.TargetMap[pkt.SrcIP]
+					var ok bool
+					st, ok = p.TargetMap[pkt.SrcIP]
 					if ok {
 						methodResponses.WithLabelValues(st, "src", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
-						if pkt.SIP.RTPStatVal != "" {
-							p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
-						}
 					}
-					dt, ok := p.TargetMap[pkt.DstIP]
+					dt, ok = p.TargetMap[pkt.DstIP]
 					if ok {
 						methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 					}
@@ -171,13 +168,13 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					if err != nil {
 						logp.Warn("%v", err)
 					}
+					methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+				}
 
-					methodResponses.WithLabelValues(
-						"", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+				p.requestDelay(st, dt, pkt.SrcIP, pkt.DstIP, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
 
-					if pkt.SIP.RTPStatVal != "" {
-						p.dissectXRTPStats("", pkt.SIP.RTPStatVal)
-					}
+				if pkt.SIP.RTPStatVal != "" {
+					p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
 				}
 				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
 					reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), nodeID).Inc()
@@ -195,7 +192,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	}
 }
 
-func (p *Prometheus) trackTime(cid, sm, cm string, ts time.Time) {
+func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts time.Time) {
 	for {
 		if strings.HasSuffix(cid, "_b2b-1") {
 			cid = cid[:len(cid)-6]
@@ -204,31 +201,37 @@ func (p *Prometheus) trackTime(cid, sm, cm string, ts time.Time) {
 		break
 	}
 
-	//TODO: handle only originating UA
+	//TODO: tweak performance avoid double lru add
 
 	if sm == "INVITE" && cm == "INVITE" {
 		_, ok := p.lruID.Get(cid)
 		if !ok {
 			p.lruID.Add(cid, ts)
+			p.lruID.Add(srcIP+cid, ts)
 		}
 	} else if sm == "REGISTER" && cm == "REGISTER" {
 		_, ok := p.lruID.Get(cid)
 		if !ok {
 			p.lruID.Add(cid, ts)
+			p.lruID.Add(srcIP+cid, ts)
 		}
 	}
 
 	if cm == "INVITE" && (sm == "180" || sm == "183" || sm == "200") {
-		t, ok := p.lruID.Get(cid)
+		did := dstIP + cid
+		t, ok := p.lruID.Get(did)
 		if ok {
-			logp.Info("SRD: %v", time.Now().Sub(t.(time.Time)))
+			srd.WithLabelValues(st, dt).Set(float64(time.Now().Sub(t.(time.Time))))
 			p.lruID.Remove(cid)
+			p.lruID.Remove(did)
 		}
 	} else if cm == "REGISTER" && sm == "200" {
-		t, ok := p.lruID.Get(cid)
+		did := dstIP + cid
+		t, ok := p.lruID.Get(did)
 		if ok {
-			logp.Info("RRD: %v", time.Now().Sub(t.(time.Time)))
+			rrd.WithLabelValues(st, dt).Set(float64(time.Now().Sub(t.(time.Time))))
 			p.lruID.Remove(cid)
+			p.lruID.Remove(did)
 		}
 	}
 }

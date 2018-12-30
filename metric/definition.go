@@ -23,6 +23,14 @@ var (
 		Name: "heplify_reason_isup_total",
 		Help: "ISUP Q.850 cause from reason header"},
 		[]string{"cause", "node_id"})
+	srd = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "heplify_kpi_srd",
+		Help: "SIP Session Request Delay KPI"},
+		[]string{"src_target_name", "dst_target_name"})
+	rrd = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "heplify_kpi_rrd",
+		Help: "SIP Registration Request Delay"},
+		[]string{"src_target_name", "dst_target_name"})
 
 	//X-RTP-Stat Metrics
 	xrtpCS = promauto.NewGaugeVec(prometheus.GaugeOpts{
