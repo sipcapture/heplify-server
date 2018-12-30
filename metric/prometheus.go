@@ -9,8 +9,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/coocood/freecache"
+	"github.com/hashicorp/golang-lru"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
@@ -23,7 +25,8 @@ type Prometheus struct {
 	TargetName      []string
 	TargetMap       map[string]string
 	TargetConf      *sync.RWMutex
-	Cache           *freecache.Cache
+	cache           *freecache.Cache
+	lruID           *lru.Cache
 	horaclifixPaths [][]string
 	rtpPaths        [][]string
 	rtcpPaths       [][]string
@@ -49,7 +52,7 @@ func (p *Prometheus) setup() (err error) {
 			p.TargetIP[0] = ""
 			p.TargetName[0] = ""
 			p.TargetEmpty = true
-			p.Cache = freecache.NewCache(60 * 1024 * 1024)
+			p.cache = freecache.NewCache(60 * 1024 * 1024)
 		} else {
 			for i := range p.TargetName {
 				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
@@ -114,6 +117,11 @@ func (p *Prometheus) setup() (err error) {
 		[]string{"report_blocks_xr", "end_system_delay"},
 	}
 
+	p.lruID, err = lru.New(1e6)
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		err = http.ListenAndServe(config.Setting.PromAddr, nil)
@@ -140,6 +148,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
 
 			if pkt.SIP != nil && pkt.ProtoType == 1 {
+				//p.trackTime(pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
+
 				if !p.TargetEmpty {
 					st, ok := p.TargetMap[pkt.SrcIP]
 					if ok {
@@ -153,11 +163,11 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 						methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 					}
 				} else {
-					_, err := p.Cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
+					_, err := p.cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
 					if err == nil {
 						continue
 					}
-					err = p.Cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
+					err = p.cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
 					if err != nil {
 						logp.Warn("%v", err)
 					}
@@ -181,6 +191,44 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			} else if pkt.ProtoType == 38 {
 				p.dissectHoraclifixStats([]byte(pkt.Payload))
 			}
+		}
+	}
+}
+
+func (p *Prometheus) trackTime(cid, sm, cm string, ts time.Time) {
+	for {
+		if strings.HasSuffix(cid, "_b2b-1") {
+			cid = cid[:len(cid)-6]
+			continue
+		}
+		break
+	}
+
+	//TODO: handle only originating UA
+
+	if sm == "INVITE" && cm == "INVITE" {
+		_, ok := p.lruID.Get(cid)
+		if !ok {
+			p.lruID.Add(cid, ts)
+		}
+	} else if sm == "REGISTER" && cm == "REGISTER" {
+		_, ok := p.lruID.Get(cid)
+		if !ok {
+			p.lruID.Add(cid, ts)
+		}
+	}
+
+	if cm == "INVITE" && (sm == "180" || sm == "183" || sm == "200") {
+		t, ok := p.lruID.Get(cid)
+		if ok {
+			logp.Info("SRD: %v", time.Now().Sub(t.(time.Time)))
+			p.lruID.Remove(cid)
+		}
+	} else if cm == "REGISTER" && sm == "200" {
+		t, ok := p.lruID.Get(cid)
+		if ok {
+			logp.Info("RRD: %v", time.Now().Sub(t.(time.Time)))
+			p.lruID.Remove(cid)
 		}
 	}
 }

@@ -13,6 +13,7 @@ require (
 	github.com/gogo/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
 	github.com/grafana/loki v0.0.0-20181220172923-22f5968d0dcd
+	github.com/hashicorp/golang-lru v0.5.0
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lib/pq v1.0.0
 	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329 // indirect
