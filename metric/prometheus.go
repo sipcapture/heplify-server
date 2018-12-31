@@ -221,7 +221,7 @@ func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts t
 		did := dstIP + cid
 		t, ok := p.lruID.Get(did)
 		if ok {
-			srd.WithLabelValues(st, dt).Set(float64(time.Now().Sub(t.(time.Time))))
+			srd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
 			p.lruID.Remove(cid)
 			p.lruID.Remove(did)
 		}
@@ -229,7 +229,7 @@ func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts t
 		did := dstIP + cid
 		t, ok := p.lruID.Get(did)
 		if ok {
-			rrd.WithLabelValues(st, dt).Set(float64(time.Now().Sub(t.(time.Time))))
+			rrd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
 			p.lruID.Remove(cid)
 			p.lruID.Remove(did)
 		}
