@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cespare/xxhash"
 	"github.com/coocood/freecache"
+	"github.com/hashicorp/golang-lru"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
@@ -26,6 +26,7 @@ type Prometheus struct {
 	TargetMap       map[string]string
 	TargetConf      *sync.RWMutex
 	cache           *freecache.Cache
+	lruID           *lru.Cache
 	horaclifixPaths [][]string
 	rtpPaths        [][]string
 	rtcpPaths       [][]string
@@ -51,6 +52,7 @@ func (p *Prometheus) setup() (err error) {
 			p.TargetIP[0] = ""
 			p.TargetName[0] = ""
 			p.TargetEmpty = true
+			p.cache = freecache.NewCache(60 * 1024 * 1024)
 		} else {
 			for i := range p.TargetName {
 				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
@@ -115,7 +117,10 @@ func (p *Prometheus) setup() (err error) {
 		[]string{"report_blocks_xr", "end_system_delay"},
 	}
 
-	p.cache = freecache.NewCache(80 * 1024 * 1024)
+	p.lruID, err = lru.New(1e6)
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -166,7 +171,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
 
-				p.requestDelay(st, dt, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
+				p.requestDelay(st, dt, pkt.SrcIP, pkt.DstIP, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
 
 				if pkt.SIP.RTPStatVal != "" {
 					p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
@@ -187,10 +192,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	}
 }
 
-func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
-	if !p.TargetEmpty && st == "" {
-		return
-	}
+func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts time.Time) {
 	for {
 		if strings.HasSuffix(cid, "_b2b-1") {
 			cid = cid[:len(cid)-6]
@@ -199,28 +201,37 @@ func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
 		break
 	}
 
-	if (sm == "INVITE" && cm == "INVITE") || (sm == "REGISTER" && cm == "REGISTER") {
-		sid := int64(xxhash.Sum64String(cid))
-		_, err := p.cache.GetInt(sid)
-		if err != nil {
-			err = p.cache.SetInt(sid, nil, 600)
-			if err != nil {
-				logp.Warn("%v", err)
-			}
-			err = p.cache.SetInt(int64(xxhash.Sum64String(st+cid)), encTimeByte(ts), 600)
-			if err != nil {
-				logp.Warn("%v", err)
-			}
+	//TODO: tweak performance avoid double lru add
+
+	if sm == "INVITE" && cm == "INVITE" {
+		_, ok := p.lruID.Get(cid)
+		if !ok {
+			p.lruID.Add(cid, ts)
+			p.lruID.Add(srcIP+cid, ts)
+		}
+	} else if sm == "REGISTER" && cm == "REGISTER" {
+		_, ok := p.lruID.Get(cid)
+		if !ok {
+			p.lruID.Add(cid, ts)
+			p.lruID.Add(srcIP+cid, ts)
 		}
 	}
 
-	if (cm == "INVITE" || cm == "REGISTER") && (sm == "180" || sm == "183" || sm == "200") {
-		did := dt + cid
-		v, err := p.cache.GetInt(int64(xxhash.Sum64String(did)))
-		if err == nil {
-			srd.WithLabelValues(st, dt).Set(float64(ts.Sub(decTimeByte(v))))
-			p.cache.DelInt(int64(xxhash.Sum64String(cid)))
-			p.cache.DelInt(int64(xxhash.Sum64String(did)))
+	if cm == "INVITE" && (sm == "180" || sm == "183" || sm == "200") {
+		did := dstIP + cid
+		t, ok := p.lruID.Get(did)
+		if ok {
+			srd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
+			p.lruID.Remove(cid)
+			p.lruID.Remove(did)
+		}
+	} else if cm == "REGISTER" && sm == "200" {
+		did := dstIP + cid
+		t, ok := p.lruID.Get(did)
+		if ok {
+			rrd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
+			p.lruID.Remove(cid)
+			p.lruID.Remove(did)
 		}
 	}
 }

@@ -105,7 +105,7 @@ services:
       org.label-schema.group: "monitoring"
 
   heplify-server:
-    image: sipcapture/heplify-server:testing
+    image: sipcapture/heplify-server:0.99
     container_name: heplify-server
     ports:
       - "9060:9060"
