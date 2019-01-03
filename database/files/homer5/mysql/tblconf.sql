@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `alias` (
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `host_2` (`ip`,`port`,`capture_id`),
   KEY `host` (`ip`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- name: create-group-table
 CREATE TABLE IF NOT EXISTS `group` (
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `node` (
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `host_2` (`host`),
   KEY `host` (`host`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- name: create-setting-table
 CREATE TABLE IF NOT EXISTS `setting` (

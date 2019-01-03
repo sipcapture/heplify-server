@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -245,6 +246,13 @@ func (h *HEP) parseSIP() error {
 	return nil
 }
 
+var fixUTF8 = func(r rune) rune {
+	if r == utf8.RuneError || r == '\x00' {
+		return -1
+	}
+	return r
+}
+
 func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
 		hashVal := int64(xxhash.Sum64String(h.SrcIP)) + int64(h.SrcPort) + int64(xxhash.Sum64String(h.Payload))
@@ -259,19 +267,7 @@ func (h *HEP) normPayload() {
 		}
 	}
 	if !utf8.ValidString(h.Payload) {
-		v := make([]rune, 0, len(h.Payload))
-		for i, r := range h.Payload {
-			if r == utf8.RuneError {
-				_, size := utf8.DecodeRuneInString(h.Payload[i:])
-				if size == 1 {
-					continue
-				}
-			} else if r == '\x00' {
-				continue
-			}
-			v = append(v, r)
-		}
-		h.Payload = string(v)
+		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
 }
 

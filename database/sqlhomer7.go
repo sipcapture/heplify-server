@@ -1,18 +1,17 @@
 package database
 
 import (
-	"bytes"
 	"database/sql"
 	"strconv"
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
+	"github.com/valyala/bytebufferpool"
 )
 
 type SQLHomer7 struct {
@@ -72,18 +71,13 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 	var (
 		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
-		pkt        *decoder.HEP
-		date       string
-		pHeader    []byte
-		dHeader    []byte
-		ok         bool
-		callRows   = make([]interface{}, 0, s.bulkCnt)
-		regRows    = make([]interface{}, 0, s.bulkCnt)
-		defRows    = make([]interface{}, 0, s.bulkCnt)
-		dnsRows    = make([]interface{}, 0, s.bulkCnt)
-		logRows    = make([]interface{}, 0, s.bulkCnt)
-		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
-		reportRows = make([]interface{}, 0, s.bulkCnt)
+		callRows   = make([]string, 0, s.bulkCnt)
+		regRows    = make([]string, 0, s.bulkCnt)
+		defRows    = make([]string, 0, s.bulkCnt)
+		dnsRows    = make([]string, 0, s.bulkCnt)
+		logRows    = make([]string, 0, s.bulkCnt)
+		rtcpRows   = make([]string, 0, s.bulkCnt)
+		reportRows = make([]string, 0, s.bulkCnt)
 		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
 	)
 
@@ -100,131 +94,135 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 
 	for {
 		select {
-		case pkt, ok = <-hCh:
+		case pkt, ok := <-hCh:
 			if !ok {
 				break
 			}
 
-			date = pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
+			date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
+			bpp := bytebufferpool.Get()
+			bpd := bytebufferpool.Get()
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-				pHeader = makeProtoHeader(pkt, pkt.SIP.XCallID)
-				dHeader = makeSIPDataHeader(pkt, date)
+				pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID, bpp)
+				dHeader := makeSIPDataHeader(pkt, date, bpd)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
-					callRows = append(callRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					callRows = append(callRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
 					if callCnt == s.bulkCnt {
 						s.bulkInsert(callCopy, callRows)
-						callRows = []interface{}{}
+						callRows = []string{}
 						callCnt = 0
 					}
 				case "REGISTER":
-					regRows = append(regRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					regRows = append(regRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					regCnt++
 					if regCnt == s.bulkCnt {
 						s.bulkInsert(registerCopy, regRows)
-						regRows = []interface{}{}
+						regRows = []string{}
 						regCnt = 0
 					}
 				default:
-					defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					defRows = append(defRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					defCnt++
 					if defCnt == s.bulkCnt {
 						s.bulkInsert(defaultCopy, defRows)
-						defRows = []interface{}{}
+						defRows = []string{}
 						defCnt = 0
 					}
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
-				pHeader = makeProtoHeader(pkt, "")
-				dHeader = makeRTCDataHeader(pkt, date)
+				pHeader := makeProtoHeader(pkt, "", bpp)
+				dHeader := makeRTCDataHeader(pkt, date, bpd)
 				switch pkt.ProtoType {
 				case 5:
-					rtcpRows = append(rtcpRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					rtcpCnt++
 					if rtcpCnt == s.bulkCnt {
 						s.bulkInsert(rtcpCopy, rtcpRows)
-						rtcpRows = []interface{}{}
+						rtcpRows = []string{}
 						rtcpCnt = 0
 					}
 				case 53:
-					dnsRows = append(dnsRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					dnsRows = append(dnsRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					dnsCnt++
 					if dnsCnt == s.bulkCnt {
 						s.bulkInsert(dnsCopy, dnsRows)
-						dnsRows = []interface{}{}
+						dnsRows = []string{}
 						dnsCnt = 0
 					}
 				case 100:
-					logRows = append(logRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
 					if logCnt == s.bulkCnt {
 						s.bulkInsert(logCopy, logRows)
-						logRows = []interface{}{}
+						logRows = []string{}
 						logCnt = 0
 					}
 				default:
 					stop()
 					timer.Reset(1e9)
-					reportRows = append(reportRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+					reportRows = append(reportRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					reportCnt++
 					if reportCnt == s.bulkCnt {
 						s.bulkInsert(reportCopy, reportRows)
-						reportRows = []interface{}{}
+						reportRows = []string{}
 						reportCnt = 0
 					}
 				}
 			}
+			bytebufferpool.Put(bpp)
+			bytebufferpool.Put(bpd)
 		case <-timer.C:
 			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
 				s.bulkInsert(callCopy, callRows[:l])
-				callRows = []interface{}{}
+				callRows = []string{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
 				s.bulkInsert(registerCopy, regRows[:l])
-				regRows = []interface{}{}
+				regRows = []string{}
 				regCnt = 0
 			}
 			if defCnt > 0 {
 				l := len(defRows)
 				s.bulkInsert(defaultCopy, defRows[:l])
-				defRows = []interface{}{}
+				defRows = []string{}
 				defCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
 				s.bulkInsert(rtcpCopy, rtcpRows[:l])
-				rtcpRows = []interface{}{}
+				rtcpRows = []string{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
 				s.bulkInsert(reportCopy, reportRows[:l])
-				reportRows = []interface{}{}
+				reportRows = []string{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
 				s.bulkInsert(dnsCopy, dnsRows[:l])
-				dnsRows = []interface{}{}
+				dnsRows = []string{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
 				s.bulkInsert(logCopy, logRows[:l])
-				logRows = []interface{}{}
+				logRows = []string{}
 				logCnt = 0
 			}
 		}
 	}
 }
 
-func (s *SQLHomer7) bulkInsert(query string, rows []interface{}) {
+func (s *SQLHomer7) bulkInsert(query string, rows []string) {
 	tx, err := s.db.Begin()
 	if err != nil || tx == nil {
 		logp.Err("%v", err)
@@ -260,11 +258,8 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}) {
 	err = tx.Commit()
 	if err != nil {
 		for i := 0; i < len(rows); i++ {
-			s, ok := rows[i].(string)
-			if ok {
-				if strings.Contains(s, "\x00") {
-					logp.Err("%q", s)
-				}
+			if strings.Contains(rows[i], "\x00") {
+				logp.Err("%q", rows[i])
 			}
 		}
 		logp.Err("%v", err)
@@ -273,73 +268,70 @@ func (s *SQLHomer7) bulkInsert(query string, rows []interface{}) {
 	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }
 
-func makeProtoHeader(h *decoder.HEP, corrID string) []byte {
-	var b bytes.Buffer
-	b.WriteString("{")
-	b.WriteString("\"protocolFamily\":")
-	b.WriteString(strconv.Itoa(int(h.Version)))
-	b.WriteString(",\"protocol\":")
-	b.WriteString(strconv.Itoa(int(h.Protocol)))
-	b.WriteString(",\"srcIp\":\"")
-	b.WriteString(h.SrcIP)
-	b.WriteString("\",\"dstIp\":\"")
-	b.WriteString(h.DstIP)
-	b.WriteString("\",\"srcPort\":")
-	b.WriteString(strconv.Itoa(int(h.SrcPort)))
-	b.WriteString(",\"dstPort\":")
-	b.WriteString(strconv.Itoa(int(h.DstPort)))
-	b.WriteString(",\"timeSeconds\":")
-	b.WriteString(strconv.Itoa(int(h.Tsec)))
-	b.WriteString(",\"timeUseconds\":")
-	b.WriteString(strconv.Itoa(int(h.Tmsec)))
-	b.WriteString(",\"payloadType\":")
-	b.WriteString(strconv.Itoa(int(h.ProtoType)))
-	b.WriteString(",\"captureId\":")
-	b.WriteString(strconv.Itoa(int(h.NodeID)))
-	b.WriteString(",\"capturePass\":\"")
-	b.WriteString(h.NodePW)
+func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffer) string {
+	sb.WriteString("{")
+	sb.WriteString("\"protocolFamily\":")
+	sb.WriteString(strconv.Itoa(int(h.Version)))
+	sb.WriteString(",\"protocol\":")
+	sb.WriteString(strconv.Itoa(int(h.Protocol)))
+	sb.WriteString(",\"srcIp\":\"")
+	sb.WriteString(h.SrcIP)
+	sb.WriteString("\",\"dstIp\":\"")
+	sb.WriteString(h.DstIP)
+	sb.WriteString("\",\"srcPort\":")
+	sb.WriteString(strconv.Itoa(int(h.SrcPort)))
+	sb.WriteString(",\"dstPort\":")
+	sb.WriteString(strconv.Itoa(int(h.DstPort)))
+	sb.WriteString(",\"timeSeconds\":")
+	sb.WriteString(strconv.Itoa(int(h.Tsec)))
+	sb.WriteString(",\"timeUseconds\":")
+	sb.WriteString(strconv.Itoa(int(h.Tmsec)))
+	sb.WriteString(",\"payloadType\":")
+	sb.WriteString(strconv.Itoa(int(h.ProtoType)))
+	sb.WriteString(",\"captureId\":")
+	sb.WriteString(strconv.Itoa(int(h.NodeID)))
+	sb.WriteString(",\"capturePass\":\"")
+	sb.WriteString(h.NodePW)
 	if corrID != "" {
-		b.WriteString("\",\"correlation_id\":\"")
-		b.WriteString(corrID)
+		sb.WriteString("\",\"correlation_id\":\"")
+		sb.WriteString(corrID)
 	}
-	b.WriteString("\"}")
-	return b.Bytes()
+	sb.WriteString("\"}")
+	return sb.String()
 }
 
-func makeRTCDataHeader(h *decoder.HEP, date string) []byte {
-	var b bytes.Buffer
-	b.WriteString("{")
-	b.WriteString("\"create_date\":\"")
-	b.WriteString(date)
-	b.WriteString("\",\"sid\":\"")
-	b.WriteString(h.CID)
-	b.WriteString("\"}")
-	return b.Bytes()
+func makeRTCDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
+	sb.WriteString("{")
+	sb.WriteString("\"create_date\":\"")
+	sb.WriteString(date)
+	sb.WriteString("\",\"sid\":\"")
+	sb.WriteString(h.CID)
+	sb.WriteString("\"}")
+	return sb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, date string) []byte {
-	var b bytes.Buffer
-	b.WriteString("{")
-	b.WriteString("\"create_date\":\"")
-	b.WriteString(date)
-	b.WriteString("\",\"ruri_user\":\"")
-	b.WriteString(h.SIP.StartLine.URI.User)
-	b.WriteString("\",\"from_user\":\"")
-	b.WriteString(h.SIP.FromUser)
-	b.WriteString("\",\"to_user\":\"")
-	b.WriteString(h.SIP.ToUser)
-	b.WriteString("\",\"pid_user\":\"")
-	b.WriteString(h.SIP.PaiUser)
-	b.WriteString("\",\"auth_user\":\"")
-	b.WriteString(h.SIP.AuthUser)
-	b.WriteString("\",\"sid\":\"")
-	b.WriteString(h.CID)
-	b.WriteString("\",\"method\":\"")
-	b.WriteString(h.SIP.StartLine.Method)
-	b.WriteString("\",\"source_ip\":\"")
-	b.WriteString(h.SrcIP)
-	b.WriteString("\",\"destination_ip\":\"")
-	b.WriteString(h.DstIP)
-	b.WriteString("\"}")
-	return b.Bytes()
+func makeSIPDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
+	sb.WriteString("{")
+	sb.WriteString("\"create_date\":\"")
+	sb.WriteString(date)
+	sb.WriteString("\",\"ruri_user\":\"")
+	sb.WriteString(h.SIP.StartLine.URI.User)
+	sb.WriteString("\",\"from_user\":\"")
+	sb.WriteString(h.SIP.FromUser)
+	sb.WriteString("\",\"to_user\":\"")
+	sb.WriteString(h.SIP.ToUser)
+	sb.WriteString("\",\"pid_user\":\"")
+	sb.WriteString(h.SIP.PaiUser)
+	sb.WriteString("\",\"auth_user\":\"")
+	sb.WriteString(h.SIP.AuthUser)
+	sb.WriteString("\",\"sid\":\"")
+	sb.WriteString(h.CID)
+	sb.WriteString("\",\"method\":\"")
+	sb.WriteString(h.SIP.StartLine.Method)
+	sb.WriteString("\",\"source_ip\":\"")
+	sb.WriteString(h.SrcIP)
+	sb.WriteString("\",\"destination_ip\":\"")
+	sb.WriteString(h.DstIP)
+	sb.WriteString("\"}")
+	return sb.String()
 }
