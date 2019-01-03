@@ -24,7 +24,6 @@ func (m *Mock) setup() error {
 func (m *Mock) insert(hCh chan *decoder.HEP) {
 	var (
 		pkt             *decoder.HEP
-		ok              bool
 		callCnt, defCnt int
 		callRows        = make([]interface{}, 0, m.bulkCnt)
 		defRows         = make([]interface{}, 0, m.bulkCnt)
@@ -77,50 +76,44 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		return r
 	}
 
-	for {
-		select {
-		case pkt, ok = <-hCh:
-			if !ok {
-				break
-			}
+	for pkt := range hCh {
+		date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
+		bpp := bytebufferpool.Get()
+		bpd := bytebufferpool.Get()
+		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+			//pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID)
+			//dHeader := makeSIPDataHeader(pkt, date)
 
-			date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-			bpp := bytebufferpool.Get()
-			bpd := bytebufferpool.Get()
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-				//pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID)
-				//dHeader := makeSIPDataHeader(pkt, date)
+			pHeader := makeProtoHeaderString(pkt, pkt.SIP.XCallID, bpp)
+			dHeader := makeSIPDataHeaderString(pkt, date, bpd)
+			switch pkt.SIP.CseqMethod {
+			case "INVITE":
+				callRows = addSIPRow(callRows)
+				callCnt++
+				if callCnt == m.bulkCnt {
+					m.bulkInsert(callCopy, callRows)
+					callRows = []interface{}{}
+					callCnt = 0
+				}
 
-				pHeader := makeProtoHeaderString(pkt, pkt.SIP.XCallID, bpp)
-				dHeader := makeSIPDataHeaderString(pkt, date, bpd)
-				switch pkt.SIP.CseqMethod {
-				case "INVITE":
-					callRows = addSIPRow(callRows)
-					callCnt++
-					if callCnt == m.bulkCnt {
-						m.bulkInsert(callCopy, callRows)
-						callRows = []interface{}{}
-						callCnt = 0
-					}
+			default:
+				//defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
+				defRowsString = append(defRowsString, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 
-				default:
-					//defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
-					defRowsString = append(defRowsString, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+				defCnt++
+				if defCnt == m.bulkCnt {
+					//m.bulkInsert(defaultCopy, defRows)
+					m.bulkInsertString(defaultCopy, defRowsString)
 
-					defCnt++
-					if defCnt == m.bulkCnt {
-						//m.bulkInsert(defaultCopy, defRows)
-						m.bulkInsertString(defaultCopy, defRowsString)
-
-						defRows = []interface{}{}
-						defRowsString = []string{}
-						defCnt = 0
-					}
+					defRows = []interface{}{}
+					defRowsString = []string{}
+					defCnt = 0
 				}
 			}
-			bytebufferpool.Put(bpp)
-			bytebufferpool.Put(bpd)
 		}
+		bytebufferpool.Put(bpp)
+		bytebufferpool.Put(bpd)
+
 	}
 }
 

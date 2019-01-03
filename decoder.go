@@ -238,9 +238,9 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.CseqMethod) < 3 {
-		return errors.New("Could not find a valid CSeq in packet")
+		return errors.New("could not find a valid CSeq in packet")
 	} else if len(h.SIP.CallID) < 1 {
-		return errors.New("Could not find a valid Call-ID in packet")
+		return errors.New("could not find a valid Call-ID in packet")
 	}
 	h.CID = h.SIP.CallID
 	return nil
