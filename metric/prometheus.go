@@ -117,7 +117,7 @@ func (p *Prometheus) setup() (err error) {
 		[]string{"report_blocks_xr", "end_system_delay"},
 	}
 
-	p.lruID, err = lru.New(1e6)
+	p.lruID, err = lru.New(1e5)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
 
-				p.requestDelay(st, dt, pkt.SrcIP, pkt.DstIP, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
+				p.requestDelay(st, dt, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
 
 				if pkt.SIP.RTPStatVal != "" {
 					p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
@@ -192,7 +192,10 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	}
 }
 
-func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts time.Time) {
+func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
+	if !p.TargetEmpty && st == "" {
+		return
+	}
 	for {
 		if strings.HasSuffix(cid, "_b2b-1") {
 			cid = cid[:len(cid)-6]
@@ -202,34 +205,23 @@ func (p *Prometheus) requestDelay(st, dt, srcIP, dstIP, cid, sm, cm string, ts t
 	}
 
 	//TODO: tweak performance avoid double lru add
-
-	if sm == "INVITE" && cm == "INVITE" {
+	if (sm == "INVITE" && cm == "INVITE") || (sm == "REGISTER" && cm == "REGISTER") {
 		_, ok := p.lruID.Get(cid)
 		if !ok {
 			p.lruID.Add(cid, ts)
-			p.lruID.Add(srcIP+cid, ts)
-		}
-	} else if sm == "REGISTER" && cm == "REGISTER" {
-		_, ok := p.lruID.Get(cid)
-		if !ok {
-			p.lruID.Add(cid, ts)
-			p.lruID.Add(srcIP+cid, ts)
+			p.lruID.Add(st+cid, ts)
 		}
 	}
 
-	if cm == "INVITE" && (sm == "180" || sm == "183" || sm == "200") {
-		did := dstIP + cid
+	if (cm == "INVITE" || cm == "REGISTER") && (sm == "180" || sm == "183" || sm == "200") {
+		did := dt + cid
 		t, ok := p.lruID.Get(did)
 		if ok {
-			srd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
-			p.lruID.Remove(cid)
-			p.lruID.Remove(did)
-		}
-	} else if cm == "REGISTER" && sm == "200" {
-		did := dstIP + cid
-		t, ok := p.lruID.Get(did)
-		if ok {
-			rrd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
+			if cm == "INVITE" {
+				srd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
+			} else {
+				rrd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
+			}
 			p.lruID.Remove(cid)
 			p.lruID.Remove(did)
 		}
