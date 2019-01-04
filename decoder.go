@@ -34,7 +34,7 @@ var (
 	hepLen10 = []byte{0x00, 0x0a}
 	chunck16 = []byte{0x00, 0x00}
 	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
-	dedup    = freecache.NewCache(10 * 1024 * 1024)
+	dedup    = freecache.NewCache(20 * 1024 * 1024)
 )
 
 // HEP chuncks
@@ -261,7 +261,7 @@ func (h *HEP) normPayload() {
 			h.ProtoType = 0
 			return
 		}
-		err = dedup.SetInt(hashVal, nil, 1)
+		err = dedup.SetInt(hashVal, nil, 2)
 		if err != nil {
 			logp.Warn("%v", err)
 		}

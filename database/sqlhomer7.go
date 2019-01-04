@@ -29,8 +29,8 @@ const (
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
 
-var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
-var queryValCnt = 5
+//var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
+//var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)

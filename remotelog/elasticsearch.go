@@ -74,7 +74,7 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 		ok  bool
 	)
 
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ticker := time.NewTicker(12 * time.Hour)
 
@@ -93,7 +93,10 @@ func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
 			}
 		case <-c:
 			logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
-			e.bulkClient.Flush()
+			err := e.bulkClient.Flush()
+			if err != nil {
+				logp.Warn("%v", err)
+			}
 		}
 	}
 }
