@@ -8,7 +8,7 @@ import (
 
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/valyala/bytebufferpool"

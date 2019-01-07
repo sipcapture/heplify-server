@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/olivere/elastic"

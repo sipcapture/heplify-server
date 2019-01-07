@@ -1,13 +1,11 @@
-
 //line machine.rl:1
 package metric
 
 import (
-  "strings"
+	"strings"
 )
 
 // ragel -G2 -Z machine.rl
-
 
 //line machine.go:13
 const metric_start int = 1
@@ -16,43 +14,40 @@ const metric_error int = 0
 
 const metric_en_main int = 1
 
-
 //line machine.rl:12
 
-
 func extractXR(vq, data string) (s string) {
-  if numPos := strings.Index(data, vq); numPos >= 0 {
-      numPos += len(vq)
-      data = data[numPos:]
-  } else {
-      return s
-  }
+	if numPos := strings.Index(data, vq); numPos >= 0 {
+		numPos += len(vq)
+		data = data[numPos:]
+	} else {
+		return s
+	}
 
-  cs, p, pe, eof := 0, 0, len(data), len(data)
-  mark := 0
+	cs, p, pe, eof := 0, 0, len(data), len(data)
+	mark := 0
 
-  
 //line machine.go:36
 	{
-	cs = metric_start
+		cs = metric_start
 	}
 
 //line machine.go:41
 	{
-	if p == pe {
-		goto _test_eof
-	}
-	switch cs {
-	case 1:
-		goto st_case_1
-	case 2:
-		goto st_case_2
-	case 3:
-		goto st_case_3
-	case 0:
-		goto st_case_0
-	}
-	goto st_out
+		if p == pe {
+			goto _test_eof
+		}
+		switch cs {
+		case 1:
+			goto st_case_1
+		case 2:
+			goto st_case_2
+		case 3:
+			goto st_case_3
+		case 0:
+			goto st_case_0
+		}
+		goto st_out
 	st_case_1:
 		switch data[p] {
 		case 13:
@@ -66,12 +61,12 @@ func extractXR(vq, data string) (s string) {
 			goto tr1
 		}
 		goto tr0
-tr0:
+	tr0:
 //line machine.rl:26
 
-		  mark = p
-		
-	goto st2
+		mark = p
+
+		goto st2
 	st2:
 		if p++; p == pe {
 			goto _test_eof2
@@ -90,26 +85,26 @@ tr0:
 			goto tr3
 		}
 		goto st2
-tr1:
+	tr1:
 //line machine.rl:26
 
-		  mark = p
-		
+		mark = p
+
 //line machine.rl:30
 
-		  s = data[mark:p]
-		
+		s = data[mark:p]
+
 //line machine.rl:37
- return s 
-	goto st3
-tr3:
+		return s
+		goto st3
+	tr3:
 //line machine.rl:30
 
-		  s = data[mark:p]
-		
+		s = data[mark:p]
+
 //line machine.rl:37
- return s 
-	goto st3
+		return s
+		goto st3
 	st3:
 		if p++; p == pe {
 			goto _test_eof3
@@ -117,40 +112,47 @@ tr3:
 	st_case_3:
 //line machine.go:119
 		goto st0
-st_case_0:
+	st_case_0:
 	st0:
 		cs = 0
 		goto _out
 	st_out:
-	_test_eof2: cs = 2; goto _test_eof
-	_test_eof3: cs = 3; goto _test_eof
+	_test_eof2:
+		cs = 2
+		goto _test_eof
+	_test_eof3:
+		cs = 3
+		goto _test_eof
 
-	_test_eof: {}
-	if p == eof {
-		switch cs {
-		case 2:
+	_test_eof:
+		{
+		}
+		if p == eof {
+			switch cs {
+			case 2:
 //line machine.rl:30
 
-		  s = data[mark:p]
-		
-		case 1:
+				s = data[mark:p]
+
+			case 1:
 //line machine.rl:26
 
-		  mark = p
-		
+				mark = p
+
 //line machine.rl:30
 
-		  s = data[mark:p]
-		
+				s = data[mark:p]
+
 //line machine.go:146
+			}
+		}
+
+	_out:
+		{
 		}
 	}
 
-	_out: {}
-	}
-
 //line machine.rl:41
-
 
 	return s
 }

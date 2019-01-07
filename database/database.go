@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 )
 

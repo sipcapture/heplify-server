@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 )
 
@@ -35,7 +35,7 @@ var VQSessionReport = `VQSessionReport: CallTerm
 
 func init() {
 	config.Setting.PromAddr = ":9999"
-	config.Setting.PromTargetName = "test1,test2"
+	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	go func() {
 		metric := New("prometheus")

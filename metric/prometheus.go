@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
-	"github.com/hashicorp/golang-lru"
-	"github.com/negbie/heplify-server"
+	lru "github.com/hashicorp/golang-lru"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -142,6 +142,14 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			var st, dt string
+			cid := pkt.SIP.CallID
+			for {
+				if strings.HasSuffix(cid, "_b2b-1") {
+					cid = cid[:len(cid)-6]
+					continue
+				}
+				break
+			}
 			if !p.TargetEmpty {
 				var ok bool
 				st, ok = p.TargetMap[pkt.SrcIP]
@@ -153,18 +161,18 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
 			} else {
-				_, err := p.cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
+				_, err := p.cache.Get([]byte(cid + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
 				if err == nil {
 					continue
 				}
-				err = p.cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
+				err = p.cache.Set([]byte(cid+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
 				if err != nil {
 					logp.Warn("%v", err)
 				}
 				methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 			}
 
-			p.requestDelay(st, dt, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
+			p.requestDelay(st, dt, cid, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
 
 			if pkt.SIP.RTPStatVal != "" {
 				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
@@ -187,13 +195,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
 	if !p.TargetEmpty && st == "" {
 		return
-	}
-	for {
-		if strings.HasSuffix(cid, "_b2b-1") {
-			cid = cid[:len(cid)-6]
-			continue
-		}
-		break
 	}
 
 	//TODO: tweak performance avoid double lru add

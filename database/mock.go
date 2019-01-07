@@ -3,7 +3,7 @@ package database
 import (
 	"strconv"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/valyala/bytebufferpool"
 )
