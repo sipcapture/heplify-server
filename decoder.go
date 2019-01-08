@@ -27,14 +27,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	hepVer   = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
-	hepLen   = []byte{0x00, 0x00}
-	hepLen7  = []byte{0x00, 0x07}
-	hepLen8  = []byte{0x00, 0x08}
-	hepLen10 = []byte{0x00, 0x0a}
-	chunck16 = []byte{0x00, 0x00}
-	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
-	dedup    = freecache.NewCache(20 * 1024 * 1024)
+	hepVer = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
+	dedup  = freecache.NewCache(20 * 1024 * 1024)
 )
 
 // HEP chuncks

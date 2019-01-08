@@ -1,5 +1,17 @@
--- name: index-call-date
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_date ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'create_date'));
+-- name: index-call-create_date
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_create_date ON hep_proto_1_call_{{date}}_{{time}} (create_date);
+-- name: index-call-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_sid ON hep_proto_1_call_{{date}}_{{time}} (sid);
+
+-- name: index-call-srcIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_srcIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'srcIp'));
+-- name: index-call-dstIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_dstIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'dstIp'));
+-- name: index-call-payloadType
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_payloadType ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'payloadType'));
+
+-- name: index-call-cseq
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_cseq ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'cseq'));
 -- name: index-call-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-call-from_user
@@ -10,17 +22,27 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_to_user ON hep_pro
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_pid_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'pid_user'));
 -- name: index-call-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_auth_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'auth_user'));
--- name: index-call-sid
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_sid ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'sid'));
+-- name: index-call-callid
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_callid ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'callid'));
 -- name: index-call-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_method ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'method'));
--- name: index-call-source_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_source_ip ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'source_ip'));
--- name: index-call-destination_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_destination_ip ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'destination_ip'));
 
--- name: index-register-date
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_date ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'create_date'));
+
+
+-- name: index-register-create_date
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_create_date ON hep_proto_1_register_{{date}}_{{time}} (create_date);
+-- name: index-register-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_sid ON hep_proto_1_register_{{date}}_{{time}} (sid);
+
+-- name: index-register-srcIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_srcIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'srcIp'));
+-- name: index-register-dstIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_dstIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'dstIp'));
+-- name: index-register-payloadType
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_payloadType ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'payloadType'));
+
+-- name: index-register-cseq
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_cseq ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'cseq'));
 -- name: index-register-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_ruri_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-register-from_user
@@ -31,17 +53,27 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_to_user ON hep
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_pid_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'pid_user'));
 -- name: index-register-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_auth_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'auth_user'));
--- name: index-register-sid
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_sid ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'sid'));
+-- name: index-register-callid
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_callid ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'callid'));
 -- name: index-register-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_method ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'method'));
--- name: index-register-source_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_source_ip ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'source_ip'));
--- name: index-register-destination_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_destination_ip ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'destination_ip'));
 
--- name: index-default-date
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_date ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'create_date'));
+
+
+-- name: index-default-create_date
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_create_date ON hep_proto_1_default_{{date}}_{{time}} (create_date);
+-- name: index-default-sid
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_sid ON hep_proto_1_default_{{date}}_{{time}} (sid);
+
+-- name: index-default-srcIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_srcIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'srcIp'));
+-- name: index-default-dstIp
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_dstIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'dstIp'));
+-- name: index-default-payloadType
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_payloadType ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'payloadType'));
+
+-- name: index-default-cseq
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_cseq ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'cseq'));
 -- name: index-default-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-default-from_user
@@ -52,11 +84,8 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_to_user ON hep_
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_pid_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'pid_user'));
 -- name: index-default-auth_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_auth_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'auth_user'));
--- name: index-default-sid
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_sid ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'sid'));
+-- name: index-default-callid
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_callid ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'callid'));
 -- name: index-default-method
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_method ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'method'));
--- name: index-default-source_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_source_ip ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'source_ip'));
--- name: index-default-destination_ip
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_destination_ip ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'destination_ip'));
+
