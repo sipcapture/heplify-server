@@ -7,5 +7,5 @@ CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_sid ON hep_pr
 CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_srcIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-logs-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_dstIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-logs-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_payloadType ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-logs-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_correlation_id ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));
