@@ -7,8 +7,8 @@ CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_sid ON hep_pro
 CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_srcIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-report-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_dstIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-report-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_payloadType ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-report-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_correlation_id ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));
 
 
 
@@ -21,5 +21,5 @@ CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_sid ON hep_prot
 CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_srcIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-rtcp-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_dstIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-rtcp-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_payloadType ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-rtcp-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_correlation_id ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));

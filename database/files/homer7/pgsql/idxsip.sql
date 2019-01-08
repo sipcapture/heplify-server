@@ -7,11 +7,11 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_sid ON hep_proto_1
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_srcIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-call-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_dstIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-call-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_payloadType ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-call-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_correlation_id ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'correlation_id'));
 
--- name: index-call-cseq
-CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_cseq ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'cseq'));
+-- name: index-call-ruri_domain
+CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_domain ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'ruri_domain'));
 -- name: index-call-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-call-from_user
@@ -38,11 +38,11 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_sid ON hep_pro
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_srcIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-register-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_dstIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-register-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_payloadType ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-register-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_correlation_id ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'correlation_id'));
 
--- name: index-register-cseq
-CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_cseq ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'cseq'));
+-- name: index-register-ruri_domain
+CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_ruri_domain ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'ruri_domain'));
 -- name: index-register-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_ruri_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-register-from_user
@@ -69,11 +69,11 @@ CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_sid ON hep_prot
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_srcIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'srcIp'));
 -- name: index-default-dstIp
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_dstIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'dstIp'));
--- name: index-default-payloadType
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_payloadType ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'payloadType'));
+-- name: index-default-correlation_id
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_correlation_id ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));
 
--- name: index-default-cseq
-CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_cseq ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'cseq'));
+-- name: index-default-ruri_domain
+CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_domain ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'ruri_domain'));
 -- name: index-default-ruri_user
 CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'ruri_user'));
 -- name: index-default-from_user

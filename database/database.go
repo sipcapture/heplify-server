@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	decoder "github.com/negbie/heplify-server"
@@ -40,6 +41,7 @@ func New(name string) *Database {
 func (d *Database) Run() error {
 	driver := config.Setting.DBDriver
 	shema := config.Setting.DBShema
+	worker := config.Setting.DBWorker
 	if driver != "mysql" && driver != "postgres" && driver != "mock" {
 		return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
 	}
@@ -58,7 +60,11 @@ func (d *Database) Run() error {
 		return err
 	}
 
-	for i := 0; i < config.Setting.DBWorker; i++ {
+	if worker > runtime.NumCPU() {
+		worker = runtime.NumCPU()
+	}
+
+	for i := 0; i < worker; i++ {
 		go func() {
 			d.DBH.insert(d.Chan)
 		}()

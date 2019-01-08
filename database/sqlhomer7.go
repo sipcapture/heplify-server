@@ -312,8 +312,8 @@ func makeRTCDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffe
 
 func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
-	sb.WriteString("\"cseq\":\"")
-	sb.WriteString(h.SIP.CseqMethod)
+	sb.WriteString("\"ruri_domain\":\"")
+	sb.WriteString(h.SIP.StartLine.URI.Host)
 	sb.WriteString("\",\"ruri_user\":\"")
 	sb.WriteString(h.SIP.StartLine.URI.User)
 	sb.WriteString("\",\"from_user\":\"")
