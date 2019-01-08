@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 )
 
@@ -41,10 +41,10 @@ func (d *Database) Run() error {
 	driver := config.Setting.DBDriver
 	shema := config.Setting.DBShema
 	if driver != "mysql" && driver != "postgres" && driver != "mock" {
-		return fmt.Errorf("Invalid DBDriver: %s, please use mysql or postgres", driver)
+		return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
 	}
 	if shema != "homer5" && shema != "homer7" && shema != "mock" {
-		return fmt.Errorf("Invalid DBShema: %s, please use homer5 or homer7", shema)
+		return fmt.Errorf("invalid DBShema: %s, please use homer5 or homer7", shema)
 	}
 	if shema == "homer5" && driver != "mysql" {
 		return fmt.Errorf("homer5 has only mysql support")

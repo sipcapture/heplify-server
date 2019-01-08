@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
 	"github.com/negbie/heplify-server/metric"
@@ -359,7 +359,7 @@ OUT:
 			select {
 			case h.dbCh <- hepPkt:
 			default:
-				if time.Now().Sub(lastWarn) > 5e8 {
+				if time.Since(lastWarn) > 5e8 {
 					logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 				}
 				lastWarn = time.Now()
@@ -370,7 +370,7 @@ OUT:
 			select {
 			case h.pmCh <- hepPkt:
 			default:
-				if time.Now().Sub(lastWarn) > 5e8 {
+				if time.Since(lastWarn) > 5e8 {
 					logp.Warn("overflowing metric channel")
 				}
 				lastWarn = time.Now()
@@ -381,7 +381,7 @@ OUT:
 			select {
 			case h.mqCh <- append([]byte{}, msg...):
 			default:
-				if time.Now().Sub(lastWarn) > 5e8 {
+				if time.Since(lastWarn) > 5e8 {
 					logp.Warn("overflowing queue channel")
 				}
 				lastWarn = time.Now()
@@ -392,7 +392,7 @@ OUT:
 			select {
 			case h.esCh <- hepPkt:
 			default:
-				if time.Now().Sub(lastWarn) > 5e8 {
+				if time.Since(lastWarn) > 5e8 {
 					logp.Warn("overflowing elasticsearch channel")
 				}
 				lastWarn = time.Now()
@@ -403,7 +403,7 @@ OUT:
 			select {
 			case h.lkCh <- hepPkt:
 			default:
-				if time.Now().Sub(lastWarn) > 5e8 {
+				if time.Since(lastWarn) > 5e8 {
 					logp.Warn("overflowing loki channel")
 				}
 				lastWarn = time.Now()
@@ -414,19 +414,16 @@ OUT:
 
 func (h *HEPInput) logStats() {
 	ticker := time.NewTicker(5 * time.Minute)
-	for {
-		select {
-		case <-ticker.C:
-			logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Duplicate: %d, Error: %d",
-				atomic.LoadUint64(&h.stats.PktCount)/300,
-				atomic.LoadUint64(&h.stats.HEPCount),
-				atomic.LoadUint64(&h.stats.DupCount),
-				atomic.LoadUint64(&h.stats.ErrCount),
-			)
-			atomic.StoreUint64(&h.stats.PktCount, 0)
-			atomic.StoreUint64(&h.stats.HEPCount, 0)
-			atomic.StoreUint64(&h.stats.DupCount, 0)
-			atomic.StoreUint64(&h.stats.ErrCount, 0)
-		}
+	for range ticker.C {
+		logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Duplicate: %d, Error: %d",
+			atomic.LoadUint64(&h.stats.PktCount)/300,
+			atomic.LoadUint64(&h.stats.HEPCount),
+			atomic.LoadUint64(&h.stats.DupCount),
+			atomic.LoadUint64(&h.stats.ErrCount),
+		)
+		atomic.StoreUint64(&h.stats.PktCount, 0)
+		atomic.StoreUint64(&h.stats.HEPCount, 0)
+		atomic.StoreUint64(&h.stats.DupCount, 0)
+		atomic.StoreUint64(&h.stats.ErrCount, 0)
 	}
 }

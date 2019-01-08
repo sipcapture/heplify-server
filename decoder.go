@@ -27,14 +27,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	hepVer   = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
-	hepLen   = []byte{0x00, 0x00}
-	hepLen7  = []byte{0x00, 0x07}
-	hepLen8  = []byte{0x00, 0x08}
-	hepLen10 = []byte{0x00, 0x0a}
-	chunck16 = []byte{0x00, 0x00}
-	chunck32 = []byte{0x00, 0x00, 0x00, 0x00}
-	dedup    = freecache.NewCache(10 * 1024 * 1024)
+	hepVer = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
+	dedup  = freecache.NewCache(20 * 1024 * 1024)
 )
 
 // HEP chuncks
@@ -238,9 +232,9 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.CseqMethod) < 3 {
-		return errors.New("Could not find a valid CSeq in packet")
+		return errors.New("could not find a valid CSeq in packet")
 	} else if len(h.SIP.CallID) < 1 {
-		return errors.New("Could not find a valid Call-ID in packet")
+		return errors.New("could not find a valid Call-ID in packet")
 	}
 	h.CID = h.SIP.CallID
 	return nil
@@ -261,7 +255,7 @@ func (h *HEP) normPayload() {
 			h.ProtoType = 0
 			return
 		}
-		err = dedup.SetInt(hashVal, nil, 1)
+		err = dedup.SetInt(hashVal, nil, 2)
 		if err != nil {
 			logp.Warn("%v", err)
 		}

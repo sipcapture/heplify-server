@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
-	"github.com/hashicorp/golang-lru"
-	"github.com/negbie/heplify-server"
+	lru "github.com/hashicorp/golang-lru"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -133,61 +133,61 @@ func (p *Prometheus) setup() (err error) {
 }
 
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
+	for pkt := range hCh {
+		nodeID := strconv.Itoa(int(pkt.NodeID))
+		labelType := decoder.HEPTypeString(pkt.ProtoType)
 
-	for {
-		select {
-		case pkt, ok := <-hCh:
-			if !ok {
+		packetsByType.WithLabelValues(labelType).Inc()
+		packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
+
+		if pkt.SIP != nil && pkt.ProtoType == 1 {
+			var st, dt string
+			cid := pkt.SIP.CallID
+			for {
+				if strings.HasSuffix(cid, "_b2b-1") {
+					cid = cid[:len(cid)-6]
+					continue
+				}
 				break
 			}
-
-			nodeID := strconv.Itoa(int(pkt.NodeID))
-			labelType := decoder.HEPTypeString(pkt.ProtoType)
-
-			packetsByType.WithLabelValues(labelType).Inc()
-			packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
-
-			if pkt.SIP != nil && pkt.ProtoType == 1 {
-				var st, dt string
-				if !p.TargetEmpty {
-					var ok bool
-					st, ok = p.TargetMap[pkt.SrcIP]
-					if ok {
-						methodResponses.WithLabelValues(st, "src", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
-					}
-					dt, ok = p.TargetMap[pkt.DstIP]
-					if ok {
-						methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
-					}
-				} else {
-					_, err := p.cache.Get([]byte(pkt.SIP.CallID + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
-					if err == nil {
-						continue
-					}
-					err = p.cache.Set([]byte(pkt.SIP.CallID+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
-					if err != nil {
-						logp.Warn("%v", err)
-					}
-					methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+			if !p.TargetEmpty {
+				var ok bool
+				st, ok = p.TargetMap[pkt.SrcIP]
+				if ok {
+					methodResponses.WithLabelValues(st, "src", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
-
-				p.requestDelay(st, dt, pkt.SIP.CallID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
-
-				if pkt.SIP.RTPStatVal != "" {
-					p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
+				dt, ok = p.TargetMap[pkt.DstIP]
+				if ok {
+					methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
-				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-					reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), nodeID).Inc()
+			} else {
+				_, err := p.cache.Get([]byte(cid + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
+				if err == nil {
+					continue
 				}
-			} else if pkt.ProtoType == 5 {
-				p.dissectRTCPStats(nodeID, []byte(pkt.Payload))
-			} else if pkt.ProtoType == 34 {
-				p.dissectRTPStats(nodeID, []byte(pkt.Payload))
-			} else if pkt.ProtoType == 35 {
-				p.dissectRTCPXRStats(nodeID, pkt.Payload)
-			} else if pkt.ProtoType == 38 {
-				p.dissectHoraclifixStats([]byte(pkt.Payload))
+				err = p.cache.Set([]byte(cid+pkt.SIP.StartLine.Method+pkt.SIP.CseqMethod), nil, 600)
+				if err != nil {
+					logp.Warn("%v", err)
+				}
+				methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 			}
+
+			p.requestDelay(st, dt, cid, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
+
+			if pkt.SIP.RTPStatVal != "" {
+				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
+			}
+			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
+				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), nodeID).Inc()
+			}
+		} else if pkt.ProtoType == 5 {
+			p.dissectRTCPStats(nodeID, []byte(pkt.Payload))
+		} else if pkt.ProtoType == 34 {
+			p.dissectRTPStats(nodeID, []byte(pkt.Payload))
+		} else if pkt.ProtoType == 35 {
+			p.dissectRTCPXRStats(nodeID, pkt.Payload)
+		} else if pkt.ProtoType == 38 {
+			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		}
 	}
 }
@@ -195,13 +195,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
 	if !p.TargetEmpty && st == "" {
 		return
-	}
-	for {
-		if strings.HasSuffix(cid, "_b2b-1") {
-			cid = cid[:len(cid)-6]
-			continue
-		}
-		break
 	}
 
 	//TODO: tweak performance avoid double lru add

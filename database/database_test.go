@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 )
 

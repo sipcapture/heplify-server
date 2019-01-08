@@ -8,7 +8,7 @@ import (
 
 	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
-	"github.com/negbie/heplify-server"
+	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/valyala/bytebufferpool"
@@ -29,8 +29,8 @@ const (
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
 
-var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
-var queryValCnt = 5
+//var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
+//var queryValCnt = 5
 
 func (s *SQLHomer7) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)
@@ -99,13 +99,13 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				break
 			}
 
-			date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
+			date := pkt.Timestamp.Format(time.RFC3339Nano)
 			bpp := bytebufferpool.Get()
 			bpd := bytebufferpool.Get()
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID, bpp)
-				dHeader := makeSIPDataHeader(pkt, date, bpd)
+				dHeader := makeSIPDataHeader(pkt, bpd)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
@@ -310,10 +310,10 @@ func makeRTCDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffe
 	return sb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
+func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
-	sb.WriteString("\"create_date\":\"")
-	sb.WriteString(date)
+	sb.WriteString("\"cseq\":\"")
+	sb.WriteString(h.SIP.CseqMethod)
 	sb.WriteString("\",\"ruri_user\":\"")
 	sb.WriteString(h.SIP.StartLine.URI.User)
 	sb.WriteString("\",\"from_user\":\"")
@@ -324,14 +324,14 @@ func makeSIPDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffe
 	sb.WriteString(h.SIP.PaiUser)
 	sb.WriteString("\",\"auth_user\":\"")
 	sb.WriteString(h.SIP.AuthUser)
-	sb.WriteString("\",\"sid\":\"")
-	sb.WriteString(h.CID)
+	sb.WriteString("\",\"callid\":\"")
+	sb.WriteString(h.SIP.CallID)
 	sb.WriteString("\",\"method\":\"")
 	sb.WriteString(h.SIP.StartLine.Method)
-	sb.WriteString("\",\"source_ip\":\"")
-	sb.WriteString(h.SrcIP)
-	sb.WriteString("\",\"destination_ip\":\"")
-	sb.WriteString(h.DstIP)
+	sb.WriteString("\",\"from_tag\":\"")
+	sb.WriteString(h.SIP.FromTag)
+	sb.WriteString("\",\"to_tag\":\"")
+	sb.WriteString(h.SIP.ToTag)
 	sb.WriteString("\"}")
 	return sb.String()
 }
