@@ -1,10 +1,6 @@
 package input
 
 import (
-	"bufio"
-	"crypto/tls"
-	"encoding/binary"
-	"net"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -136,8 +132,9 @@ func (h *HEPInput) Run() {
 			}
 		}()
 	}
-
+	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
+
 	if config.Setting.HEPAddr != "" {
 		h.wg.Add(1)
 		go h.serveUDP()
@@ -148,171 +145,8 @@ func (h *HEPInput) Run() {
 	if config.Setting.HEPTLSAddr != "" {
 		go h.serveTLS()
 	}
-	logp.Info("start %s with %#v\n", config.Version, config.Setting)
-}
-
-func (h *HEPInput) serveUDP() {
-	ua, err := net.ResolveUDPAddr("udp", config.Setting.HEPAddr)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-
-	uc, err := net.ListenUDP("udp", ua)
-	if err != nil {
-		logp.Critical("%v", err)
-	}
-	defer uc.Close()
-	defer h.wg.Done()
-	for {
-		select {
-		case <-h.quit:
-			return
-		default:
-		}
-		uc.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
-		n, err := uc.Read(buf)
-		if err != nil {
-			continue
-		} else if n > maxPktLen {
-			logp.Warn("received too big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
-			continue
-		}
-		h.inCh <- buf[:n]
-		atomic.AddUint64(&h.stats.PktCount, 1)
-	}
-}
-
-func (h *HEPInput) serveTCP() {
-	listener, err := net.Listen("tcp", config.Setting.HEPTCPAddr)
-	if err != nil {
-		logp.Err("%v", err)
-		return
-	}
-
-	for {
-		select {
-		case <-h.quit:
-			listener.Close()
-			return
-		default:
-		}
-
-		conn, err := listener.Accept()
-		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
-		if err != nil {
-			logp.Err("%v", err)
-			continue
-		}
-		h.wg.Add(1)
-		go h.handleTCP(conn)
-	}
-}
-
-func (h *HEPInput) handleTCP(c net.Conn) {
-	r := bufio.NewReader(c)
-	defer c.Close()
-	defer h.wg.Done()
-	readBytes := func(buffer []byte) (int, error) {
-		n := uint(0)
-		for n < uint(len(buffer)) {
-			nn, err := r.Read(buffer[n:])
-			n += uint(nn)
-			if err != nil {
-				return 0, err
-			}
-		}
-		return int(n), nil
-	}
-	for {
-		select {
-		case <-h.quit:
-			return
-		default:
-		}
-
-		c.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
-		hb, err := r.Peek(6)
-		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
-		} else {
-			size := binary.BigEndian.Uint16(hb[4:6])
-			if size > maxPktLen {
-				logp.Warn("unexpected packet, did you send TLS into plain TCP input?")
-				return
-			}
-			n, err := readBytes(buf[:size])
-			if err != nil || n > maxPktLen {
-				logp.Warn("%v, unusal packet size with %d bytes", err, n)
-				atomic.AddUint64(&h.stats.ErrCount, 1)
-				continue
-			}
-			h.inCh <- buf[:n]
-			atomic.AddUint64(&h.stats.PktCount, 1)
-		}
-	}
-}
-
-func (h *HEPInput) serveTLS() {
-	ca := NewCertificateAuthority()
-	listener, err := tls.Listen("tcp", config.Setting.HEPTLSAddr, &tls.Config{
-		GetCertificate: ca.GetCertificate,
-	})
-	if err != nil {
-		logp.Err("%v", err)
-		return
-	}
-
-	for {
-		select {
-		case <-h.quit:
-			listener.Close()
-			return
-		default:
-		}
-
-		conn, err := listener.Accept()
-		if err != nil {
-			logp.Err("%v", err)
-			continue
-		}
-		h.wg.Add(1)
-		go h.handleTLS(conn)
-	}
-}
-
-func (h *HEPInput) handleTLS(c net.Conn) {
-	defer c.Close()
-	defer h.wg.Done()
-	for {
-		select {
-		case <-h.quit:
-			return
-		default:
-		}
-
-		c.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
-		n, err := c.Read(buf)
-		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
-		} else if n > maxPktLen {
-			logp.Warn("received too big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
-			continue
-		}
-		h.inCh <- buf[:n]
-		atomic.AddUint64(&h.stats.PktCount, 1)
+	if config.Setting.HTTPAddr != "" {
+		go h.serveHTTP()
 	}
 }
 
