@@ -3,7 +3,7 @@ package metric
 import (
 	"runtime"
 
-	decoder "github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/decoder"
 )
 
 type Metric struct {

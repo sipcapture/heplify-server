@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/database"
+	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/heplify-server/metric"
 	"github.com/negbie/heplify-server/queue"
 	"github.com/negbie/heplify-server/remotelog"

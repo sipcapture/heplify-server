@@ -1,8 +1,8 @@
 package database
 
 import (
-	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
 )
 

@@ -6,8 +6,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
-	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/logp"
 )
 

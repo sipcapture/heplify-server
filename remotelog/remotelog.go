@@ -3,7 +3,7 @@ package remotelog
 import (
 	"sync"
 
-	decoder "github.com/negbie/heplify-server"
+	"github.com/negbie/heplify-server/decoder"
 )
 
 type Elastic struct {
