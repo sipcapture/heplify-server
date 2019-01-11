@@ -1,57 +1,45 @@
 package input
 
 import (
-	"context"
-	"io/ioutil"
-	"net/http"
-	"time"
+	"sync/atomic"
 
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/logp"
+	"github.com/valyala/fasthttp"
 )
 
 func (h *HEPInput) serveHTTP() {
-	router := http.NewServeMux()
-	router.Handle("/", index())
-
-	server := &http.Server{
-		Addr:         config.Setting.HTTPAddr,
-		Handler:      router,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
+	server := &fasthttp.Server{
+		Handler: h.requestHandler,
 	}
-
 	done := make(chan bool)
 	go func() {
 		<-h.quit
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		server.SetKeepAlivesEnabled(false)
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(); err != nil {
 			logp.Err("could not gracefully shutdown HTTP server: %v\n", err)
 		}
 		close(done)
 	}()
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServe(config.Setting.HTTPAddr); err != nil {
 		logp.Err("could not listen on %s: %v\n", config.Setting.HTTPAddr, err)
 	}
 	<-done
 }
 
-func index() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-			return
+func (h *HEPInput) requestHandler(ctx *fasthttp.RequestCtx) {
+	ctx.Request.AppendBodyString("WEBRTC")
+	hepPkt, err := decoder.DecodeHEP(ctx.Request.Body())
+	if err != nil {
+		atomic.AddUint64(&h.stats.ErrCount, 1)
+		return
+	}
+	if h.useLK {
+		select {
+		case h.lkCh <- hepPkt:
+		default:
+			logp.Warn("overflowing loki channel")
 		}
-		w.WriteHeader(http.StatusOK)
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			logp.Err("%v", err)
-		}
-		_ = body
-	})
+	}
 }

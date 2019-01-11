@@ -24,7 +24,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	hepVer = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
+	hepVer = []byte("HEP3")
+	webrtc = []byte("WEBRTC")
 	dedup  = freecache.NewCache(20 * 1024 * 1024)
 )
 
@@ -82,12 +83,17 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if bytes.HasPrefix(packet, hepVer) && len(packet) > 32 {
+	if bytes.HasPrefix(packet, hepVer) {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
 			return err
 		}
+	} else if bytes.HasSuffix(packet, webrtc) {
+		if err = h.parseWebRTC(packet[:len(packet)-6]); err == nil {
+			return nil
+		}
+		return err
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {
