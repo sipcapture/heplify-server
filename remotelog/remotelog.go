@@ -6,7 +6,7 @@ import (
 	"github.com/negbie/heplify-server/decoder"
 )
 
-type Elastic struct {
+type Remotelog struct {
 	EH   ElasticHandler
 	Chan chan *decoder.HEP
 }
@@ -16,24 +16,24 @@ type ElasticHandler interface {
 	send(chan *decoder.HEP)
 }
 
-func New(name string) *Elastic {
+func New(name string) *Remotelog {
 	var register = map[string]ElasticHandler{
 		"elasticsearch": new(Elasticsearch),
 		"loki":          new(Loki),
 	}
 
-	return &Elastic{
+	return &Remotelog{
 		EH: register[name],
 	}
 }
 
-func (e *Elastic) Run() error {
+func (r *Remotelog) Run() error {
 	var (
 		wg  sync.WaitGroup
 		err error
 	)
 
-	err = e.EH.setup()
+	err = r.EH.setup()
 	if err != nil {
 		return err
 	}
@@ -41,12 +41,12 @@ func (e *Elastic) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		e.EH.send(e.Chan)
+		r.EH.send(r.Chan)
 	}()
 	wg.Wait()
 	return nil
 }
 
-func (e *Elastic) End() {
-	close(e.Chan)
+func (r *Remotelog) End() {
+	close(r.Chan)
 }

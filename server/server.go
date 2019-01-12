@@ -114,10 +114,10 @@ func (h *HEPInput) Run() {
 
 	if h.useES {
 		go func() {
-			e := remotelog.New("elasticsearch")
-			e.Chan = h.esCh
+			r := remotelog.New("elasticsearch")
+			r.Chan = h.esCh
 
-			if err := e.Run(); err != nil {
+			if err := r.Run(); err != nil {
 				logp.Err("%v", err)
 			}
 		}()
@@ -127,11 +127,13 @@ func (h *HEPInput) Run() {
 		go func() {
 			l := remotelog.New("loki")
 			l.Chan = h.lkCh
+
 			if err := l.Run(); err != nil {
 				logp.Err("%v", err)
 			}
 		}()
 	}
+
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
 

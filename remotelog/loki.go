@@ -159,7 +159,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 				l.entry = entry{
 					model.LabelSet{
 						"job":  jobName,
-						"type": model.LabelValue(strconv.Itoa(int(pkt.ProtoType / 1000)))},
+						"type": model.LabelValue(hepType)},
 					logproto.Entry{
 						Timestamp: curPktTime,
 						Line:      pktMeta.String(),
