@@ -3,9 +3,8 @@
 FROM golang:alpine as builder
 
 RUN apk update && apk add --no-cache git
-RUN go get -u -d -v github.com/negbie/heplify-server/
+RUN go get -u -d -v github.com/negbie/heplify-server/...
 WORKDIR /go/src/github.com/negbie/heplify-server/cmd/heplify-server/
-RUN set -x && go get -u -d -v .
 
 RUN go get -u -v github.com/gobuffalo/packr/...
 WORKDIR /go/bin/

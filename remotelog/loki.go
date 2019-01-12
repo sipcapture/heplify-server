@@ -171,7 +171,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {
-					logp.Err("sendBatch: %v", err)
+					logp.Err("send size batch: %v", err)
 				}
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
@@ -191,7 +191,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 		case <-maxWait.C:
 			if len(batch) > 0 {
 				if err := l.sendBatch(batch); err != nil {
-					logp.Err("sendBatch: %v", err)
+					logp.Err("send time batch: %v", err)
 				}
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
