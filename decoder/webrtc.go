@@ -19,7 +19,12 @@ func (h *HEP) parseWebRTC(packet []byte) error {
 	}
 
 	h.ProtoType = uint32(v.GetInt("type")) + 1000
-	h.Timestamp = time.Unix(0, v.GetInt64("timestamp")*1000)
+	t := v.GetInt64("timestamp") * 1000
+	if t != 0 {
+		h.Timestamp = time.Unix(0, t)
+	} else {
+		h.Timestamp = time.Now()
+	}
 	if s := v.Get("session_id"); s != nil {
 		h.SrcIP = s.String()
 	}
@@ -28,6 +33,8 @@ func (h *HEP) parseWebRTC(packet []byte) error {
 	}
 	if e := v.Get("event"); e != nil {
 		h.Payload = e.String()
+	} else {
+		h.Payload = string(packet)
 	}
 	if s := v.Get("opaque_id"); s != nil {
 		h.CID = s.String()

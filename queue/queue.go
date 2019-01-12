@@ -8,7 +8,7 @@ import (
 )
 
 type Queue struct {
-	QH    QueueHandler
+	H     QueueHandler
 	Topic string
 	Chan  chan []byte
 }
@@ -25,7 +25,7 @@ func New(name string) *Queue {
 	}
 
 	return &Queue{
-		QH: register[name],
+		H: register[name],
 	}
 }
 
@@ -39,7 +39,7 @@ func (q *Queue) Run() error {
 		return fmt.Errorf("invalid message queue driver: %s, please use nats or nsq", config.Setting.MQDriver)
 	}
 
-	err = q.QH.setup()
+	err = q.H.setup()
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (q *Queue) Run() error {
 	go func() {
 		defer wg.Done()
 		topic := q.Topic
-		q.QH.add(topic, q.Chan)
+		q.H.add(topic, q.Chan)
 	}()
 	wg.Wait()
 	return nil
