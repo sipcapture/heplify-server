@@ -13,8 +13,8 @@ import (
 
 	"github.com/coocood/freecache"
 	lru "github.com/hashicorp/golang-lru"
-	decoder "github.com/negbie/heplify-server"
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

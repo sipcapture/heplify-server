@@ -2,9 +2,6 @@ package decoder
 
 import (
 	"bytes"
-	"encoding/binary"
-	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -27,7 +24,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	hepVer = []byte{0x48, 0x45, 0x50, 0x33} // "HEP3"
+	hepVer = []byte("HEP3")
+	webrtc = []byte("WEBRTC")
 	dedup  = freecache.NewCache(20 * 1024 * 1024)
 )
 
@@ -85,12 +83,17 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if bytes.HasPrefix(packet, hepVer) && len(packet) > 32 {
+	if bytes.HasPrefix(packet, hepVer) {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
 			return err
 		}
+	} else if bytes.HasSuffix(packet, webrtc) {
+		if err = h.parseWebRTC(packet[:len(packet)-6]); err == nil {
+			return nil
+		}
+		return err
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {
@@ -131,112 +134,6 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	logp.Debug("hep", "%+v\n\n", h)
-	return nil
-}
-
-func (h *HEP) parseHEP(packet []byte) error {
-	length := binary.BigEndian.Uint16(packet[4:6])
-	if int(length) != len(packet) {
-		return fmt.Errorf("HEP packet length is %d but should be %d", len(packet), length)
-	}
-	currentByte := uint16(6)
-
-	for currentByte < length {
-		hepChunk := packet[currentByte:]
-		if len(hepChunk) < 6 {
-			return fmt.Errorf("HEP chunk must be >= 6 byte long but is %d", len(hepChunk))
-		}
-		//chunkVendorId := binary.BigEndian.Uint16(hepChunk[:2])
-		chunkType := binary.BigEndian.Uint16(hepChunk[2:4])
-		chunkLength := binary.BigEndian.Uint16(hepChunk[4:6])
-		if len(hepChunk) < int(chunkLength) || int(chunkLength) < 6 {
-			return fmt.Errorf("HEP chunk with %d byte < chunkLength %d or chunkLength < 6", len(hepChunk), chunkLength)
-		}
-		chunkBody := hepChunk[6:chunkLength]
-
-		switch chunkType {
-		case Version, Protocol, ProtoType:
-			if len(chunkBody) != 1 {
-				return fmt.Errorf("HEP chunkType %d should be 1 byte long but is %d", chunkType, len(chunkBody))
-			}
-		case SrcPort, DstPort, Vlan:
-			if len(chunkBody) != 2 {
-				return fmt.Errorf("HEP chunkType %d should be 2 byte long but is %d", chunkType, len(chunkBody))
-			}
-		case IP4SrcIP, IP4DstIP, Tsec, Tmsec, NodeID:
-			if len(chunkBody) != 4 {
-				return fmt.Errorf("HEP chunkType %d should be 4 byte long but is %d", chunkType, len(chunkBody))
-			}
-		case IP6SrcIP, IP6DstIP:
-			if len(chunkBody) != 16 {
-				return fmt.Errorf("HEP chunkType %d should be 16 byte long but is %d", chunkType, len(chunkBody))
-			}
-		}
-
-		switch chunkType {
-		case Version:
-			h.Version = uint32(chunkBody[0])
-		case Protocol:
-			h.Protocol = uint32(chunkBody[0])
-		case IP4SrcIP:
-			h.NetSrcIP = chunkBody
-			h.SrcIP = h.NetSrcIP.String()
-		case IP4DstIP:
-			h.NetDstIP = chunkBody
-			h.DstIP = h.NetDstIP.String()
-		case IP6SrcIP:
-			h.NetSrcIP = chunkBody
-			h.SrcIP = h.NetSrcIP.String()
-		case IP6DstIP:
-			h.NetDstIP = chunkBody
-			h.DstIP = h.NetDstIP.String()
-		case SrcPort:
-			h.SrcPort = uint32(binary.BigEndian.Uint16(chunkBody))
-		case DstPort:
-			h.DstPort = uint32(binary.BigEndian.Uint16(chunkBody))
-		case Tsec:
-			h.Tsec = binary.BigEndian.Uint32(chunkBody)
-		case Tmsec:
-			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
-		case ProtoType:
-			h.ProtoType = uint32(chunkBody[0])
-		case NodeID:
-			h.NodeID = binary.BigEndian.Uint32(chunkBody)
-		case NodePW:
-			h.NodePW = string(chunkBody)
-		case Payload:
-			h.Payload = string(chunkBody)
-		case CID:
-			h.CID = string(chunkBody)
-		case Vlan:
-			h.Vlan = uint32(binary.BigEndian.Uint16(chunkBody))
-		default:
-		}
-		currentByte += chunkLength
-	}
-	return nil
-}
-
-func (h *HEP) parseSIP() error {
-	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs...)
-
-	if h.SIP.StartLine == nil {
-		h.SIP.StartLine = new(sipparser.StartLine)
-	}
-	if h.SIP.StartLine.URI == nil {
-		h.SIP.StartLine.URI = new(sipparser.URI)
-	}
-	if h.SIP.StartLine.Method == "" {
-		h.SIP.StartLine.Method = h.SIP.StartLine.Resp
-	}
-	if h.SIP.Error != nil {
-		return h.SIP.Error
-	} else if len(h.SIP.CseqMethod) < 3 {
-		return errors.New("could not find a valid CSeq in packet")
-	} else if len(h.SIP.CallID) < 1 {
-		return errors.New("could not find a valid Call-ID in packet")
-	}
-	h.CID = h.SIP.CallID
 	return nil
 }
 
