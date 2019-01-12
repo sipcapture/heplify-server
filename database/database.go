@@ -10,7 +10,7 @@ import (
 )
 
 type Database struct {
-	DBH  DBHandler
+	H    DBHandler
 	Chan chan *decoder.HEP
 }
 
@@ -34,7 +34,7 @@ func New(name string) *Database {
 	}
 
 	return &Database{
-		DBH: register[name],
+		H: register[name],
 	}
 }
 
@@ -55,7 +55,7 @@ func (d *Database) Run() error {
 		return fmt.Errorf("homer7 has only postgres support")
 	}
 
-	err := d.DBH.setup()
+	err := d.H.setup()
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (d *Database) Run() error {
 
 	for i := 0; i < worker; i++ {
 		go func() {
-			d.DBH.insert(d.Chan)
+			d.H.insert(d.Chan)
 		}()
 	}
 	return nil

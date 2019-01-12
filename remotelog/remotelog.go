@@ -7,23 +7,23 @@ import (
 )
 
 type Remotelog struct {
-	EH   ElasticHandler
+	H    RemoteHandler
 	Chan chan *decoder.HEP
 }
 
-type ElasticHandler interface {
+type RemoteHandler interface {
 	setup() error
 	send(chan *decoder.HEP)
 }
 
 func New(name string) *Remotelog {
-	var register = map[string]ElasticHandler{
+	var register = map[string]RemoteHandler{
 		"elasticsearch": new(Elasticsearch),
 		"loki":          new(Loki),
 	}
 
 	return &Remotelog{
-		EH: register[name],
+		H: register[name],
 	}
 }
 
@@ -33,7 +33,7 @@ func (r *Remotelog) Run() error {
 		err error
 	)
 
-	err = r.EH.setup()
+	err = r.H.setup()
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (r *Remotelog) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		r.EH.send(r.Chan)
+		r.H.send(r.Chan)
 	}()
 	wg.Wait()
 	return nil

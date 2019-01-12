@@ -7,7 +7,7 @@ import (
 )
 
 type Metric struct {
-	MH   MetricHandler
+	H    MetricHandler
 	Chan chan *decoder.HEP
 }
 
@@ -22,19 +22,19 @@ func New(name string) *Metric {
 	}
 
 	return &Metric{
-		MH: register[name],
+		H: register[name],
 	}
 }
 
 func (m *Metric) Run() error {
-	err := m.MH.setup()
+	err := m.H.setup()
 	if err != nil {
 		return err
 	}
 
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
-			m.MH.expose(m.Chan)
+			m.H.expose(m.Chan)
 		}()
 	}
 	return nil
