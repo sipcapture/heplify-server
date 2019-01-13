@@ -14,7 +14,7 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-type SQLHomer7 struct {
+type Postgres struct {
 	db      *sql.DB
 	bulkCnt int
 }
@@ -32,7 +32,7 @@ const (
 //var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 //var queryValCnt = 5
 
-func (s *SQLHomer7) setup() error {
+func (p *Postgres) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
@@ -44,40 +44,40 @@ func (s *SQLHomer7) setup() error {
 		r.Rotate()
 	}
 
-	if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
-		s.db.Close()
+	if p.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
+		p.db.Close()
 		return err
 	}
 
-	if err = s.db.Ping(); err != nil {
-		s.db.Close()
+	if err = p.db.Ping(); err != nil {
+		p.db.Close()
 		return err
 	}
 
-	s.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
-	s.db.SetMaxIdleConns(config.Setting.DBWorker)
+	p.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
+	p.db.SetMaxIdleConns(config.Setting.DBWorker)
 
-	s.bulkCnt = config.Setting.DBBulk
+	p.bulkCnt = config.Setting.DBBulk
 
-	if s.bulkCnt < 1 {
-		s.bulkCnt = 1
+	if p.bulkCnt < 1 {
+		p.bulkCnt = 1
 	}
 
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
 }
 
-func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
+func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	var (
 		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
-		callRows   = make([]string, 0, s.bulkCnt)
-		regRows    = make([]string, 0, s.bulkCnt)
-		defRows    = make([]string, 0, s.bulkCnt)
-		dnsRows    = make([]string, 0, s.bulkCnt)
-		logRows    = make([]string, 0, s.bulkCnt)
-		rtcpRows   = make([]string, 0, s.bulkCnt)
-		reportRows = make([]string, 0, s.bulkCnt)
+		callRows   = make([]string, 0, p.bulkCnt)
+		regRows    = make([]string, 0, p.bulkCnt)
+		defRows    = make([]string, 0, p.bulkCnt)
+		dnsRows    = make([]string, 0, p.bulkCnt)
+		logRows    = make([]string, 0, p.bulkCnt)
+		rtcpRows   = make([]string, 0, p.bulkCnt)
+		reportRows = make([]string, 0, p.bulkCnt)
 		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
 	)
 
@@ -110,24 +110,24 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
-					if callCnt == s.bulkCnt {
-						s.bulkInsert(callCopy, callRows)
+					if callCnt == p.bulkCnt {
+						p.bulkInsert(callCopy, callRows)
 						callRows = []string{}
 						callCnt = 0
 					}
 				case "REGISTER":
 					regRows = append(regRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					regCnt++
-					if regCnt == s.bulkCnt {
-						s.bulkInsert(registerCopy, regRows)
+					if regCnt == p.bulkCnt {
+						p.bulkInsert(registerCopy, regRows)
 						regRows = []string{}
 						regCnt = 0
 					}
 				default:
 					defRows = append(defRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					defCnt++
-					if defCnt == s.bulkCnt {
-						s.bulkInsert(defaultCopy, defRows)
+					if defCnt == p.bulkCnt {
+						p.bulkInsert(defaultCopy, defRows)
 						defRows = []string{}
 						defCnt = 0
 					}
@@ -139,24 +139,24 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 				case 5:
 					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					rtcpCnt++
-					if rtcpCnt == s.bulkCnt {
-						s.bulkInsert(rtcpCopy, rtcpRows)
+					if rtcpCnt == p.bulkCnt {
+						p.bulkInsert(rtcpCopy, rtcpRows)
 						rtcpRows = []string{}
 						rtcpCnt = 0
 					}
 				case 53:
 					dnsRows = append(dnsRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					dnsCnt++
-					if dnsCnt == s.bulkCnt {
-						s.bulkInsert(dnsCopy, dnsRows)
+					if dnsCnt == p.bulkCnt {
+						p.bulkInsert(dnsCopy, dnsRows)
 						dnsRows = []string{}
 						dnsCnt = 0
 					}
 				case 100:
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
-					if logCnt == s.bulkCnt {
-						s.bulkInsert(logCopy, logRows)
+					if logCnt == p.bulkCnt {
+						p.bulkInsert(logCopy, logRows)
 						logRows = []string{}
 						logCnt = 0
 					}
@@ -165,8 +165,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 					timer.Reset(1e9)
 					reportRows = append(reportRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					reportCnt++
-					if reportCnt == s.bulkCnt {
-						s.bulkInsert(reportCopy, reportRows)
+					if reportCnt == p.bulkCnt {
+						p.bulkInsert(reportCopy, reportRows)
 						reportRows = []string{}
 						reportCnt = 0
 					}
@@ -178,43 +178,43 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
-				s.bulkInsert(callCopy, callRows[:l])
+				p.bulkInsert(callCopy, callRows[:l])
 				callRows = []string{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
-				s.bulkInsert(registerCopy, regRows[:l])
+				p.bulkInsert(registerCopy, regRows[:l])
 				regRows = []string{}
 				regCnt = 0
 			}
 			if defCnt > 0 {
 				l := len(defRows)
-				s.bulkInsert(defaultCopy, defRows[:l])
+				p.bulkInsert(defaultCopy, defRows[:l])
 				defRows = []string{}
 				defCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
-				s.bulkInsert(rtcpCopy, rtcpRows[:l])
+				p.bulkInsert(rtcpCopy, rtcpRows[:l])
 				rtcpRows = []string{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
-				s.bulkInsert(reportCopy, reportRows[:l])
+				p.bulkInsert(reportCopy, reportRows[:l])
 				reportRows = []string{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
-				s.bulkInsert(dnsCopy, dnsRows[:l])
+				p.bulkInsert(dnsCopy, dnsRows[:l])
 				dnsRows = []string{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
-				s.bulkInsert(logCopy, logRows[:l])
+				p.bulkInsert(logCopy, logRows[:l])
 				logRows = []string{}
 				logCnt = 0
 			}
@@ -222,8 +222,8 @@ func (s *SQLHomer7) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQLHomer7) bulkInsert(query string, rows []string) {
-	tx, err := s.db.Begin()
+func (p *Postgres) bulkInsert(query string, rows []string) {
+	tx, err := p.db.Begin()
 	if err != nil || tx == nil {
 		logp.Err("%v", err)
 		return

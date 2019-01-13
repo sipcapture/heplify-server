@@ -83,14 +83,14 @@ var (
 	rtcValCnt      = 12
 )
 
-type SQLHomer5 struct {
+type MySQL struct {
 	db         *sql.DB
 	bulkCnt    int
 	sipBulkVal []byte
 	rtcBulkVal []byte
 }
 
-func (s *SQLHomer5) setup() error {
+func (m *MySQL) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
@@ -102,44 +102,44 @@ func (s *SQLHomer5) setup() error {
 		r.Rotate()
 	}
 
-	if s.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
-		s.db.Close()
+	if m.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
+		m.db.Close()
 		return err
 	}
 
-	if err = s.db.Ping(); err != nil {
-		s.db.Close()
+	if err = m.db.Ping(); err != nil {
+		m.db.Close()
 		return err
 	}
 
-	s.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
-	s.db.SetMaxIdleConns(config.Setting.DBWorker)
+	m.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
+	m.db.SetMaxIdleConns(config.Setting.DBWorker)
 
-	s.bulkCnt = config.Setting.DBBulk
-	if s.bulkCnt < 1 {
-		s.bulkCnt = 1
+	m.bulkCnt = config.Setting.DBBulk
+	if m.bulkCnt < 1 {
+		m.bulkCnt = 1
 	}
 
-	s.sipBulkVal = sipQueryVal(s.bulkCnt)
-	s.rtcBulkVal = rtcQueryVal(s.bulkCnt)
+	m.sipBulkVal = sipQueryVal(m.bulkCnt)
+	m.rtcBulkVal = rtcQueryVal(m.bulkCnt)
 
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
 }
 
-func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
+func (m *MySQL) insert(hCh chan *decoder.HEP) {
 	var (
 		callCnt, regCnt, restCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
 
 		pkt        *decoder.HEP
 		ok         bool
-		callRows   = make([]interface{}, 0, s.bulkCnt)
-		regRows    = make([]interface{}, 0, s.bulkCnt)
-		restRows   = make([]interface{}, 0, s.bulkCnt)
-		dnsRows    = make([]interface{}, 0, s.bulkCnt)
-		logRows    = make([]interface{}, 0, s.bulkCnt)
-		rtcpRows   = make([]interface{}, 0, s.bulkCnt)
-		reportRows = make([]interface{}, 0, s.bulkCnt)
+		callRows   = make([]interface{}, 0, m.bulkCnt)
+		regRows    = make([]interface{}, 0, m.bulkCnt)
+		restRows   = make([]interface{}, 0, m.bulkCnt)
+		dnsRows    = make([]interface{}, 0, m.bulkCnt)
+		logRows    = make([]interface{}, 0, m.bulkCnt)
+		rtcpRows   = make([]interface{}, 0, m.bulkCnt)
+		reportRows = make([]interface{}, 0, m.bulkCnt)
 		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
 	)
 
@@ -220,24 +220,24 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = addSIPRow(callRows)
 					callCnt++
-					if callCnt == s.bulkCnt {
-						s.bulkInsert(callQuery, s.sipBulkVal, callRows)
+					if callCnt == m.bulkCnt {
+						m.bulkInsert(callQuery, m.sipBulkVal, callRows)
 						callRows = []interface{}{}
 						callCnt = 0
 					}
 				case "REGISTER":
 					regRows = addSIPRow(regRows)
 					regCnt++
-					if regCnt == s.bulkCnt {
-						s.bulkInsert(registerQuery, s.sipBulkVal, regRows)
+					if regCnt == m.bulkCnt {
+						m.bulkInsert(registerQuery, m.sipBulkVal, regRows)
 						regRows = []interface{}{}
 						regCnt = 0
 					}
 				default:
 					restRows = addSIPRow(restRows)
 					restCnt++
-					if restCnt == s.bulkCnt {
-						s.bulkInsert(restQuery, s.sipBulkVal, restRows)
+					if restCnt == m.bulkCnt {
+						m.bulkInsert(restQuery, m.sipBulkVal, restRows)
 						restRows = []interface{}{}
 						restCnt = 0
 					}
@@ -248,24 +248,24 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 				case 5:
 					rtcpRows = addRTCRow(rtcpRows)
 					rtcpCnt++
-					if rtcpCnt == s.bulkCnt {
-						s.bulkInsert(rtcpQuery, s.rtcBulkVal, rtcpRows)
+					if rtcpCnt == m.bulkCnt {
+						m.bulkInsert(rtcpQuery, m.rtcBulkVal, rtcpRows)
 						rtcpRows = []interface{}{}
 						rtcpCnt = 0
 					}
 				case 53:
 					dnsRows = addRTCRow(dnsRows)
 					dnsCnt++
-					if dnsCnt == s.bulkCnt {
-						s.bulkInsert(dnsQuery, s.rtcBulkVal, dnsRows)
+					if dnsCnt == m.bulkCnt {
+						m.bulkInsert(dnsQuery, m.rtcBulkVal, dnsRows)
 						dnsRows = []interface{}{}
 						dnsCnt = 0
 					}
 				case 100:
 					logRows = addRTCRow(logRows)
 					logCnt++
-					if logCnt == s.bulkCnt {
-						s.bulkInsert(logQuery, s.rtcBulkVal, logRows)
+					if logCnt == m.bulkCnt {
+						m.bulkInsert(logQuery, m.rtcBulkVal, logRows)
 						logRows = []interface{}{}
 						logCnt = 0
 					}
@@ -274,8 +274,8 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 					timer.Reset(1e9)
 					reportRows = addRTCRow(reportRows)
 					reportCnt++
-					if reportCnt == s.bulkCnt {
-						s.bulkInsert(reportQuery, s.rtcBulkVal, reportRows)
+					if reportCnt == m.bulkCnt {
+						m.bulkInsert(reportQuery, m.rtcBulkVal, reportRows)
 						reportRows = []interface{}{}
 						reportCnt = 0
 					}
@@ -285,43 +285,43 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
-				s.bulkInsert(callQuery, sipQueryVal(l/sipValCnt), callRows[:l])
+				m.bulkInsert(callQuery, sipQueryVal(l/sipValCnt), callRows[:l])
 				callRows = []interface{}{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
-				s.bulkInsert(registerQuery, sipQueryVal(l/sipValCnt), regRows[:l])
+				m.bulkInsert(registerQuery, sipQueryVal(l/sipValCnt), regRows[:l])
 				regRows = []interface{}{}
 				regCnt = 0
 			}
 			if restCnt > 0 {
 				l := len(restRows)
-				s.bulkInsert(restQuery, sipQueryVal(l/sipValCnt), restRows[:l])
+				m.bulkInsert(restQuery, sipQueryVal(l/sipValCnt), restRows[:l])
 				restRows = []interface{}{}
 				restCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
-				s.bulkInsert(rtcpQuery, rtcQueryVal(l/rtcValCnt), rtcpRows[:l])
+				m.bulkInsert(rtcpQuery, rtcQueryVal(l/rtcValCnt), rtcpRows[:l])
 				rtcpRows = []interface{}{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
-				s.bulkInsert(reportQuery, rtcQueryVal(l/rtcValCnt), reportRows[:l])
+				m.bulkInsert(reportQuery, rtcQueryVal(l/rtcValCnt), reportRows[:l])
 				reportRows = []interface{}{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
-				s.bulkInsert(dnsQuery, rtcQueryVal(l/rtcValCnt), dnsRows[:l])
+				m.bulkInsert(dnsQuery, rtcQueryVal(l/rtcValCnt), dnsRows[:l])
 				dnsRows = []interface{}{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
-				s.bulkInsert(logQuery, rtcQueryVal(l/rtcValCnt), logRows[:l])
+				m.bulkInsert(logQuery, rtcQueryVal(l/rtcValCnt), logRows[:l])
 				logRows = []interface{}{}
 				logCnt = 0
 			}
@@ -329,12 +329,12 @@ func (s *SQLHomer5) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (s *SQLHomer5) bulkInsert(q, v []byte, rows []interface{}) {
+func (m *MySQL) bulkInsert(q, v []byte, rows []interface{}) {
 	tblDate := time.Now().In(time.UTC).AppendFormat(q, "20060102")
 	query := make([]byte, len(tblDate)+len(v))
 	tdl := copy(query, tblDate)
 	copy(query[tdl:], v)
-	_, err := s.db.Exec(string(query), rows...)
+	_, err := m.db.Exec(string(query), rows...)
 	if err != nil {
 		logp.Err("%v", err)
 	}
