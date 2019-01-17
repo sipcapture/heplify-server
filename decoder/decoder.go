@@ -69,6 +69,7 @@ type HEP struct {
 	NetDstIP  net.IP
 	Timestamp time.Time
 	SIP       *sipparser.SipMsg
+	Host      string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -128,7 +129,15 @@ func (h *HEP) parse(packet []byte) error {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
 					h.Payload = "DISCARD"
+					return nil
 				}
+			}
+		}
+	} else if h.ProtoType == 112 && len(config.Setting.FilterHost) > 0 {
+		for _, host := range config.Setting.FilterHost {
+			if strings.Contains(h.Payload, host) {
+				h.Host = host
+				return nil
 			}
 		}
 	}

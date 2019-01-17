@@ -31,6 +31,10 @@ var (
 		Name: "heplify_kpi_rrd",
 		Help: "SIP Registration Request Delay"},
 		[]string{"src_target_name", "dst_target_name"})
+	logSeverity = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "heplify_severity_total",
+		Help: "Log errors and warnings"},
+		[]string{"node_id", "severity", "host"})
 
 	//X-RTP-Stat Metrics
 	xrtpCS = promauto.NewGaugeVec(prometheus.GaugeOpts{

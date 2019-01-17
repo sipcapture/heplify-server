@@ -20,17 +20,10 @@ type DBHandler interface {
 }
 
 func New(name string) *Database {
-	if config.Setting.DBShema == "homer5" {
-		name += "Homer5"
-	} else if config.Setting.DBShema == "homer7" {
-		name += "Homer7"
-	}
 	var register = map[string]DBHandler{
-		"mysqlHomer5":    new(SQLHomer5),
-		"postgresHomer5": new(SQLHomer5),
-		"mysqlHomer7":    new(SQLHomer7),
-		"postgresHomer7": new(SQLHomer7),
-		"mock":           new(Mock),
+		"mysql":    new(MySQL),
+		"postgres": new(Postgres),
+		"mock":     new(Mock),
 	}
 
 	return &Database{
