@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.03"
+const Version = "heplify-server 1.04"
 
 var Setting HeplifyServer
 
@@ -42,6 +42,7 @@ type HeplifyServer struct {
 	DBDropOnStart  bool     `default:"false"`
 	Dedup          bool     `default:"false"`
 	DiscardMethod  []string `default:""`
+	FilterHost     []string `default:""`
 	AlegIDs        []string `default:""`
 	LogDbg         string   `default:""`
 	LogLvl         string   `default:"info"`
@@ -87,6 +88,7 @@ func NewConfig() *HeplifyServer {
 		DBDropOnStart:  false,
 		Dedup:          false,
 		DiscardMethod:  nil,
+		FilterHost:     nil,
 		AlegIDs:        nil,
 		LogDbg:         "",
 		LogLvl:         "info",

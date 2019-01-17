@@ -145,12 +145,23 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						Line:      pktMeta.String(),
 					}}
 
-			case keep && pkt.ProtoType > 1 && pkt.ProtoType < 1000:
+			case keep && pkt.ProtoType > 1 && pkt.ProtoType <= 100:
 				l.entry = entry{
 					model.LabelSet{
 						"job":     jobName,
 						"type":    model.LabelValue(hepType),
 						"node_id": model.LabelValue(nodeID)},
+					logproto.Entry{
+						Timestamp: curPktTime,
+						Line:      pktMeta.String(),
+					}}
+			case keep && pkt.ProtoType == 112:
+				l.entry = entry{
+					model.LabelSet{
+						"job":     jobName,
+						"type":    model.LabelValue(pkt.CID),
+						"node_id": model.LabelValue(nodeID),
+						"host":    model.LabelValue(pkt.Host)},
 					logproto.Entry{
 						Timestamp: curPktTime,
 						Line:      pktMeta.String(),

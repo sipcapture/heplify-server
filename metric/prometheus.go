@@ -188,6 +188,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			p.dissectRTCPXRStats(nodeID, pkt.Payload)
 		} else if pkt.ProtoType == 38 {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
+		} else if pkt.ProtoType == 112 {
+			logSeverity.WithLabelValues(nodeID, pkt.CID, pkt.Host).Inc()
 		}
 	}
 }
