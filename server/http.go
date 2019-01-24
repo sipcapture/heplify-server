@@ -42,4 +42,11 @@ func (h *HEPInput) requestHandler(ctx *fasthttp.RequestCtx) {
 			logp.Warn("overflowing loki channel")
 		}
 	}
+	if h.usePM && hepPkt.ProtoType == 1032 {
+		select {
+		case h.pmCh <- hepPkt:
+		default:
+			logp.Warn("overflowing metric channel")
+		}
+	}
 }

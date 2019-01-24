@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	//HEP, SIP Metrics
+	// HEP, SIP Metrics
 	packetsByType = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_packets_total",
 		Help: "Total packets by HEP type"},
@@ -36,7 +36,7 @@ var (
 		Help: "Log errors and warnings"},
 		[]string{"node_id", "severity", "host"})
 
-	//X-RTP-Stat Metrics
+	// X-RTP-Stat Metrics
 	xrtpCS = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_xrtp_cs",
 		Help: "XRTP call setup time"},
@@ -66,7 +66,7 @@ var (
 		Help: "XRTP mos"},
 		[]string{"target_name"})
 
-	//RTCP Metrics
+	// RTCP Metrics
 	rtcpFractionLost = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcp_fraction_lost",
 		Help: "RTCP fraction lost"},
@@ -84,7 +84,7 @@ var (
 		Help: "RTCP dlsr"},
 		[]string{"node_id"})
 
-	//RTCP-XR Metrics
+	// RTCP-XR Metrics
 	rtcpxrFractionLost = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_fraction_lost",
 		Help: "RTCPXR fraction lost"},
@@ -118,7 +118,7 @@ var (
 		Help: "RTCPXR end system delay"},
 		[]string{"node_id"})
 
-	//VQ-RTCP-XR Metrics
+	// VQ-RTCP-XR Metrics
 	vqrtcpxrNLR = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_vqrtcpxr_nlr",
 		Help: "VQ-RTCPXR network packet loss rate"},
@@ -140,7 +140,7 @@ var (
 		Help: "VQ-RTCPXR MOS conversation voice quality"},
 		[]string{"node_id"})
 
-	//RTPAgent Metrics
+	// RTPAgent Metrics
 	rtpagentDelta = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtpagent_delta",
 		Help: "RTPAgent delta"},
@@ -158,7 +158,7 @@ var (
 		Help: "RTPAgent packets lost"},
 		[]string{"node_id"})
 
-	//Horaclifix Metrics
+	// Horaclifix Metrics
 	horaclifixRtpMOS = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "horaclifix_rtp_mos",
 		Help: "Incoming RTP MOS"},
@@ -207,4 +207,90 @@ var (
 		Name: "horaclifix_rtcp_max_lat",
 		Help: "Incoming RTCP maxLat"},
 		[]string{"sbc_name", "direction", "inc_realm", "out_realm"})
+
+	// Janus Metrics
+	janusRtt                 = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_rtt"})
+	janusLost                = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost"})
+	janusLostByRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost_by_remote"})
+	janusJitterLocal         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_local"})
+	janusJitterRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_remote"})
+	janusInLinkQuality       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_link_quality"})
+	janusInMediaLinkQuality  = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_media_link_quality"})
+	janusOutLinkQuality      = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_link_quality"})
+	janusOutMediaLinkQuality = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_media_link_quality"})
+	janusPacketsReceived     = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_received"})
+	janusPacketsSent         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_sent"})
+	janusBytesReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_received"})
+	janusBytesSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_sent"})
+	janusNacksReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_received"})
+	janusNacksSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_sent"})
+
+	// JSON Paths
+
+	rtcpPaths = [][]string{
+		[]string{"report_blocks", "[0]", "fraction_lost"},
+		[]string{"report_blocks", "[0]", "packets_lost"},
+		[]string{"report_blocks", "[0]", "ia_jitter"},
+		[]string{"report_blocks", "[0]", "dlsr"},
+		[]string{"report_blocks_xr", "fraction_lost"},
+		[]string{"report_blocks_xr", "fraction_discard"},
+		[]string{"report_blocks_xr", "burst_density"},
+		[]string{"report_blocks_xr", "gap_density"},
+		[]string{"report_blocks_xr", "burst_duration"},
+		[]string{"report_blocks_xr", "gap_duration"},
+		[]string{"report_blocks_xr", "round_trip_delay"},
+		[]string{"report_blocks_xr", "end_system_delay"},
+	}
+	rtpPaths = [][]string{
+		[]string{"DELTA"},
+		[]string{"JITTER"},
+		[]string{"MOS"},
+		[]string{"PACKET_LOSS"},
+	}
+	horaclifixPaths = [][]string{
+		[]string{"NAME"},
+		[]string{"INC_REALM"},
+		[]string{"OUT_REALM"},
+		[]string{"INC_MOS"},
+		[]string{"INC_RVAL"},
+		[]string{"INC_RTP_PK"},
+		[]string{"INC_RTP_PK_LOSS"},
+		[]string{"INC_RTP_AVG_JITTER"},
+		[]string{"INC_RTP_MAX_JITTER"},
+		[]string{"INC_RTCP_PK"},
+		[]string{"INC_RTCP_PK_LOSS"},
+		[]string{"INC_RTCP_AVG_JITTER"},
+		[]string{"INC_RTCP_MAX_JITTER"},
+		[]string{"INC_RTCP_AVG_LAT"},
+		[]string{"INC_RTCP_MAX_LAT"},
+		[]string{"OUT_MOS"},
+		[]string{"OUT_RVAL"},
+		[]string{"OUT_RTP_PK"},
+		[]string{"OUT_RTP_PK_LOSS"},
+		[]string{"OUT_RTP_AVG_JITTER"},
+		[]string{"OUT_RTP_MAX_JITTER"},
+		[]string{"OUT_RTCP_PK"},
+		[]string{"OUT_RTCP_PK_LOSS"},
+		[]string{"OUT_RTCP_AVG_JITTER"},
+		[]string{"OUT_RTCP_MAX_JITTER"},
+		[]string{"OUT_RTCP_AVG_LAT"},
+		[]string{"OUT_RTCP_MAX_LAT"},
+	}
+	janusPaths = [][]string{
+		[]string{"rtt"},
+		[]string{"lost"},
+		[]string{"lost-by-remote"},
+		[]string{"jitter-local"},
+		[]string{"jitter-remote"},
+		[]string{"in-link-quality"},
+		[]string{"in-media-link-quality"},
+		[]string{"out-link-quality"},
+		[]string{"out-media-link-quality"},
+		[]string{"packets-received"},
+		[]string{"packets-sent"},
+		[]string{"bytes-received"},
+		[]string{"bytes-sent"},
+		[]string{"nacks-received"},
+		[]string{"nacks-sent"},
+	}
 )
