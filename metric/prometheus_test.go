@@ -33,6 +33,8 @@ var VQSessionReport = `VQSessionReport: CallTerm
 						Delay:RTD=0 ESD=0 IAJ=0
 						QualityEst:MOSLQ=3.8 MOSCQ=4.2`
 
+var janusStat = `{"media":"audio","base":48000,"rtt":11,"lost":3,"lost-by-remote":4,"jitter-local":2,"jitter-remote":0,"in-link-quality":100,"in-media-link-quality":100,"out-link-quality":0,"out-media-link-quality":0,"packets-received":250,"packets-sent":250,"bytes-received":12840,"bytes-sent":5000,"bytes-received-lastsec":2611,"bytes-sent-lastsec":1020,"nacks-received":0,"nacks-sent":55}`
+
 func init() {
 	config.Setting.PromAddr = ":9999"
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
@@ -90,6 +92,19 @@ func BenchmarkDissectXRTPStats(b *testing.B) {
 	}
 	hep.ProtoType = 1
 	hep.SIP.RTPStatVal = XRTPStat
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pmCh <- hep
+	}
+}
+
+func BenchmarkDissectJanusStats(b *testing.B) {
+	hep, err := decoder.DecodeHEP(hepPacket)
+	if err != nil {
+		b.Error(err)
+	}
+	hep.ProtoType = 1032
+	hep.Payload = janusStat
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pmCh <- hep

@@ -20,16 +20,13 @@ import (
 )
 
 type Prometheus struct {
-	TargetEmpty     bool
-	TargetIP        []string
-	TargetName      []string
-	TargetMap       map[string]string
-	TargetConf      *sync.RWMutex
-	cache           *freecache.Cache
-	lruID           *lru.Cache
-	horaclifixPaths [][]string
-	rtpPaths        [][]string
-	rtcpPaths       [][]string
+	TargetEmpty bool
+	TargetIP    []string
+	TargetName  []string
+	TargetMap   map[string]string
+	TargetConf  *sync.RWMutex
+	cache       *freecache.Cache
+	lruID       *lru.Cache
 }
 
 func (p *Prometheus) setup() (err error) {
@@ -65,56 +62,6 @@ func (p *Prometheus) setup() (err error) {
 	} else {
 		logp.Info("please give every PromTargetIP a unique IP and PromTargetName a unique name")
 		return fmt.Errorf("faulty PromTargetIP or PromTargetName")
-	}
-
-	p.horaclifixPaths = [][]string{
-		[]string{"NAME"},
-		[]string{"INC_REALM"},
-		[]string{"OUT_REALM"},
-		[]string{"INC_MOS"},
-		[]string{"INC_RVAL"},
-		[]string{"INC_RTP_PK"},
-		[]string{"INC_RTP_PK_LOSS"},
-		[]string{"INC_RTP_AVG_JITTER"},
-		[]string{"INC_RTP_MAX_JITTER"},
-		[]string{"INC_RTCP_PK"},
-		[]string{"INC_RTCP_PK_LOSS"},
-		[]string{"INC_RTCP_AVG_JITTER"},
-		[]string{"INC_RTCP_MAX_JITTER"},
-		[]string{"INC_RTCP_AVG_LAT"},
-		[]string{"INC_RTCP_MAX_LAT"},
-		[]string{"OUT_MOS"},
-		[]string{"OUT_RVAL"},
-		[]string{"OUT_RTP_PK"},
-		[]string{"OUT_RTP_PK_LOSS"},
-		[]string{"OUT_RTP_AVG_JITTER"},
-		[]string{"OUT_RTP_MAX_JITTER"},
-		[]string{"OUT_RTCP_PK"},
-		[]string{"OUT_RTCP_PK_LOSS"},
-		[]string{"OUT_RTCP_AVG_JITTER"},
-		[]string{"OUT_RTCP_MAX_JITTER"},
-		[]string{"OUT_RTCP_AVG_LAT"},
-		[]string{"OUT_RTCP_MAX_LAT"},
-	}
-	p.rtpPaths = [][]string{
-		[]string{"DELTA"},
-		[]string{"JITTER"},
-		[]string{"MOS"},
-		[]string{"PACKET_LOSS"},
-	}
-	p.rtcpPaths = [][]string{
-		[]string{"report_blocks", "[0]", "fraction_lost"},
-		[]string{"report_blocks", "[0]", "packets_lost"},
-		[]string{"report_blocks", "[0]", "ia_jitter"},
-		[]string{"report_blocks", "[0]", "dlsr"},
-		[]string{"report_blocks_xr", "fraction_lost"},
-		[]string{"report_blocks_xr", "fraction_discard"},
-		[]string{"report_blocks_xr", "burst_density"},
-		[]string{"report_blocks_xr", "gap_density"},
-		[]string{"report_blocks_xr", "burst_duration"},
-		[]string{"report_blocks_xr", "gap_duration"},
-		[]string{"report_blocks_xr", "round_trip_delay"},
-		[]string{"report_blocks_xr", "end_system_delay"},
 	}
 
 	p.lruID, err = lru.New(1e5)
@@ -190,6 +137,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		} else if pkt.ProtoType == 112 {
 			logSeverity.WithLabelValues(nodeID, pkt.CID, pkt.Host).Inc()
+		} else if pkt.ProtoType == 1032 {
+			p.dissectJanusStats([]byte(pkt.Payload))
 		}
 	}
 }

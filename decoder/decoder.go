@@ -135,7 +135,7 @@ func (h *HEP) parse(packet []byte) error {
 		}
 	} else if h.ProtoType == 112 && len(config.Setting.FilterHost) > 0 {
 		for _, host := range config.Setting.FilterHost {
-			if strings.Contains(h.Payload, host) {
+			if strings.Index(h.Payload, host) > -1 {
 				h.Host = host
 				return nil
 			}

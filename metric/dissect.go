@@ -138,7 +138,7 @@ func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
 				rtcpxrEndSystemDelay.WithLabelValues(nodeID).Set(endSystemDelay)
 			}
 		}
-	}, p.rtcpPaths...)
+	}, rtcpPaths...)
 }
 
 func (p *Prometheus) dissectRTPStats(nodeID string, data []byte) {
@@ -161,7 +161,7 @@ func (p *Prometheus) dissectRTPStats(nodeID string, data []byte) {
 				rtpagentPacketsLost.WithLabelValues(nodeID).Set(packetsLost)
 			}
 		}
-	}, p.rtpPaths...)
+	}, rtpPaths...)
 }
 
 func (p *Prometheus) dissectHoraclifixStats(data []byte) {
@@ -281,7 +281,74 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 				horaclifixRtcpMaxLAT.WithLabelValues(sbcName, "out", incRealm, outRealm).Set(outRtcpMaxLat)
 			}
 		}
-	}, p.horaclifixPaths...)
+	}, horaclifixPaths...)
+}
+
+func (p *Prometheus) dissectJanusStats(data []byte) {
+	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			if rtt, err := jsonparser.ParseFloat(value); err == nil {
+				janusRtt.Set(rtt)
+			}
+		case 1:
+			if lost, err := jsonparser.ParseFloat(value); err == nil {
+				janusLost.Set(lost)
+			}
+		case 2:
+			if lostByRemote, err := jsonparser.ParseFloat(value); err == nil {
+				janusLostByRemote.Set(lostByRemote)
+			}
+		case 3:
+			if jitterLocal, err := jsonparser.ParseFloat(value); err == nil {
+				janusJitterLocal.Set(jitterLocal)
+			}
+		case 4:
+			if jitterRemote, err := jsonparser.ParseFloat(value); err == nil {
+				janusJitterRemote.Set(jitterRemote)
+			}
+		case 5:
+			if inLinkQuality, err := jsonparser.ParseFloat(value); err == nil {
+				janusInLinkQuality.Set(inLinkQuality)
+			}
+		case 6:
+			if inMediaLinkQuality, err := jsonparser.ParseFloat(value); err == nil {
+				janusInMediaLinkQuality.Set(inMediaLinkQuality)
+			}
+		case 7:
+			if outLinkQuality, err := jsonparser.ParseFloat(value); err == nil {
+				janusOutLinkQuality.Set(outLinkQuality)
+			}
+		case 8:
+			if outMediaLinkQuality, err := jsonparser.ParseFloat(value); err == nil {
+				janusOutMediaLinkQuality.Set(outMediaLinkQuality)
+			}
+		case 9:
+			if packetsReceived, err := jsonparser.ParseFloat(value); err == nil {
+				janusPacketsReceived.Set(packetsReceived)
+			}
+		case 10:
+			if packetsSent, err := jsonparser.ParseFloat(value); err == nil {
+				janusPacketsSent.Set(packetsSent)
+			}
+		case 11:
+			if bytesReceived, err := jsonparser.ParseFloat(value); err == nil {
+				janusBytesReceived.Set(bytesReceived)
+			}
+		case 12:
+			if bytesSent, err := jsonparser.ParseFloat(value); err == nil {
+				janusBytesSent.Set(bytesSent)
+			}
+		case 13:
+			if nacksReceived, err := jsonparser.ParseFloat(value); err == nil {
+				janusNacksReceived.Set(nacksReceived)
+			}
+		case 14:
+			if nacksSent, err := jsonparser.ParseFloat(value); err == nil {
+				janusNacksSent.Set(nacksSent)
+			}
+		}
+	}, janusPaths...)
 }
 
 func normMax(val float64) float64 {
