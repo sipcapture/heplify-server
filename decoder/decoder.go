@@ -168,6 +168,8 @@ func (h *HEP) normPayload() {
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
+	} else if strings.Index(h.Payload, "\x00") > -1 {
+		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
 }
 

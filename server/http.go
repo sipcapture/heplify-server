@@ -1,6 +1,7 @@
 package input
 
 import (
+	"strings"
 	"sync/atomic"
 
 	"github.com/negbie/heplify-server/config"
@@ -10,6 +11,9 @@ import (
 )
 
 func (h *HEPInput) serveHTTP() {
+	addr := config.Setting.HTTPAddr
+	addr = strings.TrimPrefix(addr, "https://")
+	addr = strings.TrimPrefix(addr, "http://")
 	server := &fasthttp.Server{
 		Handler: h.requestHandler,
 	}
@@ -22,8 +26,8 @@ func (h *HEPInput) serveHTTP() {
 		close(done)
 	}()
 
-	if err := server.ListenAndServe(config.Setting.HTTPAddr); err != nil {
-		logp.Err("could not listen on %s: %v\n", config.Setting.HTTPAddr, err)
+	if err := server.ListenAndServe(addr); err != nil {
+		logp.Err("could not listen on %s: %v\n", addr, err)
 	}
 	<-done
 }
