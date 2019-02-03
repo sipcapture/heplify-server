@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gobuffalo/packr"
@@ -134,7 +133,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				}
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
 				pHeader := makeProtoHeader(pkt, "", bpp)
-				dHeader := makeRTCDataHeader(pkt, date, bpd)
+				dHeader := makeRTCDataHeader(pkt, bpd)
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
@@ -257,11 +256,6 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 	}
 	err = tx.Commit()
 	if err != nil {
-		for i := 0; i < len(rows); i++ {
-			if strings.Contains(rows[i], "\x00") {
-				logp.Err("%q", rows[i])
-			}
-		}
 		logp.Err("%v", err)
 	}
 
@@ -271,25 +265,25 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"protocolFamily\":")
-	sb.WriteString(strconv.Itoa(int(h.Version)))
+	sb.WriteString(strconv.FormatUint(uint64(h.Version), 10))
 	sb.WriteString(",\"protocol\":")
-	sb.WriteString(strconv.Itoa(int(h.Protocol)))
+	sb.WriteString(strconv.FormatUint(uint64(h.Protocol), 10))
 	sb.WriteString(",\"srcIp\":\"")
 	sb.WriteString(h.SrcIP)
 	sb.WriteString("\",\"dstIp\":\"")
 	sb.WriteString(h.DstIP)
 	sb.WriteString("\",\"srcPort\":")
-	sb.WriteString(strconv.Itoa(int(h.SrcPort)))
+	sb.WriteString(strconv.FormatUint(uint64(h.SrcPort), 10))
 	sb.WriteString(",\"dstPort\":")
-	sb.WriteString(strconv.Itoa(int(h.DstPort)))
+	sb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
 	sb.WriteString(",\"timeSeconds\":")
-	sb.WriteString(strconv.Itoa(int(h.Tsec)))
+	sb.WriteString(strconv.FormatUint(uint64(h.Tsec), 10))
 	sb.WriteString(",\"timeUseconds\":")
-	sb.WriteString(strconv.Itoa(int(h.Tmsec)))
+	sb.WriteString(strconv.FormatUint(uint64(h.Tmsec), 10))
 	sb.WriteString(",\"payloadType\":")
-	sb.WriteString(strconv.Itoa(int(h.ProtoType)))
+	sb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
 	sb.WriteString(",\"captureId\":")
-	sb.WriteString(strconv.Itoa(int(h.NodeID)))
+	sb.WriteString(h.Node)
 	sb.WriteString(",\"capturePass\":\"")
 	sb.WriteString(h.NodePW)
 	if corrID != "" {
@@ -300,12 +294,12 @@ func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffe
 	return sb.String()
 }
 
-func makeRTCDataHeader(h *decoder.HEP, date string, sb *bytebufferpool.ByteBuffer) string {
+func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
-	sb.WriteString("\"create_date\":\"")
-	sb.WriteString(date)
-	sb.WriteString("\",\"sid\":\"")
-	sb.WriteString(h.CID)
+	sb.WriteString("\"host\":\"")
+	sb.WriteString(h.Host)
+	sb.WriteString("\",\"tag\":\"")
+	sb.WriteString(h.Tag)
 	sb.WriteString("\"}")
 	return sb.String()
 }

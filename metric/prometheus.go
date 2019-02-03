@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -81,7 +80,6 @@ func (p *Prometheus) setup() (err error) {
 
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	for pkt := range hCh {
-		nodeID := strconv.Itoa(int(pkt.NodeID))
 		labelType := decoder.HEPTypeString(pkt.ProtoType)
 
 		packetsByType.WithLabelValues(labelType).Inc()
@@ -101,11 +99,11 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				var ok bool
 				st, ok = p.TargetMap[pkt.SrcIP]
 				if ok {
-					methodResponses.WithLabelValues(st, "src", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(st, "src", pkt.Node, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
 				dt, ok = p.TargetMap[pkt.DstIP]
 				if ok {
-					methodResponses.WithLabelValues(dt, "dst", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(dt, "dst", pkt.Node, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 				}
 			} else {
 				_, err := p.cache.Get([]byte(cid + pkt.SIP.StartLine.Method + pkt.SIP.CseqMethod))
@@ -116,7 +114,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				if err != nil {
 					logp.Warn("%v", err)
 				}
-				methodResponses.WithLabelValues("", "", nodeID, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+				methodResponses.WithLabelValues("", "", pkt.Node, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
 			}
 
 			p.requestDelay(st, dt, cid, pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod, pkt.Timestamp)
@@ -125,18 +123,18 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
 			}
 			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), nodeID).Inc()
+				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), pkt.Node).Inc()
 			}
 		} else if pkt.ProtoType == 5 {
-			p.dissectRTCPStats(nodeID, []byte(pkt.Payload))
+			p.dissectRTCPStats(pkt.Node, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 34 {
-			p.dissectRTPStats(nodeID, []byte(pkt.Payload))
+			p.dissectRTPStats(pkt.Node, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 35 {
-			p.dissectRTCPXRStats(nodeID, pkt.Payload)
+			p.dissectRTCPXRStats(pkt.Node, pkt.Payload)
 		} else if pkt.ProtoType == 38 {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		} else if pkt.ProtoType == 112 {
-			logSeverity.WithLabelValues(nodeID, pkt.CID, pkt.Host).Inc()
+			logSeverity.WithLabelValues(pkt.Node, pkt.CID, pkt.Host).Inc()
 		} else if pkt.ProtoType == 1032 {
 			p.dissectJanusStats([]byte(pkt.Payload))
 		}
