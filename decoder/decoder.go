@@ -70,6 +70,8 @@ type HEP struct {
 	Timestamp time.Time
 	SIP       *sipparser.SipMsg
 	Host      string
+	Tag       string
+	Node      string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -141,6 +143,7 @@ func (h *HEP) parse(packet []byte) error {
 			}
 		}
 	}
+	h.Node = strconv.FormatUint(uint64(h.NodeID), 10)
 
 	logp.Debug("hep", "%+v\n\n", h)
 	return nil

@@ -77,7 +77,6 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 		ok          bool
 		keep        bool
 		hepType     string
-		nodeID      string
 		curPktTime  time.Time
 		lastPktTime time.Time
 		batch       = map[model.Fingerprint]*logproto.Stream{}
@@ -106,7 +105,6 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 				curPktTime = time.Now()
 			}
 			lastPktTime = curPktTime
-			nodeID = strconv.Itoa(int(pkt.NodeID))
 			hepType = decoder.HEPTypeString(pkt.ProtoType)
 			maxWait.Reset(l.BatchWait)
 
@@ -137,7 +135,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 					model.LabelSet{
 						"job":      jobName,
 						"type":     model.LabelValue(hepType),
-						"node_id":  model.LabelValue(nodeID),
+						"node":     model.LabelValue(pkt.Node),
 						"response": model.LabelValue(pkt.SIP.StartLine.Method),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					logproto.Entry{
@@ -148,9 +146,9 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			case keep && pkt.ProtoType > 1 && pkt.ProtoType <= 100:
 				l.entry = entry{
 					model.LabelSet{
-						"job":     jobName,
-						"type":    model.LabelValue(hepType),
-						"node_id": model.LabelValue(nodeID)},
+						"job":  jobName,
+						"type": model.LabelValue(hepType),
+						"node": model.LabelValue(pkt.Node)},
 					logproto.Entry{
 						Timestamp: curPktTime,
 						Line:      pktMeta.String(),
@@ -158,10 +156,10 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 			case keep && pkt.ProtoType == 112:
 				l.entry = entry{
 					model.LabelSet{
-						"job":     jobName,
-						"type":    model.LabelValue(pkt.CID),
-						"node_id": model.LabelValue(nodeID),
-						"host":    model.LabelValue(pkt.Host)},
+						"job":  jobName,
+						"type": model.LabelValue(pkt.CID),
+						"node": model.LabelValue(pkt.Node),
+						"host": model.LabelValue(pkt.Host)},
 					logproto.Entry{
 						Timestamp: curPktTime,
 						Line:      pktMeta.String(),
