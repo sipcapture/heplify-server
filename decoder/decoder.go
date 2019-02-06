@@ -130,7 +130,7 @@ func (h *HEP) parse(packet []byte) error {
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.Payload = "DISCARD"
+					h = nil
 					return nil
 				}
 			}

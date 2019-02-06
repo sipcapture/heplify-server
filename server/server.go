@@ -185,7 +185,7 @@ OUT:
 		} else if hepPkt.ProtoType == 0 {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
-		} else if hepPkt.Payload == "DISCARD" {
+		} else if hepPkt == nil {
 			continue
 		}
 

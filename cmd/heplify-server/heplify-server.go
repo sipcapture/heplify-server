@@ -81,6 +81,9 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	hep := input.NewHEPInput()
 	servers := []server{hep}
+	/* 	autopprof.Capture(autopprof.CPUProfile{
+		Duration: 15 * time.Second,
+	}) */
 
 	for _, srv := range servers {
 		wg.Add(1)
