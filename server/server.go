@@ -185,8 +185,6 @@ OUT:
 		} else if hepPkt.ProtoType == 0 {
 			atomic.AddUint64(&h.stats.DupCount, 1)
 			continue
-		} else if hepPkt == nil {
-			continue
 		}
 
 		atomic.AddUint64(&h.stats.HEPCount, 1)
@@ -251,7 +249,7 @@ OUT:
 func (h *HEPInput) logStats() {
 	ticker := time.NewTicker(5 * time.Minute)
 	for range ticker.C {
-		logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Duplicate: %d, Error: %d",
+		logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Filtered: %d, Error: %d",
 			atomic.LoadUint64(&h.stats.PktCount)/300,
 			atomic.LoadUint64(&h.stats.HEPCount),
 			atomic.LoadUint64(&h.stats.DupCount),
