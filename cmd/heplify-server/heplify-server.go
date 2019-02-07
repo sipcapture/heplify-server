@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"syscall"
@@ -77,7 +78,7 @@ func main() {
 	var sigCh = make(chan os.Signal, 1)
 
 	//go http.ListenAndServe(":8181", http.DefaultServeMux)
-
+	debug.SetGCPercent(50)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	hep := input.NewHEPInput()
 	servers := []server{hep}
