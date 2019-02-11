@@ -130,7 +130,7 @@ func (h *HEP) parse(packet []byte) error {
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.Payload = "DISCARD"
+					h.ProtoType = 0
 					return nil
 				}
 			}
@@ -144,7 +144,13 @@ func (h *HEP) parse(packet []byte) error {
 		}
 	}
 	h.Node = strconv.FormatUint(uint64(h.NodeID), 10)
-
+	for {
+		if strings.HasSuffix(h.CID, "_b2b-1") {
+			h.CID = h.CID[:len(h.CID)-6]
+			continue
+		}
+		break
+	}
 	logp.Debug("hep", "%+v\n\n", h)
 	return nil
 }

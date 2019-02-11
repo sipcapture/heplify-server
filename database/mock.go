@@ -34,11 +34,11 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		r = append(r, []interface{}{
 			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
 			pkt.Timestamp.UnixNano() / 1000,
-			short(pkt.SIP.StartLine.Method, 50),
-			short(pkt.SIP.StartLine.RespText, 100),
-			short(pkt.SIP.StartLine.URI.Raw, 200),
-			short(pkt.SIP.StartLine.URI.User, 100),
-			short(pkt.SIP.StartLine.URI.Host, 150),
+			short(pkt.SIP.FirstMethod, 50),
+			short(pkt.SIP.FirstRespText, 100),
+			short(pkt.SIP.URIRaw, 200),
+			short(pkt.SIP.URIUser, 100),
+			short(pkt.SIP.URIHost, 150),
 			short(pkt.SIP.FromUser, 100),
 			short(pkt.SIP.FromHost, 150),
 			short(pkt.SIP.FromTag, 64),
@@ -69,7 +69,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 			short(pkt.SIP.RTPStatVal, 256),
 			pkt.ProtoType,
 			pkt.NodeID,
-			short(pkt.SIP.CallID, 120),
+			short(pkt.CID, 120),
 			short(pkt.Payload, 3000)}...)
 		return r
 	}

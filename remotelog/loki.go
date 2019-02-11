@@ -136,7 +136,7 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 						"job":      jobName,
 						"type":     model.LabelValue(hepType),
 						"node":     model.LabelValue(pkt.Node),
-						"response": model.LabelValue(pkt.SIP.StartLine.Method),
+						"response": model.LabelValue(pkt.SIP.FirstMethod),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					logproto.Entry{
 						Timestamp: curPktTime,
