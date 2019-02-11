@@ -13,7 +13,7 @@ type Remotelog struct {
 
 type RemoteHandler interface {
 	setup() error
-	send(chan *decoder.HEP)
+	start(chan *decoder.HEP)
 }
 
 func New(name string) *Remotelog {
@@ -41,7 +41,7 @@ func (r *Remotelog) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		r.H.send(r.Chan)
+		r.H.start(r.Chan)
 	}()
 	wg.Wait()
 	return nil
