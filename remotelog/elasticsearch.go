@@ -68,7 +68,7 @@ func (e *Elasticsearch) setup() error {
 	return nil
 }
 
-func (e *Elasticsearch) send(hCh chan *decoder.HEP) {
+func (e *Elasticsearch) start(hCh chan *decoder.HEP) {
 	var (
 		pkt *decoder.HEP
 		ok  bool

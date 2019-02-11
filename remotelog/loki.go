@@ -1,8 +1,11 @@
 package remotelog
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,10 +23,11 @@ import (
 )
 
 const (
-	contentType = "application/x-protobuf"
-	postPath    = "/api/prom/push"
-	getPath     = "/api/prom/label"
-	jobName     = model.LabelValue("heplify-server")
+	contentType  = "application/x-protobuf"
+	postPath     = "/api/prom/push"
+	getPath      = "/api/prom/label"
+	jobName      = model.LabelValue("heplify-server")
+	maxErrMsgLen = 1024
 )
 
 type entry struct {
@@ -70,7 +74,7 @@ func (l *Loki) setup() error {
 	return nil
 }
 
-func (l *Loki) send(hCh chan *decoder.HEP) {
+func (l *Loki) start(hCh chan *decoder.HEP) {
 	var (
 		pkt         *decoder.HEP
 		pktMeta     strings.Builder
@@ -175,7 +179,6 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 					}}
 			default:
 				continue
-
 			}
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
@@ -214,33 +217,58 @@ func (l *Loki) send(hCh chan *decoder.HEP) {
 }
 
 func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
+	buf, err := encodeBatch(batch)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = l.send(ctx, buf)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func encodeBatch(batch map[model.Fingerprint]*logproto.Stream) ([]byte, error) {
 	req := logproto.PushRequest{
 		Streams: make([]*logproto.Stream, 0, len(batch)),
 	}
-	count := 0
 	for _, stream := range batch {
 		req.Streams = append(req.Streams, stream)
-		count += len(stream.Entries)
 	}
 	buf, err := proto.Marshal(&req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	buf = snappy.Encode(nil, buf)
+	return buf, nil
+}
 
-	resp, err := http.Post(l.URL, contentType, bytes.NewReader(buf))
+func (l *Loki) send(ctx context.Context, buf []byte) (int, error) {
+	req, err := http.NewRequest("POST", l.URL, bytes.NewReader(buf))
 	if err != nil {
-		return err
+		return -1, err
 	}
-	if err := resp.Body.Close(); err != nil {
-		return err
+	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", contentType)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return -1, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("%d - %s", resp.StatusCode, resp.Status)
+		scanner := bufio.NewScanner(io.LimitReader(resp.Body, maxErrMsgLen))
+		line := ""
+		if scanner.Scan() {
+			line = scanner.Text()
+		}
+		err = fmt.Errorf("server returned HTTP status %s (%d): %s", resp.Status, resp.StatusCode, line)
 	}
-	logp.Debug("loki", "entries: %s, count: %d", req, count)
-	return nil
+	return resp.StatusCode, err
 }
 
 // Stop the client.
