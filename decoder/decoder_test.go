@@ -56,14 +56,16 @@ func BenchmarkDecodeHEP(b *testing.B) {
 // EncodeHEP creates the HEP Packet which
 // will be send to wire
 func EncodeHEP(h *HEP) []byte {
-	buf := new(bytes.Buffer)
-	hepMsg := makeChuncks(h, buf)
+	hepMsg := makeChuncks(h)
 	binary.BigEndian.PutUint16(hepMsg[4:6], uint16(len(hepMsg)))
 	return hepMsg
 }
 
+var w bytes.Buffer
+
 // makeChuncks will construct the respective HEP chunck
-func makeChuncks(h *HEP, w *bytes.Buffer) []byte {
+func makeChuncks(h *HEP) []byte {
+	w.Reset()
 	w.Write(hepVer)
 	// hepMsg length placeholder. Will be written later
 	w.Write(hepLen)

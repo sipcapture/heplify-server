@@ -87,37 +87,29 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			var st, dt string
-			cid := pkt.SIP.CallID
-			for {
-				if strings.HasSuffix(cid, "_b2b-1") {
-					cid = cid[:len(cid)-6]
-					continue
-				}
-				break
-			}
 			if !p.TargetEmpty {
 				var ok bool
 				st, ok = p.TargetMap[pkt.SrcIP]
 				if ok {
-					methodResponses.WithLabelValues(st, "src", pkt.Node, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(st, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
 				dt, ok = p.TargetMap[pkt.DstIP]
 				if ok {
-					methodResponses.WithLabelValues(dt, "dst", pkt.Node, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(dt, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
 			} else {
-				_, err := p.cache.Get([]byte(cid + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod))
+				_, err := p.cache.Get([]byte(pkt.CID + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod))
 				if err == nil {
 					continue
 				}
-				err = p.cache.Set([]byte(cid+pkt.SIP.FirstMethod+pkt.SIP.CseqMethod), nil, 600)
+				err = p.cache.Set([]byte(pkt.CID+pkt.SIP.FirstMethod+pkt.SIP.CseqMethod), nil, 600)
 				if err != nil {
 					logp.Warn("%v", err)
 				}
 				methodResponses.WithLabelValues("", "", pkt.Node, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 			}
 
-			p.requestDelay(st, dt, cid, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod, pkt.Timestamp)
+			p.requestDelay(st, dt, pkt.CID, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod, pkt.Timestamp)
 
 			if pkt.SIP.RTPStatVal != "" {
 				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)

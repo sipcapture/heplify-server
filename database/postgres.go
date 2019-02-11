@@ -319,7 +319,7 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("\",\"auth_user\":\"")
 	sb.WriteString(h.SIP.AuthUser)
 	sb.WriteString("\",\"callid\":\"")
-	sb.WriteString(h.SIP.CallID)
+	sb.WriteString(h.CID)
 	sb.WriteString("\",\"method\":\"")
 	sb.WriteString(h.SIP.FirstMethod)
 	sb.WriteString("\",\"from_tag\":\"")

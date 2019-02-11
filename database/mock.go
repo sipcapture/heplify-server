@@ -69,7 +69,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 			short(pkt.SIP.RTPStatVal, 256),
 			pkt.ProtoType,
 			pkt.NodeID,
-			short(pkt.SIP.CallID, 120),
+			short(pkt.CID, 120),
 			short(pkt.Payload, 3000)}...)
 		return r
 	}
