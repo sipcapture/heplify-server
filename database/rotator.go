@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/gobuffalo/packr"
-	"github.com/negbie/dotsql"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/robfig/cron"
@@ -27,10 +25,9 @@ type Rotator struct {
 	logStep    int
 	qosStep    int
 	sipStep    int
-	box        *packr.Box
 }
 
-func NewRotator(b *packr.Box) *Rotator {
+func NewRotator() *Rotator {
 	r := &Rotator{}
 	r.rootDBAddr, _ = connectString("")
 	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
@@ -38,7 +35,6 @@ func NewRotator(b *packr.Box) *Rotator {
 	r.logStep = setStep(config.Setting.DBPartLog)
 	r.qosStep = setStep(config.Setting.DBPartQos)
 	r.sipStep = setStep(config.Setting.DBPartSip)
-	r.box = b
 	return r
 }
 
@@ -99,16 +95,16 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		defer db.Close()
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET time_zone = \"+00:00\";")
-		if err := r.dbExecFile(db, r.box.String("mysql/tbldatalog.sql"), suffix, duration, r.logStep); err == nil {
-			r.dbExecFileLoop(db, r.box.String("mysql/parlog.sql"), suffix, duration, r.logStep)
+		if err := r.dbExecFile(db, tbldatalogmaria, suffix, duration, r.logStep); err == nil {
+			r.dbExecFileLoop(db, parlogmaria, suffix, duration, r.logStep)
 		}
-		if err := r.dbExecFile(db, r.box.String("mysql/tbldataqos.sql"), suffix, duration, r.qosStep); err == nil {
-			r.dbExecFileLoop(db, r.box.String("mysql/parqos.sql"), suffix, duration, r.qosStep)
+		if err := r.dbExecFile(db, tbldataqosmaria, suffix, duration, r.qosStep); err == nil {
+			r.dbExecFileLoop(db, parqosmaria, suffix, duration, r.qosStep)
 		}
-		if err := r.dbExecFile(db, r.box.String("mysql/tbldatasip.sql"), suffix, duration, r.sipStep); err == nil {
-			r.dbExecFileLoop(db, r.box.String("mysql/parsip.sql"), suffix, duration, r.sipStep)
+		if err := r.dbExecFile(db, tbldatasipmaria, suffix, duration, r.sipStep); err == nil {
+			r.dbExecFileLoop(db, parsipmaria, suffix, duration, r.sipStep)
 		}
-		r.dbExecFile(db, r.box.String("mysql/parmax.sql"), suffix, 0, 0)
+		r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
@@ -117,13 +113,13 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		defer db.Close()
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
-		r.dbExecFile(db, r.box.String("pgsql/tbldata.sql"), suffix, 0, 0)
-		r.dbExecFileLoop(db, r.box.String("pgsql/parlog.sql"), suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/parqos.sql"), suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/parsip.sql"), suffix, duration, r.sipStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/idxlog.sql"), suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/idxqos.sql"), suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/idxsip.sql"), suffix, duration, r.sipStep)
+		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
+		r.dbExecFileLoop(db, parlogpg, suffix, duration, r.logStep)
+		r.dbExecFileLoop(db, parqospg, suffix, duration, r.qosStep)
+		r.dbExecFileLoop(db, parsippg, suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.logStep)
+		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.qosStep)
+		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.sipStep)
 	}
 	return nil
 }
@@ -136,17 +132,17 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/tblconf.sql"), suffix, 0, 0)
-		r.dbExecFile(db, r.box.String("mysql/insconf.sql"), suffix, 0, 0)
+		r.dbExecFile(db, tblconfmaria, suffix, 0, 0)
+		r.dbExecFile(db, insconfmaria, suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := sql.Open(config.Setting.DBDriver, r.confDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("pgsql/idxconf.sql"), suffix, 0, 0)
-		r.dbExecFile(db, r.box.String("pgsql/tblconf.sql"), suffix, 0, 0)
-		r.dbExecFile(db, r.box.String("pgsql/insconf.sql"), suffix, 0, 0)
+		r.dbExecFile(db, idxconfpg, suffix, 0, 0)
+		r.dbExecFile(db, tblconfpg, suffix, 0, 0)
+		r.dbExecFile(db, insconfpg, suffix, 0, 0)
 	}
 	return nil
 }
@@ -159,16 +155,24 @@ func (r *Rotator) DropTables(duration int) (err error) {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, r.box.String("mysql/droptbl.sql"), suffix, 0, 0)
+		r.dbExecFile(db, droplogmaria, suffix, 0, 0)
+		r.dbExecFile(db, dropreportmaria, suffix, 0, 0)
+		r.dbExecFile(db, droprtcpmaria, suffix, 0, 0)
+		r.dbExecFile(db, dropcallmaria, suffix, 0, 0)
+		r.dbExecFile(db, dropregistermaria, suffix, 0, 0)
+		r.dbExecFile(db, dropdefaultmaria, suffix, 0, 0)
 	} else if config.Setting.DBDriver == "postgres" {
 		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFileLoop(db, r.box.String("pgsql/droplog.sql"), suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/dropqos.sql"), suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, r.box.String("pgsql/dropsip.sql"), suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, droplogpg, suffix, duration, r.logStep)
+		r.dbExecFileLoop(db, dropreportpg, suffix, duration, r.qosStep)
+		r.dbExecFileLoop(db, droprtcppg, suffix, duration, r.qosStep)
+		r.dbExecFileLoop(db, dropcallpg, suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, dropregisterpg, suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, dropdefaultpg, suffix, duration, r.sipStep)
 	}
 	return nil
 }
@@ -178,19 +182,15 @@ func (r *Rotator) dbExec(db *sql.DB, query string) {
 	checkDBErr(err)
 }
 
-func (r *Rotator) dbExecFile(db *sql.DB, file string, pattern strings.Replacer, d, p int) error {
+func (r *Rotator) dbExecFile(db *sql.DB, file []string, pattern strings.Replacer, d, p int) error {
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	tt := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	newMinTime := tt.Format("1504")
 	newEndTime := tt.Add(time.Minute * time.Duration(p)).Format("2006-01-02 15:04:05")
 
-	dot, err := dotsql.LoadFromString(pattern.Replace(file))
-	if err != nil {
-		logp.Err("%s\n\n", err)
-	}
-
 	var lastErr error
-	for _, query := range dot.QueryMap() {
+	for _, query := range file {
+		query = pattern.Replace(query)
 		if p != 0 {
 			query = strings.Replace(query, partitionMinTime, newMinTime, -1)
 			query = strings.Replace(query, partitionEndTime, newEndTime, -1)
@@ -203,13 +203,9 @@ func (r *Rotator) dbExecFile(db *sql.DB, file string, pattern strings.Replacer, 
 	return lastErr
 }
 
-func (r *Rotator) dbExecFileLoop(db *sql.DB, file string, pattern strings.Replacer, d, p int) {
-	dot, err := dotsql.LoadFromString(pattern.Replace(file))
-	if err != nil {
-		logp.Err("%s\n\n", err)
-	}
-
-	for _, q := range dot.QueryMap() {
+func (r *Rotator) dbExecFileLoop(db *sql.DB, file []string, pattern strings.Replacer, d, p int) {
+	for _, q := range file {
+		q = pattern.Replace(q)
 		fileLoop(db, q, d, p)
 	}
 }
