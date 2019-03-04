@@ -5,7 +5,6 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gobuffalo/packr"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/logp"
@@ -97,8 +96,7 @@ func (m *MySQL) setup() error {
 	}
 
 	if config.Setting.DBRotate {
-		b := packr.NewBox("./files/homer5")
-		r := NewRotator(&b)
+		r := NewRotator()
 		r.Rotate()
 	}
 

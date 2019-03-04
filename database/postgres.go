@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gobuffalo/packr"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
@@ -38,8 +37,7 @@ func (p *Postgres) setup() error {
 	}
 
 	if config.Setting.DBRotate {
-		b := packr.NewBox("./files/homer7")
-		r := NewRotator(&b)
+		r := NewRotator()
 		r.Rotate()
 	}
 
