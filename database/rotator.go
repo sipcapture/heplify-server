@@ -19,29 +19,48 @@ const (
 )
 
 type Rotator struct {
-	rootDBAddr string
-	confDBAddr string
-	dataDBAddr string
-	logStep    int
-	qosStep    int
-	sipStep    int
+	driver           string
+	rootDBAddr       string
+	confDBAddr       string
+	dataDBAddr       string
+	partLog          int
+	partQos          int
+	partSip          int
+	dropDays         int
+	dropDaysCall     int
+	dropDaysRegister int
+	dropDaysRest     int
 }
 
 func NewRotator() *Rotator {
 	r := &Rotator{}
+	r.driver = config.Setting.DBDriver
 	r.rootDBAddr, _ = connectString("")
 	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
 	r.dataDBAddr, _ = connectString(config.Setting.DBDataTable)
-	r.logStep = setStep(config.Setting.DBPartLog)
-	r.qosStep = setStep(config.Setting.DBPartQos)
-	r.sipStep = setStep(config.Setting.DBPartSip)
+	r.partLog = setStep(config.Setting.DBPartLog)
+	r.partQos = setStep(config.Setting.DBPartQos)
+	r.partSip = setStep(config.Setting.DBPartSip)
+	r.dropDays = config.Setting.DBDropDays
+	r.dropDaysCall = config.Setting.DBDropDaysCall
+	if r.dropDaysCall == 0 {
+		r.dropDaysCall = r.dropDays
+	}
+	r.dropDaysRegister = config.Setting.DBDropDaysRegister
+	if r.dropDaysRegister == 0 {
+		r.dropDaysRegister = r.dropDays
+	}
+	r.dropDaysRest = config.Setting.DBDropDaysRest
+	if r.dropDaysRest == 0 {
+		r.dropDaysRest = r.dropDays
+	}
 	return r
 }
 
 func (r *Rotator) CreateDatabases() (err error) {
 	for {
-		if config.Setting.DBDriver == "mysql" {
-			db, err := sql.Open(config.Setting.DBDriver, r.rootDBAddr)
+		if r.driver == "mysql" {
+			db, err := sql.Open(r.driver, r.rootDBAddr)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -55,8 +74,8 @@ func (r *Rotator) CreateDatabases() (err error) {
 				db.Close()
 				break
 			}
-		} else if config.Setting.DBDriver == "postgres" {
-			db, err := sql.Open(config.Setting.DBDriver, r.rootDBAddr)
+		} else if r.driver == "postgres" {
+			db, err := sql.Open(r.driver, r.rootDBAddr)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
@@ -87,26 +106,26 @@ func replaceDay(d int) strings.Replacer {
 
 func (r *Rotator) CreateDataTables(duration int) (err error) {
 	suffix := replaceDay(duration)
-	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
+	if r.driver == "mysql" {
+		db, err := sql.Open(r.driver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET time_zone = \"+00:00\";")
-		if err := r.dbExecFile(db, tbldatalogmaria, suffix, duration, r.logStep); err == nil {
-			r.dbExecFileLoop(db, parlogmaria, suffix, duration, r.logStep)
+		if err := r.dbExecFile(db, tbldatalogmaria, suffix, duration, r.partLog); err == nil {
+			r.dbExecFileLoop(db, parlogmaria, suffix, duration, r.partLog)
 		}
-		if err := r.dbExecFile(db, tbldataqosmaria, suffix, duration, r.qosStep); err == nil {
-			r.dbExecFileLoop(db, parqosmaria, suffix, duration, r.qosStep)
+		if err := r.dbExecFile(db, tbldataqosmaria, suffix, duration, r.partQos); err == nil {
+			r.dbExecFileLoop(db, parqosmaria, suffix, duration, r.partQos)
 		}
-		if err := r.dbExecFile(db, tbldatasipmaria, suffix, duration, r.sipStep); err == nil {
-			r.dbExecFileLoop(db, parsipmaria, suffix, duration, r.sipStep)
+		if err := r.dbExecFile(db, tbldatasipmaria, suffix, duration, r.partSip); err == nil {
+			r.dbExecFileLoop(db, parsipmaria, suffix, duration, r.partSip)
 		}
 		r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
-	} else if config.Setting.DBDriver == "postgres" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
+	} else if r.driver == "postgres" {
+		db, err := sql.Open(r.driver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
@@ -114,28 +133,28 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
-		r.dbExecFileLoop(db, parlogpg, suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, parqospg, suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, parsippg, suffix, duration, r.sipStep)
-		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, parlogpg, suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, parqospg, suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, parsippg, suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.partSip)
 	}
 	return nil
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
 	suffix := replaceDay(duration)
-	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.confDBAddr)
+	if r.driver == "mysql" {
+		db, err := sql.Open(r.driver, r.confDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
 		r.dbExecFile(db, tblconfmaria, suffix, 0, 0)
 		r.dbExecFile(db, insconfmaria, suffix, 0, 0)
-	} else if config.Setting.DBDriver == "postgres" {
-		db, err := sql.Open(config.Setting.DBDriver, r.confDBAddr)
+	} else if r.driver == "postgres" {
+		db, err := sql.Open(r.driver, r.confDBAddr)
 		if err != nil {
 			return err
 		}
@@ -147,32 +166,31 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 	return nil
 }
 
-func (r *Rotator) DropTables(duration int) (err error) {
-	suffix := replaceDay(duration * -1)
-	if config.Setting.DBDriver == "mysql" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
+func (r *Rotator) DropTables() (err error) {
+	if r.driver == "mysql" {
+		db, err := sql.Open(r.driver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFile(db, droplogmaria, suffix, 0, 0)
-		r.dbExecFile(db, dropreportmaria, suffix, 0, 0)
-		r.dbExecFile(db, droprtcpmaria, suffix, 0, 0)
-		r.dbExecFile(db, dropcallmaria, suffix, 0, 0)
-		r.dbExecFile(db, dropregistermaria, suffix, 0, 0)
-		r.dbExecFile(db, dropdefaultmaria, suffix, 0, 0)
-	} else if config.Setting.DBDriver == "postgres" {
-		db, err := sql.Open(config.Setting.DBDriver, r.dataDBAddr)
+		r.dbExecFile(db, droplogmaria, replaceDay(r.dropDays*-1), 0, 0)
+		r.dbExecFile(db, dropreportmaria, replaceDay(r.dropDays*-1), 0, 0)
+		r.dbExecFile(db, droprtcpmaria, replaceDay(r.dropDays*-1), 0, 0)
+		r.dbExecFile(db, dropcallmaria, replaceDay(r.dropDaysCall*-1), 0, 0)
+		r.dbExecFile(db, dropregistermaria, replaceDay(r.dropDaysRegister*-1), 0, 0)
+		r.dbExecFile(db, dropdefaultmaria, replaceDay(r.dropDaysRest*-1), 0, 0)
+	} else if r.driver == "postgres" {
+		db, err := sql.Open(r.driver, r.dataDBAddr)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
-		r.dbExecFileLoop(db, droplogpg, suffix, duration, r.logStep)
-		r.dbExecFileLoop(db, dropreportpg, suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, droprtcppg, suffix, duration, r.qosStep)
-		r.dbExecFileLoop(db, dropcallpg, suffix, duration, r.sipStep)
-		r.dbExecFileLoop(db, dropregisterpg, suffix, duration, r.sipStep)
-		r.dbExecFileLoop(db, dropdefaultpg, suffix, duration, r.sipStep)
+		r.dbExecFileLoop(db, droplogpg, replaceDay(r.dropDays*-1), r.dropDays, r.partLog)
+		r.dbExecFileLoop(db, dropreportpg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
+		r.dbExecFileLoop(db, droprtcppg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
+		r.dbExecFileLoop(db, dropcallpg, replaceDay(r.dropDaysCall*-1), r.dropDaysCall, r.partSip)
+		r.dbExecFileLoop(db, dropregisterpg, replaceDay(r.dropDaysRegister*-1), r.dropDaysRegister, r.partSip)
+		r.dbExecFileLoop(db, dropdefaultpg, replaceDay(r.dropDaysRest*-1), r.dropDaysRest, r.partSip)
 	}
 	return nil
 }
@@ -251,11 +269,11 @@ func (r *Rotator) Rotate() (err error) {
 	})
 	createJob.Start()
 
-	if config.Setting.DBDropDays > 0 {
+	if r.dropDays > 0 {
 		dropJob := cron.New()
 		logp.Info("schedule daily drop job at 03:45:00\n")
 		dropJob.AddFunc("0 45 03 * * *", func() {
-			if err := r.DropTables(config.Setting.DBDropDays); err != nil {
+			if err := r.DropTables(); err != nil {
 				logp.Err("%v", err)
 			}
 			logp.Info("finished drop job next will run at %v\n", time.Now().Add(time.Hour*24+1))
@@ -285,13 +303,13 @@ func (r *Rotator) createTables() {
 		logp.Err("%v", err)
 	}
 	logp.Info("end creating tables (%v)\n", time.Now())
-	if config.Setting.DBDropOnStart && config.Setting.DBDropDays != 0 {
-		if err := r.DropTables(config.Setting.DBDropDays); err != nil {
+	if config.Setting.DBDropOnStart && r.dropDays != 0 {
+		if err := r.DropTables(); err != nil {
 			logp.Err("%v", err)
 		}
 	}
-	if config.Setting.DBDropDays == 0 {
-		logp.Warn("don't schedule daily drop job because config.Setting.DBDropDays is 0\n")
+	if r.dropDays == 0 {
+		logp.Warn("don't schedule daily drop job because setting DBDropDays is 0\n")
 		logp.Warn("better set DBDropDays greater 0 otherwise old data won't be deleted\n")
 	}
 }
@@ -329,12 +347,11 @@ func setStep(name string) (step int) {
 
 func checkDBErr(err error) {
 	if err != nil {
-		if config.Setting.DBDriver == "mysql" {
-			if mErr, ok := err.(*mysql.MySQLError); ok && mErr.Number != 1050 &&
-				mErr.Number != 1062 && mErr.Number != 1481 && mErr.Number != 1517 {
-				logp.Warn("%s\n\n", err)
-			}
-		} else if config.Setting.DBDriver == "postgres" {
+		if mErr, ok := err.(*mysql.MySQLError); ok && mErr.Number != 1050 &&
+			mErr.Number != 1062 && mErr.Number != 1481 && mErr.Number != 1517 {
+			logp.Warn("%s\n\n", err)
+
+		} else {
 			logp.Warn("%s\n\n", err)
 		}
 	}
