@@ -24,6 +24,7 @@ type Rotator struct {
 	confDBAddr       string
 	dataDBAddr       string
 	partLog          int
+	partIsup         int
 	partQos          int
 	partSip          int
 	dropDays         int
@@ -39,6 +40,7 @@ func NewRotator() *Rotator {
 	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
 	r.dataDBAddr, _ = connectString(config.Setting.DBDataTable)
 	r.partLog = setStep(config.Setting.DBPartLog)
+	r.partIsup = setStep(config.Setting.DBPartIsup)
 	r.partQos = setStep(config.Setting.DBPartQos)
 	r.partSip = setStep(config.Setting.DBPartSip)
 	r.dropDays = config.Setting.DBDropDays
@@ -133,12 +135,14 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
-		r.dbExecFileLoop(db, parlogpg, suffix, duration, r.partLog)
-		r.dbExecFileLoop(db, parqospg, suffix, duration, r.partQos)
-		r.dbExecFileLoop(db, parsippg, suffix, duration, r.partSip)
-		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.partLog)
-		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.partQos)
-		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, parlogpg,  suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, parqospg,  suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, parisuppg, suffix, duration, r.partIsup)
+		r.dbExecFileLoop(db, parsippg,  suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, idxlogpg,  suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, idxisuppg, suffix, duration, r.partIsup)
+		r.dbExecFileLoop(db, idxqospg,  suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, idxsippg,  suffix, duration, r.partSip)
 	}
 	return nil
 }
@@ -186,6 +190,7 @@ func (r *Rotator) DropTables() (err error) {
 		}
 		defer db.Close()
 		r.dbExecFileLoop(db, droplogpg, replaceDay(r.dropDays*-1), r.dropDays, r.partLog)
+		r.dbExecFileLoop(db, dropisuppg, replaceDay(r.dropDays*-1), r.dropDays, r.partIsup)
 		r.dbExecFileLoop(db, dropreportpg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
 		r.dbExecFileLoop(db, droprtcppg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
 		r.dbExecFileLoop(db, dropcallpg, replaceDay(r.dropDaysCall*-1), r.dropDaysCall, r.partSip)
