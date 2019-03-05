@@ -45,9 +45,10 @@ func BenchmarkInsert(b *testing.B) {
 func TestMakeISUPDataHeader(t *testing.T) {
 	bpp := bytebufferpool.Get()
 	defer bytebufferpool.Put(bpp)
-	ji := makeISUPDataHeader(jsonIsup, bpp)
-	if ji != `{"cic":3324,"dpc":5236,"opc":7414,"msg_name":"IAM","called_number":"9495368","calling_number":"9182789"}` {
-		t.Fail()
+	wantJi := `{"cic":3324,"dpc":5236,"opc":7414,"msg_name":"IAM","called_number":"9495368","calling_number":"9182789","callid":"5236:7414:3324"}`
+	_, gotJi := makeISUPDataHeader(jsonIsup, bpp)
+	if gotJi != wantJi {
+		t.Errorf("[TestMakeISUPDataHeader failed]\nwant:\t%s\ngot:\t%s", wantJi, gotJi)
 	}
 }
 
@@ -56,6 +57,6 @@ func BenchmarkMakeISUPDataHeader(b *testing.B) {
 	defer bytebufferpool.Put(bpp)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = makeISUPDataHeader(jsonIsup, bpp)
+		_, _ = makeISUPDataHeader(jsonIsup, bpp)
 	}
 }

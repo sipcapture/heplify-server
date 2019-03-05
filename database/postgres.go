@@ -133,10 +133,10 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			} else if pkt.ProtoType == 54 && pkt.Payload != "" {
-				pHeader := makeProtoHeader(pkt, "", bpp)
-				dHeader := makeISUPDataHeader([]byte(pkt.Payload), bpd)
+				pHeader := makeProtoHeader(pkt, pkt.CID, bpp)
+				sid, dHeader := makeISUPDataHeader([]byte(pkt.Payload), bpd)
 
-				isupRows = append(isupRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+				isupRows = append(isupRows, sid, date, pHeader, dHeader, pkt.Payload)
 				isupCnt++
 				if isupCnt == p.bulkCnt {
 					p.bulkInsert(isupCopy, isupRows)
@@ -333,8 +333,8 @@ var IsupPaths = [][]string{
 	[]string{"calling_number", "num"},
 }
 
-func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) string {
-	var msg_name, called_number, calling_number string
+func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) (string, string) {
+	var msg_name, called_number, calling_number, callid string
 	var cic, dpc, opc int64
 
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
@@ -365,22 +365,40 @@ func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) string {
 			}
 		}
 	}, IsupPaths...)
+	scic := strconv.FormatInt(cic, 10)
+	sdpc := strconv.FormatInt(dpc, 10)
+	sopc := strconv.FormatInt(opc, 10)
+	//snprintf("%d:%d:%d", opc < dpc ? opc : dpc, dpc < opc ? opc : dpc , cic)
+
+	if opc < dpc {
+		callid = sopc + ":"
+	} else {
+		callid = sdpc + ":"
+	}
+	if dpc < opc {
+		callid += sopc + ":" + scic
+	} else {
+		callid += sdpc + ":" + scic
+	}
 
 	sb.WriteString(`{`)
 	sb.WriteString(`"cic":`)
-	sb.WriteString(strconv.FormatInt(cic, 10))
+	sb.WriteString(scic)
 	sb.WriteString(`,"dpc":`)
-	sb.WriteString(strconv.FormatInt(dpc, 10))
+	sb.WriteString(sdpc)
 	sb.WriteString(`,"opc":`)
-	sb.WriteString(strconv.FormatInt(opc, 10))
+	sb.WriteString(sopc)
 	sb.WriteString(`,"msg_name":"`)
 	sb.WriteString(msg_name)
 	sb.WriteString(`","called_number":"`)
 	sb.WriteString(called_number)
 	sb.WriteString(`","calling_number":"`)
 	sb.WriteString(calling_number)
+	sb.WriteString(`","callid":"`)
+	sb.WriteString(callid)
 	sb.WriteString(`"}`)
-	return sb.String()
+
+	return callid, sb.String()
 }
 
 func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
