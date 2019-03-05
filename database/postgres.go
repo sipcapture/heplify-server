@@ -24,6 +24,7 @@ const (
 	rtcpCopy     = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	reportCopy   = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	dnsCopy      = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	isupCopy     = "COPY hep_proto_54_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
 
@@ -66,13 +67,14 @@ func (p *Postgres) setup() error {
 
 func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	var (
-		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, reportCnt int
+		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, isupCnt, reportCnt int
 
 		callRows   = make([]string, 0, p.bulkCnt)
 		regRows    = make([]string, 0, p.bulkCnt)
 		defRows    = make([]string, 0, p.bulkCnt)
 		dnsRows    = make([]string, 0, p.bulkCnt)
 		logRows    = make([]string, 0, p.bulkCnt)
+		isupRows   = make([]string, 0, p.bulkCnt)
 		rtcpRows   = make([]string, 0, p.bulkCnt)
 		reportRows = make([]string, 0, p.bulkCnt)
 		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
@@ -129,6 +131,19 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						defCnt = 0
 					}
 				}
+			} else if pkt.ProtoType == 54 && pkt.Payload != "" {
+				pHeader := makeProtoHeader(pkt, "", bpp)
+				dHeader := makeISUPDataHeader(pkt, bpd)
+								
+				//isupRows = append(isupRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+				isupRows = append(isupRows, pkt.CID, date, pHeader, pkt.Payload, dHeader)
+				isupCnt++
+				if isupCnt == p.bulkCnt {
+					p.bulkInsert(isupCopy, isupRows)
+					isupRows = []string{}
+					isupCnt = 0
+				}					
+											
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
 				pHeader := makeProtoHeader(pkt, "", bpp)
 				dHeader := makeRTCDataHeader(pkt, bpd)
@@ -149,6 +164,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						dnsRows = []string{}
 						dnsCnt = 0
 					}
+				
 				case 100:
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
@@ -214,6 +230,12 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				p.bulkInsert(logCopy, logRows[:l])
 				logRows = []string{}
 				logCnt = 0
+			}
+			if isupCnt > 0 {
+				l := len(isupRows)
+				p.bulkInsert(isupCopy, isupRows[:l])
+				isupRows = []string{}
+				isupCnt = 0
 			}
 		}
 	}
@@ -293,6 +315,16 @@ func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffe
 }
 
 func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
+	sb.WriteString("{")
+	sb.WriteString("\"host\":\"")
+	sb.WriteString(h.Host)
+	sb.WriteString("\",\"tag\":\"")
+	sb.WriteString(h.Tag)
+	sb.WriteString("\"}")
+	return sb.String()
+}
+
+func makeISUPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
 	sb.WriteString("\"host\":\"")
 	sb.WriteString(h.Host)
