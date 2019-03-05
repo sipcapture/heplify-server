@@ -36,6 +36,7 @@ type HeplifyServer struct {
 	DBWorker           int      `default:"8"`
 	DBRotate           bool     `default:"true"`
 	DBPartLog          string   `default:"2h"`
+	DBPartIsup         string   `default:"2h"`
 	DBPartSip          string   `default:"1h"`
 	DBPartQos          string   `default:"6h"`
 	DBDropDays         int      `default:"14"`
@@ -85,6 +86,7 @@ func NewConfig() *HeplifyServer {
 		DBWorker:           8,
 		DBRotate:           true,
 		DBPartLog:          "6h",
+		DBPartIsup:         "6h",
 		DBPartSip:          "2h",
 		DBPartQos:          "12h",
 		DBDropDays:         14,
