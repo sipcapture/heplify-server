@@ -136,8 +136,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				pHeader := makeProtoHeader(pkt, "", bpp)
 				dHeader := makeISUPDataHeader([]byte(pkt.Payload), bpd)
 
-				//isupRows = append(isupRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
-				isupRows = append(isupRows, pkt.CID, date, pHeader, pkt.Payload, dHeader)
+				isupRows = append(isupRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 				isupCnt++
 				if isupCnt == p.bulkCnt {
 					p.bulkInsert(isupCopy, isupRows)
