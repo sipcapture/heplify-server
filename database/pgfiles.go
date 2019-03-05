@@ -28,8 +28,8 @@ var idxisuppg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_create_date ON hep_proto_54_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_sid ON hep_proto_54_default_{{date}}_{{time}} (sid);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_correlation_id ON hep_proto_54_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_called_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'called_number'->>'num'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_calling_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'calling_number' ->> 'num'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_called_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'called_number'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_calling_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'calling_number'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_opc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'opc'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_dpc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'dpc'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_cic ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'cic'));",
@@ -241,7 +241,7 @@ var tbldatapg = []string{
 		data_header jsonb NOT NULL,
 		raw varchar NOT NULL
 	) PARTITION BY RANGE (create_date);`,
-	
+
 	`CREATE TABLE IF NOT EXISTS hep_proto_54_default (
 		id BIGSERIAL NOT NULL,
 		sid varchar NOT NULL,
