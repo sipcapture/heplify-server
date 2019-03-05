@@ -34,6 +34,7 @@ var idxisuppg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_dpc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'dpc'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_cic ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'cic'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_msg_name ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'msg_name'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_callid ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'callid'));",
 }
 
 var idxqospg = []string{
