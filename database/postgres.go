@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/buger/jsonparser"
 	_ "github.com/lib/pq"
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
@@ -133,8 +134,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				}
 			} else if pkt.ProtoType == 54 && pkt.Payload != "" {
 				pHeader := makeProtoHeader(pkt, "", bpp)
-				dHeader := makeISUPDataHeader(pkt, bpd)
-								
+				dHeader := makeISUPDataHeader([]byte(pkt.Payload), bpd)
+
 				//isupRows = append(isupRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 				isupRows = append(isupRows, pkt.CID, date, pHeader, pkt.Payload, dHeader)
 				isupCnt++
@@ -142,8 +143,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					p.bulkInsert(isupCopy, isupRows)
 					isupRows = []string{}
 					isupCnt = 0
-				}					
-											
+				}
+
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
 				pHeader := makeProtoHeader(pkt, "", bpp)
 				dHeader := makeRTCDataHeader(pkt, bpd)
@@ -164,7 +165,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						dnsRows = []string{}
 						dnsCnt = 0
 					}
-				
+
 				case 100:
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
@@ -324,13 +325,62 @@ func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	return sb.String()
 }
 
-func makeISUPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString("{")
-	sb.WriteString("\"host\":\"")
-	sb.WriteString(h.Host)
-	sb.WriteString("\",\"tag\":\"")
-	sb.WriteString(h.Tag)
-	sb.WriteString("\"}")
+var IsupPaths = [][]string{
+	[]string{"cic"},
+	[]string{"dpc"},
+	[]string{"opc"},
+	[]string{"msg_name"},
+	[]string{"called_number", "num"},
+	[]string{"calling_number", "num"},
+}
+
+func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) string {
+	var msg_name, called_number, calling_number string
+	var cic, dpc, opc int64
+
+	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			if cic, err = jsonparser.ParseInt(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		case 1:
+			if dpc, err = jsonparser.ParseInt(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		case 2:
+			if opc, err = jsonparser.ParseInt(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		case 3:
+			if msg_name, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		case 4:
+			if called_number, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		case 5:
+			if calling_number, err = jsonparser.ParseString(value); err != nil {
+				logp.Warn("%v", err)
+			}
+		}
+	}, IsupPaths...)
+
+	sb.WriteString(`{`)
+	sb.WriteString(`"cic":`)
+	sb.WriteString(strconv.FormatInt(cic, 10))
+	sb.WriteString(`,"dpc":`)
+	sb.WriteString(strconv.FormatInt(dpc, 10))
+	sb.WriteString(`,"opc":`)
+	sb.WriteString(strconv.FormatInt(opc, 10))
+	sb.WriteString(`,"msg_name":"`)
+	sb.WriteString(msg_name)
+	sb.WriteString(`","called_number":"`)
+	sb.WriteString(called_number)
+	sb.WriteString(`","calling_number":"`)
+	sb.WriteString(calling_number)
+	sb.WriteString(`"}`)
 	return sb.String()
 }
 
