@@ -30,7 +30,7 @@ type Rotator struct {
 	dropDays         int
 	dropDaysCall     int
 	dropDaysRegister int
-	dropDaysRest     int
+	dropDaysDefault  int
 }
 
 func NewRotator() *Rotator {
@@ -52,9 +52,9 @@ func NewRotator() *Rotator {
 	if r.dropDaysRegister == 0 {
 		r.dropDaysRegister = r.dropDays
 	}
-	r.dropDaysRest = config.Setting.DBDropDaysRest
-	if r.dropDaysRest == 0 {
-		r.dropDaysRest = r.dropDays
+	r.dropDaysDefault = config.Setting.DBDropDaysDefault
+	if r.dropDaysDefault == 0 {
+		r.dropDaysDefault = r.dropDays
 	}
 	return r
 }
@@ -135,14 +135,14 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
-		r.dbExecFileLoop(db, parlogpg,  suffix, duration, r.partLog)
-		r.dbExecFileLoop(db, parqospg,  suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, parlogpg, suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, parqospg, suffix, duration, r.partQos)
 		r.dbExecFileLoop(db, parisuppg, suffix, duration, r.partIsup)
-		r.dbExecFileLoop(db, parsippg,  suffix, duration, r.partSip)
-		r.dbExecFileLoop(db, idxlogpg,  suffix, duration, r.partLog)
+		r.dbExecFileLoop(db, parsippg, suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.partLog)
 		r.dbExecFileLoop(db, idxisuppg, suffix, duration, r.partIsup)
-		r.dbExecFileLoop(db, idxqospg,  suffix, duration, r.partQos)
-		r.dbExecFileLoop(db, idxsippg,  suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.partQos)
+		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.partSip)
 	}
 	return nil
 }
@@ -182,7 +182,7 @@ func (r *Rotator) DropTables() (err error) {
 		r.dbExecFile(db, droprtcpmaria, replaceDay(r.dropDays*-1), 0, 0)
 		r.dbExecFile(db, dropcallmaria, replaceDay(r.dropDaysCall*-1), 0, 0)
 		r.dbExecFile(db, dropregistermaria, replaceDay(r.dropDaysRegister*-1), 0, 0)
-		r.dbExecFile(db, dropdefaultmaria, replaceDay(r.dropDaysRest*-1), 0, 0)
+		r.dbExecFile(db, dropdefaultmaria, replaceDay(r.dropDaysDefault*-1), 0, 0)
 	} else if r.driver == "postgres" {
 		db, err := sql.Open(r.driver, r.dataDBAddr)
 		if err != nil {
@@ -195,7 +195,7 @@ func (r *Rotator) DropTables() (err error) {
 		r.dbExecFileLoop(db, droprtcppg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
 		r.dbExecFileLoop(db, dropcallpg, replaceDay(r.dropDaysCall*-1), r.dropDaysCall, r.partSip)
 		r.dbExecFileLoop(db, dropregisterpg, replaceDay(r.dropDaysRegister*-1), r.dropDaysRegister, r.partSip)
-		r.dbExecFileLoop(db, dropdefaultpg, replaceDay(r.dropDaysRest*-1), r.dropDaysRest, r.partSip)
+		r.dbExecFileLoop(db, dropdefaultpg, replaceDay(r.dropDaysDefault*-1), r.dropDaysDefault, r.partSip)
 	}
 	return nil
 }
