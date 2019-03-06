@@ -42,7 +42,7 @@ type HeplifyServer struct {
 	DBDropDays         int      `default:"14"`
 	DBDropDaysCall     int      `default:"0"`
 	DBDropDaysRegister int      `default:"0"`
-	DBDropDaysRest     int      `default:"0"`
+	DBDropDaysDefault  int      `default:"0"`
 	DBDropOnStart      bool     `default:"false"`
 	Dedup              bool     `default:"false"`
 	DiscardMethod      []string `default:""`
@@ -92,7 +92,7 @@ func NewConfig() *HeplifyServer {
 		DBDropDays:         14,
 		DBDropDaysCall:     0,
 		DBDropDaysRegister: 0,
-		DBDropDaysRest:     0,
+		DBDropDaysDefault:  0,
 		DBDropOnStart:      false,
 		Dedup:              false,
 		DiscardMethod:      nil,
