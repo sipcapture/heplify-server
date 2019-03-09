@@ -30,14 +30,14 @@ type HeplifyServer struct {
 	DBDataTable        string   `default:"homer_data"`
 	DBConfTable        string   `default:"homer_configuration"`
 	DBTableSpace       string   `default:""`
-	DBBulk             int      `default:"200"`
-	DBTimer            int      `default:"2"`
+	DBBulk             int      `default:"400"`
+	DBTimer            int      `default:"4"`
 	DBBuffer           int      `default:"400000"`
 	DBWorker           int      `default:"8"`
 	DBRotate           bool     `default:"true"`
 	DBPartLog          string   `default:"2h"`
-	DBPartIsup         string   `default:"2h"`
-	DBPartSip          string   `default:"1h"`
+	DBPartIsup         string   `default:"6h"`
+	DBPartSip          string   `default:"2h"`
 	DBPartQos          string   `default:"6h"`
 	DBDropDays         int      `default:"14"`
 	DBDropDaysCall     int      `default:"0"`
