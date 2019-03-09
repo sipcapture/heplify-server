@@ -14,6 +14,8 @@ var idxconfpg = []string{
 	"CREATE SEQUENCE IF NOT EXISTS user_settings_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 2 CACHE 1;",
 	"CREATE SEQUENCE IF NOT EXISTS users_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 2 CACHE 1;",
 	"CREATE SEQUENCE IF NOT EXISTS mapping_schema_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 6 CACHE 1;",
+	"CREATE SEQUENCE IF NOT EXISTS alias_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;",
+	"CREATE SEQUENCE IF NOT EXISTS global_settings_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;",
 }
 
 var idxlogpg = []string{
@@ -99,6 +101,13 @@ var idxsippg = []string{
 }
 
 var insconfpg = []string{
+	`INSERT INTO "alias" ("id", "guid", "alias", "ip", "port", "mask", "captureID", "status", "create_date") VALUES
+	(1,	'84b2d4d5-ff68-4c0e-b5d2-08ab3f4da8e1',	'localhost',	'127.0.0.1',	5060,	32,	'0',	'1',	'2019-03-09 11:20:25.115838+00');`,
+
+	`INSERT INTO "global_settings" ("id", "guid", "partid", "category", "create_date", "param", "data") VALUES
+	(1,	'eb45e96d-0d8e-40b3-b10b-2990d5abb2c0',	1,	'search',	'2019-03-09 11:06:40.345+00',	'lokiserver',	'{"host":"http://127.0.0.1:3100"}'),
+	(2,	'af47f362-71ff-42b4-a81a-dd974962212e',	1,	'search',	'2019-03-09 11:06:40.345+00',	'promserver',	'{"host":"http://127.0.0.1:9090/api/v1/"}');`,
+
 	`INSERT INTO "user_settings" ("id", "guid", "username", "partid", "category", "create_date", "param", "data") VALUES
 	(1,	'0484a281-55d8-4fa9-8fbd-338bc23ddb41',	'admin',	10,	'dashboard',	'2018-12-22 18:29:03.375+00',	'home',	'{"id":"home","name":"Home","alias":"home","selectedItem":"","title":"Home","weight":10.0,"widgets":[{"reload":false,"frameless":false,"title":"World Clock","group":"Tools","name":"clock","description":"Display date and time","templateUrl":"widgets/clock/view.html","controller":"clockController","controllerAs":"clock","sizeX":1,"sizeY":1,"config":{"title":"World Clock","timePattern":"HH:mm:ss","datePattern":"YYYY-MM-DD","location":{"value":-60,"offset":"+1","name":"GMT+1 CET","desc":"Central European Time"},"showseconds":false},"edit":{"reload":true,"immediate":false,"controller":"clockEditController","templateUrl":"widgets/clock/edit.html"},"row":0,"col":0,"api":{},"uuid":"0131d42a-793d-47d6-ad03-7cdc6811fb56"},{"title":"Proto Search","group":"Search","name":"protosearch","description":"Display Search Form component","refresh":false,"sizeX":2,"sizeY":1,"config":{"title":"CALL SIP SEARCH","searchbutton":true,"protocol_id":{"name":"SIP","value":1},"protocol_profile":{"name":"call","value":"call"}},"uuid":"ed426bd0-ff21-40f7-8852-58700abc3762","fields":[{"name":"1:call:sid","selection":"Session ID","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"sid"},{"name":"1:call:protocol_header.srcIp","selection":"Source IP","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"protocol_header.srcIp"},{"name":"1:call:protocol_header.srcPort","selection":"Src Port","form_type":"input","hepid":1,"profile":"call","type":"integer","field_name":"protocol_header.srcPort"},{"name":"1:call:raw","selection":"SIP RAW","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"raw"}],"row":0,"col":1},{"title":"InfluxDB Chart","group":"Charts","name":"influxdbchart","description":"Display SIP Metrics","refresh":true,"sizeX":2,"sizeY":1,"config":{"title":"HEPIC Chart","chart":{"type":{"value":"line"}},"dataquery":{"data":[{"sum":false,"main":{"name":"heplify_method_response","value":"heplify_method_response"},"database":{"name":"homer"},"retention":{"name":"60s"},"type":[{"name":"counter","value":"counter"}],"tag":{},"typetag":{"name":"response","value":"response"}}]},"panel":{"queries":[{"name":"A1","type":{"name":"InfluxDB","alias":"influxdb"},"database":{"name":"homer"},"retention":{"name":"60s"},"value":"query"}]}},"edit":{},"api":{},"uuid":"8c8b4589-426a-4016-b964-d613ab6997b3","row":0,"col":3}],"config":{"margins":[10.0,10.0],"columns":"6","pushing":true,"draggable":{"handle":".box-header"},"resizable":{"enabled":true,"handles":["n","e","s","w","ne","se","sw","nw"]}}}'),
 	(2,	'692287e7-e6d7-44de-8125-11312af4f6f3',	'support',	10,	'dashboard',	'2018-12-22 18:29:03.375+00',	'home',	'{"id":"home","name":"Home","alias":"home","selectedItem":"","title":"Home","weight":10.0,"widgets":[{"reload":false,"frameless":false,"title":"World Clock","group":"Tools","name":"clock","description":"Display date and time","templateUrl":"widgets/clock/view.html","controller":"clockController","controllerAs":"clock","sizeX":1,"sizeY":1,"config":{"title":"World Clock","timePattern":"HH:mm:ss","datePattern":"YYYY-MM-DD","location":{"value":-60,"offset":"+1","name":"GMT+1 CET","desc":"Central European Time"},"showseconds":false},"edit":{"reload":true,"immediate":false,"controller":"clockEditController","templateUrl":"widgets/clock/edit.html"},"row":0,"col":0,"api":{},"uuid":"0131d42a-793d-47d6-ad03-7cdc6811fb56"},{"title":"Proto Search","group":"Search","name":"protosearch","description":"Display Search Form component","refresh":false,"sizeX":2,"sizeY":1,"config":{"title":"CALL SIP SEARCH","searchbutton":true,"protocol_id":{"name":"SIP","value":1},"protocol_profile":{"name":"call","value":"call"}},"uuid":"ed426bd0-ff21-40f7-8852-58700abc3762","fields":[{"name":"1:call:sid","selection":"Session ID","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"sid"},{"name":"1:call:protocol_header.srcIp","selection":"Source IP","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"protocol_header.srcIp"},{"name":"1:call:protocol_header.srcPort","selection":"Src Port","form_type":"input","hepid":1,"profile":"call","type":"integer","field_name":"protocol_header.srcPort"},{"name":"1:call:raw","selection":"SIP RAW","form_type":"input","hepid":1,"profile":"call","type":"string","field_name":"raw"}],"row":0,"col":1},{"title":"InfluxDB Chart","group":"Charts","name":"influxdbchart","description":"Display SIP Metrics","refresh":true,"sizeX":2,"sizeY":1,"config":{"title":"HEPIC Chart","chart":{"type":{"value":"line"}},"dataquery":{"data":[{"sum":false,"main":{"name":"heplify_method_response","value":"heplify_method_response"},"database":{"name":"homer"},"retention":{"name":"60s"},"type":[{"name":"counter","value":"counter"}],"tag":{},"typetag":{"name":"response","value":"response"}}]},"panel":{"queries":[{"name":"A1","type":{"name":"InfluxDB","alias":"influxdb"},"database":{"name":"homer"},"retention":{"name":"60s"},"value":"query"}]}},"edit":{},"api":{},"uuid":"8c8b4589-426a-4016-b964-d613ab6997b3","row":0,"col":3}],"config":{"margins":[10.0,10.0],"columns":"6","pushing":true,"draggable":{"handle":".box-header"},"resizable":{"enabled":true,"handles":["n","e","s","w","ne","se","sw","nw"]}}}');`,
@@ -185,6 +194,30 @@ var tblconfpg = []string{
 		"schema_settings" json,
 		"create_date" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		CONSTRAINT "mapping_schema_pkey" PRIMARY KEY ("id")
+	) WITH (oids = false);`,
+
+	`CREATE TABLE "public"."alias" (
+		"id" integer DEFAULT nextval('alias_id_seq') NOT NULL,
+		"guid" uuid,
+		"alias" character varying(40),
+		"ip" character varying(60),
+		"port" integer,
+		"mask" integer,
+		"captureID" character varying(20),
+		"status" boolean,
+		"create_date" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		CONSTRAINT "alias_pkey" PRIMARY KEY ("id")
+	) WITH (oids = false);`,
+
+	`CREATE TABLE "public"."global_settings" (
+		"id" integer DEFAULT nextval('global_settings_id_seq') NOT NULL,
+		"guid" uuid,
+		"partid" integer NOT NULL,
+		"category" character varying(100) DEFAULT 'settings' NOT NULL,
+		"create_date" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		"param" character varying(100) DEFAULT 'default' NOT NULL,
+		"data" json,
+		CONSTRAINT "global_settings_pkey" PRIMARY KEY ("id")
 	) WITH (oids = false);`,
 }
 
