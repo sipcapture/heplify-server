@@ -6,48 +6,48 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveTLS() {
-	ca := NewCertificateAuthority()
-	listener, err := tls.Listen("tcp", config.Setting.HEPTLSAddr, &tls.Config{
-		GetCertificate: ca.GetCertificate,
-	})
+func (h *HEPInput) serveTLS(addr string) {
+	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
 		return
 	}
 
-	for {
-		select {
-		case <-h.quit:
-			listener.Close()
-			return
-		default:
-		}
+	ln, err := net.ListenTCP("tcp", ta)
+	if err != nil {
+		logp.Err("%v", err)
+		return
+	}
+	defer ln.Close()
+	ca := NewCertificateAuthority()
 
-		conn, err := listener.Accept()
+	for {
+		ln.SetDeadline(time.Now().Add(1e9))
+		conn, err := ln.Accept()
 		if err != nil {
-			logp.Err("%v", err)
+			select {
+			case <-h.quitTLS:
+				logp.Info("stopping TLS listener on %s", ln.Addr())
+				h.quitTLS <- true
+				return
+			default:
+			}
 			continue
 		}
-		h.wg.Add(1)
-		go h.handleTLS(conn)
+		go h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
 	}
 }
 
 func (h *HEPInput) handleTLS(c net.Conn) {
-	defer c.Close()
-	defer h.wg.Done()
-	for {
-		select {
-		case <-h.quit:
-			return
-		default:
-		}
+	defer func() {
+		logp.Info("closing TLS connection from %s", c.RemoteAddr())
+		defer c.Close()
+	}()
 
+	for {
 		c.SetReadDeadline(time.Now().Add(1e9))
 		buf := h.buffer.Get().([]byte)
 		n, err := c.Read(buf)

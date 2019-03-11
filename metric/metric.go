@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/negbie/heplify-server/decoder"
+	"github.com/negbie/logp"
 )
 
 type Metric struct {
@@ -42,4 +43,5 @@ func (m *Metric) Run() error {
 
 func (m *Metric) End() {
 	close(m.Chan)
+	logp.Info("close metric channel")
 }

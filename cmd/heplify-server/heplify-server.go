@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -9,13 +12,11 @@ import (
 	"sync"
 	"syscall"
 
-	//"net"
-	//_ "net/http/pprof"
-
 	"github.com/koding/multiconfig"
 	"github.com/negbie/heplify-server/config"
 	input "github.com/negbie/heplify-server/server"
 	"github.com/negbie/logp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type server interface {
@@ -70,38 +71,88 @@ func tomlExists(f string) bool {
 }
 
 func main() {
-	if config.Setting.Version {
-		fmt.Println(config.Version)
-		os.Exit(0)
-	}
+	var servers []server
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
-
-	//go http.ListenAndServe(":8181", http.DefaultServeMux)
-	debug.SetGCPercent(50)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	hep := input.NewHEPInput()
-	servers := []server{hep}
+	debug.SetGCPercent(50)
+
 	/* 	autopprof.Capture(autopprof.CPUProfile{
 		Duration: 15 * time.Second,
 	}) */
 
-	for _, srv := range servers {
-		wg.Add(1)
-		go func(s server) {
-			defer wg.Done()
-			s.Run()
-		}(srv)
+	startServer := func() {
+		hep := input.NewHEPInput()
+		servers = []server{hep}
+		for _, srv := range servers {
+			wg.Add(1)
+			go func(s server) {
+				defer wg.Done()
+				s.Run()
+			}(srv)
+		}
+	}
+	endServer := func() {
+		for _, srv := range servers {
+			wg.Add(1)
+			go func(s server) {
+				defer wg.Done()
+				s.End()
+			}(srv)
+		}
+		wg.Wait()
+	}
+	cfgFile := config.Setting.Config
+	tmpl := template.Must(template.New("main").Parse(configForm))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			tmpl.Execute(w, nil)
+			return
+		}
+
+		ioutil.WriteFile(cfgFile, []byte(r.FormValue("config")), 0644)
+
+		cf := multiconfig.NewWithPath(cfgFile)
+		cfg := new(config.HeplifyServer)
+		err := cf.Load(cfg)
+		if err != nil {
+			fmt.Println("fail", err)
+			tmpl.Execute(w, struct{ Fail bool }{true})
+			return
+		}
+		fmt.Println(r.FormValue("config"))
+		endServer()
+		config.Setting = *cfg
+		startServer()
+		tmpl.Execute(w, struct{ Success bool }{true})
+	})
+
+	go http.ListenAndServe(":9191", nil)
+	if promAddr := config.Setting.PromAddr; len(promAddr) > 2 {
+		go func() {
+			http.Handle("/metrics", promhttp.Handler())
+			err := http.ListenAndServe(promAddr, nil)
+			if err != nil {
+				logp.Err("%v", err)
+			}
+		}()
 	}
 
+	startServer()
 	<-sigCh
-
-	for _, srv := range servers {
-		wg.Add(1)
-		go func(s server) {
-			defer wg.Done()
-			s.End()
-		}(srv)
-	}
-	wg.Wait()
+	endServer()
 }
+
+var configForm = `
+{{if .Success}} 
+	<h2>config reload success!</h2> 
+{{else}}{{if .Fail}}
+	<h2>config reload fail!</h2> 
+{{else}}
+<h1>Contact</h1>
+<form method="POST">
+	<label>Config:</label><br />
+	<textarea name="config"></textarea><br />
+	<input type="submit">
+</form>
+{{end}}{{end}}`

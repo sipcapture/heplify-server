@@ -97,7 +97,7 @@ func (m *MySQL) setup() error {
 
 	if config.Setting.DBRotate {
 		r := NewRotator()
-		r.Rotate()
+		go r.Rotate()
 	}
 
 	if m.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
@@ -210,7 +210,8 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 		select {
 		case pkt, ok = <-hCh:
 			if !ok {
-				break
+				m.db.Close()
+				return
 			}
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {

@@ -2,7 +2,6 @@ package metric
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
 	"github.com/negbie/logp"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Prometheus struct {
@@ -68,13 +66,6 @@ func (p *Prometheus) setup() (err error) {
 		return err
 	}
 
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		err = http.ListenAndServe(config.Setting.PromAddr, nil)
-		if err != nil {
-			logp.Err("%v", err)
-		}
-	}()
 	return err
 }
 

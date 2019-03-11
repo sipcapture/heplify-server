@@ -7,6 +7,7 @@ import (
 
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
+	"github.com/negbie/logp"
 )
 
 type Database struct {
@@ -67,6 +68,7 @@ func (d *Database) Run() error {
 
 func (d *Database) End() {
 	close(d.Chan)
+	logp.Info("close %s channel", config.Setting.DBDriver)
 }
 
 func connectString(dbName string) (string, error) {

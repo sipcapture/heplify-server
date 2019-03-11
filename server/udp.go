@@ -5,12 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveUDP() {
-	ua, err := net.ResolveUDPAddr("udp", config.Setting.HEPAddr)
+func (h *HEPInput) serveUDP(addr string) {
+	ua, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		logp.Critical("%v", err)
 	}
@@ -19,11 +18,15 @@ func (h *HEPInput) serveUDP() {
 	if err != nil {
 		logp.Critical("%v", err)
 	}
-	defer uc.Close()
-	defer h.wg.Done()
+	defer func() {
+		logp.Info("stopping UDP listener on %s", uc.LocalAddr())
+		defer uc.Close()
+	}()
+
 	for {
 		select {
-		case <-h.quit:
+		case <-h.quitUDP:
+			h.quitUDP <- true
 			return
 		default:
 		}

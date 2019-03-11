@@ -32,21 +32,9 @@ func (n *NSQ) setup() error {
 }
 
 func (n *NSQ) add(topic string, qCh chan []byte) {
-	var (
-		msg []byte
-		err error
-		ok  bool
-	)
-
 	logp.Info("Run NSQ Output, server: %s, topic: %s\n", config.Setting.MQAddr, topic)
-
-	for {
-		msg, ok = <-qCh
-		if !ok {
-			break
-		}
-
-		err = n.producer.Publish(topic, msg)
+	for msg := range qCh {
+		err := n.producer.Publish(topic, msg)
 		if err != nil {
 			logp.Err("%v", err)
 		}

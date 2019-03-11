@@ -7,40 +7,48 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveTCP() {
-	listener, err := net.Listen("tcp", config.Setting.HEPTCPAddr)
+func (h *HEPInput) serveTCP(addr string) {
+	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
 		return
 	}
 
-	for {
-		select {
-		case <-h.quit:
-			listener.Close()
-			return
-		default:
-		}
+	ln, err := net.ListenTCP("tcp", ta)
+	if err != nil {
+		logp.Err("%v", err)
+		return
+	}
+	defer ln.Close()
 
-		conn, err := listener.Accept()
+	for {
+		ln.SetDeadline(time.Now().Add(1e9))
+		conn, err := ln.Accept()
 		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		if err != nil {
-			logp.Err("%v", err)
+			select {
+			case <-h.quitTCP:
+				logp.Info("stopping TCP listener on %s", ln.Addr())
+				h.quitTCP <- true
+				return
+			default:
+			}
 			continue
 		}
-		h.wg.Add(1)
 		go h.handleTCP(conn)
 	}
 }
 
 func (h *HEPInput) handleTCP(c net.Conn) {
+	defer func() {
+		logp.Info("closing TCP connection from %s", c.RemoteAddr())
+		defer c.Close()
+	}()
+
 	r := bufio.NewReader(c)
-	defer c.Close()
-	defer h.wg.Done()
 	readBytes := func(buffer []byte) (int, error) {
 		n := uint(0)
 		for n < uint(len(buffer)) {
@@ -54,7 +62,8 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 	}
 	for {
 		select {
-		case <-h.quit:
+		case <-h.quitTCP:
+			h.quitTCP <- true
 			return
 		default:
 		}

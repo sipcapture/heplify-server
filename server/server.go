@@ -16,21 +16,24 @@ import (
 )
 
 type HEPInput struct {
-	useDB  bool
-	useMQ  bool
-	usePM  bool
-	useES  bool
-	useLK  bool
-	inCh   chan []byte
-	dbCh   chan *decoder.HEP
-	mqCh   chan []byte
-	pmCh   chan *decoder.HEP
-	esCh   chan *decoder.HEP
-	lkCh   chan *decoder.HEP
-	buffer *sync.Pool
-	quit   chan struct{}
-	stats  HEPStats
-	wg     *sync.WaitGroup
+	useDB   bool
+	useMQ   bool
+	usePM   bool
+	useES   bool
+	useLK   bool
+	inCh    chan []byte
+	dbCh    chan *decoder.HEP
+	mqCh    chan []byte
+	pmCh    chan *decoder.HEP
+	esCh    chan *decoder.HEP
+	lkCh    chan *decoder.HEP
+	wg      *sync.WaitGroup
+	buffer  *sync.Pool
+	quit    chan bool
+	quitUDP chan bool
+	quitTCP chan bool
+	quitTLS chan bool
+	stats   HEPStats
 }
 
 type HEPStats struct {
@@ -44,10 +47,13 @@ const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		inCh:   make(chan []byte, 40000),
-		buffer: &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
-		quit:   make(chan struct{}),
-		wg:     &sync.WaitGroup{},
+		inCh:    make(chan []byte, 40000),
+		buffer:  &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
+		wg:      &sync.WaitGroup{},
+		quit:    make(chan bool),
+		quitUDP: make(chan bool),
+		quitTCP: make(chan bool),
+		quitTLS: make(chan bool),
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -75,173 +81,177 @@ func NewHEPInput() *HEPInput {
 
 func (h *HEPInput) Run() {
 	for n := 0; n < runtime.NumCPU()*4; n++ {
+		h.wg.Add(1)
 		go h.hepWorker()
 	}
 
 	if h.useDB {
-		go func() {
-			d := database.New(config.Setting.DBDriver)
-			d.Chan = h.dbCh
+		d := database.New(config.Setting.DBDriver)
+		d.Chan = h.dbCh
 
-			if err := d.Run(); err != nil {
-				logp.Err("%v", err)
-			}
-		}()
+		if err := d.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer d.End()
 	}
 
 	if h.useMQ {
-		go func() {
-			q := queue.New(config.Setting.MQDriver)
-			q.Topic = config.Setting.MQTopic
-			q.Chan = h.mqCh
+		q := queue.New(config.Setting.MQDriver)
+		q.Topic = config.Setting.MQTopic
+		q.Chan = h.mqCh
 
-			if err := q.Run(); err != nil {
-				logp.Err("%v", err)
-			}
-		}()
+		if err := q.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer q.End()
 	}
 
 	if h.usePM {
-		go func() {
-			m := metric.New("prometheus")
-			m.Chan = h.pmCh
+		m := metric.New("prometheus")
+		m.Chan = h.pmCh
 
-			if err := m.Run(); err != nil {
-				logp.Err("%v", err)
-			}
-		}()
+		if err := m.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer m.End()
 	}
 
 	if h.useES {
-		go func() {
-			r := remotelog.New("elasticsearch")
-			r.Chan = h.esCh
+		r := remotelog.New("elasticsearch")
+		r.Chan = h.esCh
 
-			if err := r.Run(); err != nil {
-				logp.Err("%v", err)
-			}
-		}()
+		if err := r.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer r.End()
 	}
 
 	if h.useLK {
-		go func() {
-			l := remotelog.New("loki")
-			l.Chan = h.lkCh
+		l := remotelog.New("loki")
+		l.Chan = h.lkCh
 
-			if err := l.Run(); err != nil {
-				logp.Err("%v", err)
-			}
-		}()
+		if err := l.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer l.End()
 	}
 
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
 
 	if config.Setting.HEPAddr != "" {
-		h.wg.Add(1)
-		go h.serveUDP()
+		go h.serveUDP(config.Setting.HEPAddr)
 	}
 	if config.Setting.HEPTCPAddr != "" {
-		go h.serveTCP()
+		go h.serveTCP(config.Setting.HEPTCPAddr)
 	}
 	if config.Setting.HEPTLSAddr != "" {
-		go h.serveTLS()
+		go h.serveTLS(config.Setting.HEPTLSAddr)
 	}
 	if config.Setting.HTTPAddr != "" {
 		go h.serveHTTP()
 	}
+	h.wg.Wait()
 }
 
 func (h *HEPInput) End() {
 	logp.Info("stopping heplify-server...")
-	close(h.quit)
-	h.wg.Wait()
-	close(h.inCh)
+
+	if config.Setting.HEPAddr != "" {
+		h.quitUDP <- true
+		<-h.quitUDP
+	}
+	if config.Setting.HEPTCPAddr != "" {
+		h.quitTCP <- true
+		<-h.quitTCP
+	}
+	if config.Setting.HEPTLSAddr != "" {
+		h.quitTLS <- true
+		<-h.quitTLS
+	}
+
+	h.quit <- true
+	<-h.quit
+
 	logp.Info("heplify-server has been stopped")
 }
 
 func (h *HEPInput) hepWorker() {
-	var (
-		lastWarn = time.Now()
-		msg      = h.buffer.Get().([]byte)
-		ok       bool
-	)
+	lastWarn := time.Now()
+	msg := h.buffer.Get().([]byte)
 
-OUT:
 	for {
-		h.buffer.Put(msg[:maxPktLen])
-
 		select {
-		case msg, ok = <-h.inCh:
-			if !ok {
-				break OUT
+		case <-h.quit:
+			h.quit <- true
+			h.wg.Done()
+			return
+		case msg = <-h.inCh:
+			hepPkt, err := decoder.DecodeHEP(msg)
+			if err != nil {
+				atomic.AddUint64(&h.stats.ErrCount, 1)
+				continue
+			} else if hepPkt.ProtoType == 0 {
+				atomic.AddUint64(&h.stats.DupCount, 1)
+				continue
 			}
-		}
+			atomic.AddUint64(&h.stats.HEPCount, 1)
 
-		hepPkt, err := decoder.DecodeHEP(msg)
-		if err != nil {
-			atomic.AddUint64(&h.stats.ErrCount, 1)
-			continue
-		} else if hepPkt.ProtoType == 0 {
-			atomic.AddUint64(&h.stats.DupCount, 1)
-			continue
-		}
-
-		atomic.AddUint64(&h.stats.HEPCount, 1)
-
-		if h.useDB {
-			select {
-			case h.dbCh <- hepPkt:
-			default:
-				if time.Since(lastWarn) > 5e8 {
-					logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
+			if h.useDB {
+				select {
+				case h.dbCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
+					}
+					lastWarn = time.Now()
 				}
-				lastWarn = time.Now()
 			}
-		}
 
-		if h.usePM {
-			select {
-			case h.pmCh <- hepPkt:
-			default:
-				if time.Since(lastWarn) > 5e8 {
-					logp.Warn("overflowing metric channel")
+			if h.usePM {
+				select {
+				case h.pmCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing metric channel")
+					}
+					lastWarn = time.Now()
 				}
-				lastWarn = time.Now()
 			}
-		}
 
-		if h.useMQ {
-			select {
-			case h.mqCh <- append([]byte{}, msg...):
-			default:
-				if time.Since(lastWarn) > 5e8 {
-					logp.Warn("overflowing queue channel")
+			if h.useMQ {
+				select {
+				case h.mqCh <- append([]byte{}, msg...):
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing queue channel")
+					}
+					lastWarn = time.Now()
 				}
-				lastWarn = time.Now()
 			}
-		}
 
-		if h.useES {
-			select {
-			case h.esCh <- hepPkt:
-			default:
-				if time.Since(lastWarn) > 5e8 {
-					logp.Warn("overflowing elasticsearch channel")
+			if h.useES {
+				select {
+				case h.esCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing elasticsearch channel")
+					}
+					lastWarn = time.Now()
 				}
-				lastWarn = time.Now()
 			}
-		}
 
-		if h.useLK {
-			select {
-			case h.lkCh <- hepPkt:
-			default:
-				if time.Since(lastWarn) > 5e8 {
-					logp.Warn("overflowing loki channel")
+			if h.useLK {
+				select {
+				case h.lkCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing loki channel")
+					}
+					lastWarn = time.Now()
 				}
-				lastWarn = time.Now()
 			}
+			h.buffer.Put(msg[:maxPktLen])
 		}
 	}
 }
