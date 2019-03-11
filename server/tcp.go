@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -22,30 +23,40 @@ func (h *HEPInput) serveTCP(addr string) {
 		logp.Err("%v", err)
 		return
 	}
-	defer ln.Close()
+
+	var wg sync.WaitGroup
 
 	for {
-		ln.SetDeadline(time.Now().Add(1e9))
-		conn, err := ln.Accept()
-		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
-		if err != nil {
-			select {
-			case <-h.quitTCP:
-				logp.Info("stopping TCP listener on %s", ln.Addr())
-				h.quitTCP <- true
-				return
-			default:
+		select {
+		case <-h.quitTCP:
+			logp.Info("stopping TCP listener on %s", ln.Addr())
+			ln.Close()
+			wg.Wait()
+			close(h.exitedTCP)
+			return
+		default:
+			ln.SetDeadline(time.Now().Add(1e9))
+			conn, err := ln.Accept()
+			if err != nil {
+				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+					continue
+				}
+				logp.Err("failed to accept TCP connection: %v", err.Error())
 			}
-			continue
+			logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
+			wg.Add(1)
+			go func() {
+				h.handleTCP(conn)
+				wg.Done()
+			}()
 		}
-		go h.handleTCP(conn)
 	}
 }
 
 func (h *HEPInput) handleTCP(c net.Conn) {
 	defer func() {
 		logp.Info("closing TCP connection from %s", c.RemoteAddr())
-		defer c.Close()
+		c.Close()
 	}()
 
 	r := bufio.NewReader(c)
@@ -63,7 +74,6 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 	for {
 		select {
 		case <-h.quitTCP:
-			h.quitTCP <- true
 			return
 		default:
 		}

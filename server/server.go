@@ -16,24 +16,26 @@ import (
 )
 
 type HEPInput struct {
-	useDB   bool
-	useMQ   bool
-	usePM   bool
-	useES   bool
-	useLK   bool
-	inCh    chan []byte
-	dbCh    chan *decoder.HEP
-	mqCh    chan []byte
-	pmCh    chan *decoder.HEP
-	esCh    chan *decoder.HEP
-	lkCh    chan *decoder.HEP
-	wg      *sync.WaitGroup
-	buffer  *sync.Pool
-	quit    chan bool
-	quitUDP chan bool
-	quitTCP chan bool
-	quitTLS chan bool
-	stats   HEPStats
+	dbCh      chan *decoder.HEP
+	pmCh      chan *decoder.HEP
+	esCh      chan *decoder.HEP
+	lkCh      chan *decoder.HEP
+	inCh      chan []byte
+	mqCh      chan []byte
+	wg        *sync.WaitGroup
+	buffer    *sync.Pool
+	exitedTCP chan bool
+	exitedTLS chan bool
+	quitUDP   chan bool
+	quitTCP   chan bool
+	quitTLS   chan bool
+	quit      chan bool
+	stats     HEPStats
+	useDB     bool
+	useMQ     bool
+	usePM     bool
+	useES     bool
+	useLK     bool
 }
 
 type HEPStats struct {
@@ -47,13 +49,15 @@ const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		inCh:    make(chan []byte, 40000),
-		buffer:  &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
-		wg:      &sync.WaitGroup{},
-		quit:    make(chan bool),
-		quitUDP: make(chan bool),
-		quitTCP: make(chan bool),
-		quitTLS: make(chan bool),
+		inCh:      make(chan []byte, 40000),
+		buffer:    &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
+		wg:        &sync.WaitGroup{},
+		quit:      make(chan bool),
+		quitUDP:   make(chan bool),
+		quitTCP:   make(chan bool),
+		quitTLS:   make(chan bool),
+		exitedTCP: make(chan bool),
+		exitedTLS: make(chan bool),
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -162,12 +166,12 @@ func (h *HEPInput) End() {
 		<-h.quitUDP
 	}
 	if config.Setting.HEPTCPAddr != "" {
-		h.quitTCP <- true
-		<-h.quitTCP
+		close(h.quitTCP)
+		<-h.exitedTCP
 	}
 	if config.Setting.HEPTLSAddr != "" {
-		h.quitTLS <- true
-		<-h.quitTLS
+		close(h.quitTLS)
+		<-h.exitedTLS
 	}
 
 	h.quit <- true
@@ -181,6 +185,7 @@ func (h *HEPInput) hepWorker() {
 	msg := h.buffer.Get().([]byte)
 
 	for {
+		h.buffer.Put(msg[:maxPktLen])
 		select {
 		case <-h.quit:
 			h.quit <- true
@@ -251,7 +256,6 @@ func (h *HEPInput) hepWorker() {
 					lastWarn = time.Now()
 				}
 			}
-			h.buffer.Put(msg[:maxPktLen])
 		}
 	}
 }

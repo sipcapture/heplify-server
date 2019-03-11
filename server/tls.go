@@ -3,6 +3,7 @@ package input
 import (
 	"crypto/tls"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,33 +22,49 @@ func (h *HEPInput) serveTLS(addr string) {
 		logp.Err("%v", err)
 		return
 	}
-	defer ln.Close()
+
 	ca := NewCertificateAuthority()
+	var wg sync.WaitGroup
 
 	for {
-		ln.SetDeadline(time.Now().Add(1e9))
-		conn, err := ln.Accept()
-		if err != nil {
-			select {
-			case <-h.quitTLS:
-				logp.Info("stopping TLS listener on %s", ln.Addr())
-				h.quitTLS <- true
-				return
-			default:
+		select {
+		case <-h.quitTLS:
+			logp.Info("stopping TLS listener on %s", ln.Addr())
+			ln.Close()
+			wg.Wait()
+			close(h.exitedTLS)
+			return
+		default:
+			ln.SetDeadline(time.Now().Add(1e9))
+			conn, err := ln.Accept()
+			if err != nil {
+				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+					continue
+				}
+				logp.Err("failed to accept TLS connection: %v", err.Error())
 			}
-			continue
+			wg.Add(1)
+			go func() {
+				h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
+				wg.Done()
+			}()
 		}
-		go h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
 	}
 }
 
 func (h *HEPInput) handleTLS(c net.Conn) {
 	defer func() {
 		logp.Info("closing TLS connection from %s", c.RemoteAddr())
-		defer c.Close()
+		c.Close()
 	}()
 
 	for {
+		select {
+		case <-h.quitTLS:
+			return
+		default:
+		}
+
 		c.SetReadDeadline(time.Now().Add(1e9))
 		buf := h.buffer.Get().([]byte)
 		n, err := c.Read(buf)

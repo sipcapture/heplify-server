@@ -20,7 +20,7 @@ func (h *HEPInput) serveUDP(addr string) {
 	}
 	defer func() {
 		logp.Info("stopping UDP listener on %s", uc.LocalAddr())
-		defer uc.Close()
+		uc.Close()
 	}()
 
 	for {
