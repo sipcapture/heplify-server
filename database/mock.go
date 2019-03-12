@@ -1,6 +1,8 @@
 package database
 
 import (
+	"sync"
+
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
@@ -12,7 +14,7 @@ type Mock struct {
 	sipBulkVal []byte
 }
 
-func (m *Mock) setup() error {
+func (m *Mock) setup(wg *sync.WaitGroup) error {
 	m.db = make(map[string]interface{})
 	m.bulkCnt = config.Setting.DBBulk
 	m.sipBulkVal = sipQueryVal(m.bulkCnt)

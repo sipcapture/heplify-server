@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -89,7 +90,7 @@ type MySQL struct {
 	rtcBulkVal []byte
 }
 
-func (m *MySQL) setup() error {
+func (m *MySQL) setup(wg *sync.WaitGroup) error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
@@ -97,7 +98,8 @@ func (m *MySQL) setup() error {
 
 	if config.Setting.DBRotate {
 		r := NewRotator()
-		go r.Rotate()
+		wg.Add(1)
+		go r.Rotate(wg)
 	}
 
 	if m.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {

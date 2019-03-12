@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/negbie/heplify-server/config"
 	"github.com/negbie/heplify-server/decoder"
@@ -13,10 +14,11 @@ import (
 type Database struct {
 	H    DBHandler
 	Chan chan *decoder.HEP
+	wg   *sync.WaitGroup
 }
 
 type DBHandler interface {
-	setup() error
+	setup(*sync.WaitGroup) error
 	insert(chan *decoder.HEP)
 }
 
@@ -28,7 +30,8 @@ func New(name string) *Database {
 	}
 
 	return &Database{
-		H: register[name],
+		H:  register[name],
+		wg: &sync.WaitGroup{},
 	}
 }
 
@@ -49,7 +52,7 @@ func (d *Database) Run() error {
 		return fmt.Errorf("homer7 has only postgres support")
 	}
 
-	err := d.H.setup()
+	err := d.H.setup(d.wg)
 	if err != nil {
 		return err
 	}
@@ -67,6 +70,7 @@ func (d *Database) Run() error {
 }
 
 func (d *Database) End() {
+	d.wg.Done()
 	close(d.Chan)
 	logp.Info("close %s channel", config.Setting.DBDriver)
 }
