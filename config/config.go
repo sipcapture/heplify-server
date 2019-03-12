@@ -8,7 +8,6 @@ type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
 	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
-	HTTPAddr           string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
 	MQDriver           string   `default:""`
@@ -60,7 +59,6 @@ func NewConfig() *HeplifyServer {
 		HEPAddr:            "0.0.0.0:9060",
 		HEPTCPAddr:         "",
 		HEPTLSAddr:         "0.0.0.0:9060",
-		HTTPAddr:           "",
 		ESAddr:             "",
 		ESDiscovery:        true,
 		MQDriver:           "",

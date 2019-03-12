@@ -152,9 +152,6 @@ func (h *HEPInput) Run() {
 	if config.Setting.HEPTLSAddr != "" {
 		go h.serveTLS(config.Setting.HEPTLSAddr)
 	}
-	if config.Setting.HTTPAddr != "" {
-		go h.serveHTTP()
-	}
 	h.wg.Wait()
 }
 
