@@ -3,7 +3,7 @@ package metric
 import (
 	"runtime"
 
-	"github.com/negbie/heplify-server/decoder"
+	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/negbie/logp"
 )
 

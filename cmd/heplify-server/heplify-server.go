@@ -13,8 +13,8 @@ import (
 	"syscall"
 
 	"github.com/koding/multiconfig"
-	"github.com/negbie/heplify-server/config"
-	input "github.com/negbie/heplify-server/server"
+	"github.com/sipcapture/heplify-server/config"
+	input "github.com/sipcapture/heplify-server/server"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
