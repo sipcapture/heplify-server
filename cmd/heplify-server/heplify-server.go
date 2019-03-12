@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"syscall"
@@ -75,7 +74,6 @@ func main() {
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	debug.SetGCPercent(50)
 
 	/* 	autopprof.Capture(autopprof.CPUProfile{
 		Duration: 15 * time.Second,
@@ -102,32 +100,41 @@ func main() {
 		}
 		wg.Wait()
 	}
-	cfgFile := config.Setting.Config
-	tmpl := template.Must(template.New("main").Parse(configForm))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			tmpl.Execute(w, nil)
-			return
-		}
 
-		ioutil.WriteFile(cfgFile, []byte(r.FormValue("config")), 0644)
+	if len(config.Setting.ConfigHTTPAddr) > 2 {
+		cfgFile := config.Setting.Config
+		tmpl := template.Must(template.New("main").Parse(configForm))
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				tmpl.Execute(w, nil)
+				return
+			}
 
-		cf := multiconfig.NewWithPath(cfgFile)
-		cfg := new(config.HeplifyServer)
-		err := cf.Load(cfg)
-		if err != nil {
-			fmt.Println("fail", err)
-			tmpl.Execute(w, struct{ Fail bool }{true})
-			return
-		}
-		fmt.Println(r.FormValue("config"))
-		endServer()
-		config.Setting = *cfg
-		startServer()
-		tmpl.Execute(w, struct{ Success bool }{true})
-	})
+			ioutil.WriteFile(cfgFile, []byte(r.FormValue("config")), 0644)
+			cf := multiconfig.NewWithPath(cfgFile)
+			cfg := new(config.HeplifyServer)
+			err := cf.Load(cfg)
+			if err != nil {
+				logp.Warn("Failed config reload from %v. %v", r.RemoteAddr, err)
+				tmpl.Execute(w, struct {
+					Success bool
+					Err     error
+				}{false, err})
+			} else {
+				logp.Info("Successfull config reloaded from %v", r.RemoteAddr)
+				endServer()
+				config.Setting = *cfg
+				startServer()
+				tmpl.Execute(w, struct {
+					Success bool
+					Err     error
+				}{true, nil})
+			}
+		})
 
-	go http.ListenAndServe(":9191", nil)
+		go http.ListenAndServe(config.Setting.ConfigHTTPAddr, nil)
+	}
+
 	if promAddr := config.Setting.PromAddr; len(promAddr) > 2 {
 		go func() {
 			http.Handle("/metrics", promhttp.Handler())
@@ -144,15 +151,24 @@ func main() {
 }
 
 var configForm = `
-{{if .Success}} 
-	<h2>config reload success!</h2> 
-{{else}}{{if .Fail}}
-	<h2>config reload fail!</h2> 
-{{else}}
-<h1>Contact</h1>
-<form method="POST">
-	<label>Config:</label><br />
-	<textarea name="config"></textarea><br />
-	<input type="submit">
-</form>
-{{end}}{{end}}`
+<!DOCTYPE html>
+<html>
+    <head>
+		<title>heplify-server web config</title>
+    </head>
+    <body>
+        <h2>heplify-server.toml</h2>
+		{{if .Success}}
+			<h4>Success!</h4>
+		{{end}}
+		{{if not .Success}}
+			<h4>{{.Err}}</h4>
+		{{end}}
+		<form method="POST">
+			<label>Config:</label><br />
+			<textarea type="text"  name="config" style="font-family: Arial;font-size: 10pt;width:80%;height:25vw"></textarea><br />
+			<input type="submit" class="like" value="Apply config" />
+		</form>
+    </body>
+</html>
+`

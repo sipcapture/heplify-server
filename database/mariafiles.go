@@ -13,7 +13,7 @@ var insconfmaria = []string{
 	`INSERT INTO alias (id, gid, ip, port, capture_id, alias, status, created) VALUES
 	(1, 10, '192.168.0.30', 0, 'homer01', 'proxy01', 1, '2014-06-12 20:36:50');`,
 
-	`INSERT INTO group (gid, name) VALUES (10, 'Administrator');`,
+	"INSERT INTO `group` (`gid`, `name`) VALUES (10, 'Administrator');",
 
 	`INSERT INTO node (id, host, dbname, dbport, dbusername, dbpassword, dbtables, name, status) VALUES
 	(1, '127.0.0.1', 'homer_data', '3306', 'homer_user', 'homer_password', 'sip_capture', 'homer01', 1);`,
@@ -70,11 +70,7 @@ var tblconfmaria = []string{
 		KEY host (ip)
 	  ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
-	`CREATE TABLE IF NOT EXISTS group (
-		gid int(10) NOT NULL DEFAULT 0,
-		name varchar(100) NOT NULL DEFAULT '',
-		UNIQUE KEY gid (gid)
-	  ) ENGINE=InnoDB DEFAULT CHARSET=latin1;`,
+	"CREATE TABLE IF NOT EXISTS `group` (gid int(10) NOT NULL DEFAULT 0,name varchar(100) NOT NULL DEFAULT '',UNIQUE KEY gid (gid)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
 
 	`CREATE TABLE IF NOT EXISTS link_share (
 		id int(10) NOT NULL AUTO_INCREMENT,
