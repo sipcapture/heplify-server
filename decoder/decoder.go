@@ -92,11 +92,6 @@ func (h *HEP) parse(packet []byte) error {
 			logp.Warn("%v", err)
 			return err
 		}
-	} else if bytes.HasSuffix(packet, webrtc) {
-		if err = h.parseWebRTC(packet[:len(packet)-6]); err == nil {
-			return nil
-		}
-		return err
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {

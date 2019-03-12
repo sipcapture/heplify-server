@@ -16,8 +16,6 @@ require (
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/grafana/loki v0.0.0-20190311171129-8b0469f26e42
 	github.com/hashicorp/golang-lru v0.5.1
-	github.com/klauspost/compress v1.4.1 // indirect
-	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.0.0
@@ -38,8 +36,6 @@ require (
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/stretchr/testify v1.3.0
 	github.com/valyala/bytebufferpool v1.0.0
-	github.com/valyala/fasthttp v1.2.0
-	github.com/valyala/fastjson v1.4.1
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a // indirect
 	golang.org/x/sys v0.0.0-20190312061237-fead79001313 // indirect
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2 // indirect
