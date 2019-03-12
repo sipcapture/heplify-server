@@ -34,7 +34,7 @@ LogDbg          = ""
 LogLvl          = "info"
 LogStd          = false
 Config          = "./heplify-server.toml"
-Version         = false
+ConfigHTTPAddr  = ""
 
 # Examples:
 # -------------------------------------

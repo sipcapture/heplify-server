@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -110,7 +111,16 @@ func main() {
 				return
 			}
 
-			ioutil.WriteFile(cfgFile, []byte(r.FormValue("config")), 0644)
+			fv := []byte(r.FormValue("config"))
+			if len(fv) < 6 || !bytes.Contains(fv, []byte("=")) {
+				tmpl.Execute(w, struct {
+					Success bool
+					Err     error
+				}{false, fmt.Errorf("Wrong format or too short! Please see https://github.com/sipcapture/heplify-server/tree/master/example")})
+				return
+			}
+
+			ioutil.WriteFile(cfgFile, fv, 0644)
 			cf := multiconfig.NewWithPath(cfgFile)
 			cfg := new(config.HeplifyServer)
 			err := cf.Load(cfg)
@@ -120,16 +130,17 @@ func main() {
 					Success bool
 					Err     error
 				}{false, err})
-			} else {
-				logp.Info("Successfull config reloaded from %v", r.RemoteAddr)
-				endServer()
-				config.Setting = *cfg
-				startServer()
-				tmpl.Execute(w, struct {
-					Success bool
-					Err     error
-				}{true, nil})
+				return
 			}
+			logp.Info("Successfull config reloaded from %v", r.RemoteAddr)
+			endServer()
+			config.Setting = *cfg
+			startServer()
+			tmpl.Execute(w, struct {
+				Success bool
+				Err     error
+			}{true, nil})
+
 		})
 
 		go http.ListenAndServe(config.Setting.ConfigHTTPAddr, nil)
@@ -166,8 +177,8 @@ var configForm = `
 		{{end}}
 		<form method="POST">
 			<label>Config:</label><br />
-			<textarea type="text"  name="config" style="font-family: Arial;font-size: 10pt;width:80%;height:25vw"></textarea><br />
-			<input type="submit" class="like" value="Apply config" />
+			<textarea type="text" name="config" style="font-family: Arial;font-size: 10pt;width:80%;height:25vw"></textarea><br />
+			<input type="submit" value="Apply config" />
 		</form>
     </body>
 </html>
