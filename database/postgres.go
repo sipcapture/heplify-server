@@ -40,7 +40,7 @@ func (p *Postgres) setup() error {
 
 	if config.Setting.DBRotate {
 		r := NewRotator()
-		r.Rotate()
+		go r.Rotate()
 	}
 
 	if p.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
@@ -96,7 +96,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 		select {
 		case pkt, ok := <-hCh:
 			if !ok {
-				break
+				p.db.Close()
+				return
 			}
 
 			date := pkt.Timestamp.Format(time.RFC3339Nano)

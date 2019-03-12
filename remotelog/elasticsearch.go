@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
 	"github.com/negbie/heplify-server/config"
@@ -69,31 +66,26 @@ func (e *Elasticsearch) setup() error {
 }
 
 func (e *Elasticsearch) start(hCh chan *decoder.HEP) {
-	var (
-		pkt *decoder.HEP
-		ok  bool
-	)
 
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	defer func() {
+		logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
+		err := e.bulkClient.Flush()
+		if err != nil {
+			logp.Err("%v", err)
+		}
+	}()
+
 	ticker := time.NewTicker(12 * time.Hour)
-
 	for {
 		select {
-		case pkt, ok = <-hCh:
+		case pkt, ok := <-hCh:
 			if !ok {
-				break
+				return
 			}
 			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006-01-02")).Type("hep").Doc(pkt)
 			e.bulkClient.Add(r)
 		case <-ticker.C:
 			err := e.createIndex(e.ctx, e.client)
-			if err != nil {
-				logp.Warn("%v", err)
-			}
-		case <-c:
-			logp.Info("heplify-server wants to stop flush remaining es bulk index requests")
-			err := e.bulkClient.Flush()
 			if err != nil {
 				logp.Warn("%v", err)
 			}

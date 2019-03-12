@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -40,9 +39,7 @@ type Loki struct {
 	BatchWait     time.Duration
 	BatchSize     int
 	HEPTypeFilter []int
-	quit          chan struct{}
 	entry
-	wg sync.WaitGroup
 }
 
 func (l *Loki) setup() error {
@@ -50,7 +47,6 @@ func (l *Loki) setup() error {
 	l.BatchWait = time.Duration(config.Setting.LokiTimer) * time.Second
 	l.HEPTypeFilter = config.Setting.LokiHEPFilter
 	l.URL = config.Setting.LokiURL
-	l.quit = make(chan struct{})
 
 	u, err := url.Parse(l.URL)
 	if err != nil {
@@ -70,15 +66,12 @@ func (l *Loki) setup() error {
 	if err != nil {
 		return err
 	}
-	l.wg.Add(1)
 	return nil
 }
 
 func (l *Loki) start(hCh chan *decoder.HEP) {
 	var (
-		pkt         *decoder.HEP
 		pktMeta     strings.Builder
-		ok          bool
 		keep        bool
 		hepType     string
 		curPktTime  time.Time
@@ -90,18 +83,15 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 	defer func() {
 		if err := l.sendBatch(batch); err != nil {
-			logp.Info("heplify-server wants to stop flush remaining loki bulk index requests")
-			logp.Err("sendBatch: %v", err)
-
+			logp.Err("loki flush: %v", err)
 		}
-		l.wg.Done()
 	}()
 
 	for {
 		select {
-		case pkt, ok = <-hCh:
+		case pkt, ok := <-hCh:
 			if !ok {
-				break
+				return
 			}
 			curPktTime = pkt.Timestamp
 			// guard against entry out of order errors
@@ -208,10 +198,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
 			}
-
-		case <-l.quit:
-			return
-
 		}
 	}
 }
@@ -269,10 +255,4 @@ func (l *Loki) send(ctx context.Context, buf []byte) (int, error) {
 		err = fmt.Errorf("server returned HTTP status %s (%d): %s", resp.Status, resp.StatusCode, line)
 	}
 	return resp.StatusCode, err
-}
-
-// Stop the client.
-func (l *Loki) Stop() {
-	close(l.quit)
-	l.wg.Wait()
 }

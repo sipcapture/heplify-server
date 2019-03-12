@@ -2,9 +2,9 @@ package queue
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/negbie/heplify-server/config"
+	"github.com/negbie/logp"
 )
 
 type Queue struct {
@@ -30,30 +30,25 @@ func New(name string) *Queue {
 }
 
 func (q *Queue) Run() error {
-	var (
-		wg  sync.WaitGroup
-		err error
-	)
 
 	if config.Setting.MQDriver != "nats" && config.Setting.MQDriver != "nsq" {
 		return fmt.Errorf("invalid message queue driver: %s, please use nats or nsq", config.Setting.MQDriver)
 	}
 
-	err = q.H.setup()
+	err := q.H.setup()
 	if err != nil {
 		return err
 	}
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		topic := q.Topic
 		q.H.add(topic, q.Chan)
 	}()
-	wg.Wait()
+
 	return nil
 }
 
 func (q *Queue) End() {
 	close(q.Chan)
+	logp.Info("close queue channel")
 }

@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.06"
+const Version = "heplify-server 1.07"
 
 var Setting HeplifyServer
 
@@ -52,7 +52,7 @@ type HeplifyServer struct {
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
 	Config             string   `default:"./heplify-server.toml"`
-	Version            bool     `default:"false"`
+	ConfigHTTPAddr     string   `default:""`
 }
 
 func NewConfig() *HeplifyServer {
@@ -102,7 +102,7 @@ func NewConfig() *HeplifyServer {
 		LogLvl:             "info",
 		LogStd:             false,
 		Config:             "./heplify-server.toml",
-		Version:            false,
+		ConfigHTTPAddr:     "",
 	}
 }
 

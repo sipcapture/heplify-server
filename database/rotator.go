@@ -99,9 +99,9 @@ func (r *Rotator) CreateDatabases() (err error) {
 	return nil
 }
 
-func replaceDay(d int) strings.Replacer {
+func replaceDay(d int) *strings.Replacer {
 	pn := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
-	return *strings.NewReplacer(
+	return strings.NewReplacer(
 		"{{date}}", pn,
 	)
 }
@@ -205,7 +205,7 @@ func (r *Rotator) dbExec(db *sql.DB, query string) {
 	checkDBErr(err)
 }
 
-func (r *Rotator) dbExecFile(db *sql.DB, file []string, pattern strings.Replacer, d, p int) error {
+func (r *Rotator) dbExecFile(db *sql.DB, file []string, pattern *strings.Replacer, d, p int) error {
 	t := time.Now().Add(time.Hour * time.Duration(24*d))
 	tt := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	newMinTime := tt.Format("1504")
@@ -226,7 +226,7 @@ func (r *Rotator) dbExecFile(db *sql.DB, file []string, pattern strings.Replacer
 	return lastErr
 }
 
-func (r *Rotator) dbExecFileLoop(db *sql.DB, file []string, pattern strings.Replacer, d, p int) {
+func (r *Rotator) dbExecFileLoop(db *sql.DB, file []string, pattern *strings.Replacer, d, p int) {
 	for _, q := range file {
 		q = pattern.Replace(q)
 		fileLoop(db, q, d, p)
@@ -352,10 +352,9 @@ func setStep(name string) (step int) {
 
 func checkDBErr(err error) {
 	if err != nil {
-		if mErr, ok := err.(*mysql.MySQLError); ok && mErr.Number != 1050 &&
-			mErr.Number != 1062 && mErr.Number != 1481 && mErr.Number != 1517 {
-			logp.Warn("%s\n\n", err)
-
+		if mErr, ok := err.(*mysql.MySQLError); ok && (mErr.Number == 1050 ||
+			mErr.Number == 1062 || mErr.Number == 1481 || mErr.Number == 1517) {
+			logp.Debug("rotator", "%s\n\n", err)
 		} else {
 			logp.Warn("%s\n\n", err)
 		}

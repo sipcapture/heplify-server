@@ -1,9 +1,8 @@
 package remotelog
 
 import (
-	"sync"
-
 	"github.com/negbie/heplify-server/decoder"
+	"github.com/negbie/logp"
 )
 
 type Remotelog struct {
@@ -28,25 +27,19 @@ func New(name string) *Remotelog {
 }
 
 func (r *Remotelog) Run() error {
-	var (
-		wg  sync.WaitGroup
-		err error
-	)
-
-	err = r.H.setup()
+	err := r.H.setup()
 	if err != nil {
 		return err
 	}
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		r.H.start(r.Chan)
 	}()
-	wg.Wait()
+
 	return nil
 }
 
 func (r *Remotelog) End() {
 	close(r.Chan)
+	logp.Info("close remotelog channel")
 }
