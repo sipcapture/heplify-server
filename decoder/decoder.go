@@ -10,7 +10,7 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/coocood/freecache"
-	"github.com/negbie/heplify-server/config"
+	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/negbie/sipparser"
 )

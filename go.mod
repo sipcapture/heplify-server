@@ -1,4 +1,4 @@
-module github.com/negbie/heplify-server
+module github.com/sipcapture/heplify-server
 
 require (
 	github.com/OneOfOne/xxhash v1.2.4 // indirect
@@ -14,12 +14,12 @@ require (
 	github.com/golang/protobuf v1.3.0 // indirect
 	github.com/golang/snappy v0.0.1
 	github.com/google/go-cmp v0.2.0 // indirect
-	github.com/grafana/loki v0.0.0-20190311171129-8b0469f26e42
+	github.com/grafana/loki v0.0.0-20190312134403-d0fcfd8e70fe
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.0.0
-	github.com/mailru/easyjson v0.0.0-20190221075403-6243d8e04c3f // indirect
+	github.com/mailru/easyjson v0.0.0-20190312143242-1de009706dbe // indirect
 	github.com/nats-io/gnatsd v1.4.1 // indirect
 	github.com/nats-io/go-nats v1.7.2
 	github.com/nats-io/nkeys v0.0.2 // indirect

@@ -15,8 +15,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/logproto"
-	"github.com/negbie/heplify-server/config"
-	"github.com/negbie/heplify-server/decoder"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/negbie/logp"
 	"github.com/prometheus/common/model"
 )
