@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -32,7 +33,7 @@ const (
 //var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 //var queryValCnt = 5
 
-func (p *Postgres) setup() error {
+func (p *Postgres) setup(wg *sync.WaitGroup) error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
@@ -40,7 +41,8 @@ func (p *Postgres) setup() error {
 
 	if config.Setting.DBRotate {
 		r := NewRotator()
-		go r.Rotate()
+		wg.Add(1)
+		go r.Rotate(wg)
 	}
 
 	if p.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {

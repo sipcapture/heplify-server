@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -258,9 +259,10 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 	}
 }
 
-func (r *Rotator) Rotate() (err error) {
+func (r *Rotator) Rotate(wg *sync.WaitGroup) {
 	r.createTables()
 	createJob := cron.New()
+	defer createJob.Stop()
 
 	logp.Info("schedule daily rotate job at 03:30:00\n")
 	createJob.AddFunc("0 30 03 * * *", func() {
@@ -276,6 +278,7 @@ func (r *Rotator) Rotate() (err error) {
 
 	if r.dropDays > 0 {
 		dropJob := cron.New()
+		defer dropJob.Stop()
 		logp.Info("schedule daily drop job at 03:45:00\n")
 		dropJob.AddFunc("0 45 03 * * *", func() {
 			if err := r.DropTables(); err != nil {
@@ -285,7 +288,7 @@ func (r *Rotator) Rotate() (err error) {
 		})
 		dropJob.Start()
 	}
-	return nil
+	wg.Wait()
 }
 
 func (r *Rotator) createTables() {
