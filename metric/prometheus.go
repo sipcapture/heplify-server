@@ -2,18 +2,15 @@ package metric
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/coocood/freecache"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
-	"github.com/negbie/logp"
 )
 
 type Prometheus struct {
@@ -30,15 +27,6 @@ func (p *Prometheus) setup() (err error) {
 	p.TargetConf = new(sync.RWMutex)
 	p.TargetIP = strings.Split(cutSpace(config.Setting.PromTargetIP), ",")
 	p.TargetName = strings.Split(cutSpace(config.Setting.PromTargetName), ",")
-
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGHUP)
-	go func() {
-		for {
-			<-s
-			p.loadPromConf()
-		}
-	}()
 
 	if len(p.TargetIP) == len(p.TargetName) && p.TargetIP != nil && p.TargetName != nil {
 		if len(p.TargetIP[0]) == 0 || len(p.TargetName[0]) == 0 {
