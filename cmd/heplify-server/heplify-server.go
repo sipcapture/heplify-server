@@ -13,10 +13,10 @@ import (
 	"syscall"
 
 	"github.com/koding/multiconfig"
-	"github.com/sipcapture/heplify-server/config"
-	input "github.com/sipcapture/heplify-server/server"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sipcapture/heplify-server/config"
+	input "github.com/sipcapture/heplify-server/server"
 )
 
 type server interface {
@@ -48,6 +48,7 @@ func init() {
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
 	logging.Level = config.Setting.LogLvl
+	logging.ToSyslog = &config.Setting.LogSys
 	logp.ToStderr = &config.Setting.LogStd
 	fileRotator.Path = "./"
 	fileRotator.Name = "heplify-server.log"
