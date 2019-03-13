@@ -27,7 +27,6 @@ type server interface {
 func init() {
 	var err error
 	var logging logp.Logging
-	var fileRotator logp.FileRotator
 
 	c := multiconfig.New()
 	cfg := new(config.HeplifyServer)
@@ -47,12 +46,16 @@ func init() {
 	}
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
-	logging.Level = config.Setting.LogLvl
-	logging.ToSyslog = &config.Setting.LogSys
 	logp.ToStderr = &config.Setting.LogStd
-	fileRotator.Path = "./"
-	fileRotator.Name = "heplify-server.log"
-	logging.Files = &fileRotator
+	logging.Level = config.Setting.LogLvl
+	if config.Setting.LogSys {
+		logging.ToSyslog = &config.Setting.LogSys
+	} else {
+		var fileRotator logp.FileRotator
+		fileRotator.Path = "./"
+		fileRotator.Name = "heplify-server.log"
+		logging.Files = &fileRotator
+	}
 
 	err = logp.Init("heplify-server", &logging)
 	if err != nil {
