@@ -6,13 +6,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/sipcapture/heplify-server/metric"
 	"github.com/sipcapture/heplify-server/queue"
 	"github.com/sipcapture/heplify-server/remotelog"
-	"github.com/negbie/logp"
 )
 
 type HEPInput struct {
@@ -259,16 +259,23 @@ func (h *HEPInput) hepWorker() {
 
 func (h *HEPInput) logStats() {
 	ticker := time.NewTicker(5 * time.Minute)
-	for range ticker.C {
-		logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Filtered: %d, Error: %d",
-			atomic.LoadUint64(&h.stats.PktCount)/300,
-			atomic.LoadUint64(&h.stats.HEPCount),
-			atomic.LoadUint64(&h.stats.DupCount),
-			atomic.LoadUint64(&h.stats.ErrCount),
-		)
-		atomic.StoreUint64(&h.stats.PktCount, 0)
-		atomic.StoreUint64(&h.stats.HEPCount, 0)
-		atomic.StoreUint64(&h.stats.DupCount, 0)
-		atomic.StoreUint64(&h.stats.ErrCount, 0)
+	for {
+		select {
+		case <-ticker.C:
+			logp.Info("stats since last 5 minutes. PPS: %d, HEP: %d, Filtered: %d, Error: %d",
+				atomic.LoadUint64(&h.stats.PktCount)/300,
+				atomic.LoadUint64(&h.stats.HEPCount),
+				atomic.LoadUint64(&h.stats.DupCount),
+				atomic.LoadUint64(&h.stats.ErrCount),
+			)
+			atomic.StoreUint64(&h.stats.PktCount, 0)
+			atomic.StoreUint64(&h.stats.HEPCount, 0)
+			atomic.StoreUint64(&h.stats.DupCount, 0)
+			atomic.StoreUint64(&h.stats.ErrCount, 0)
+
+		case <-h.quit:
+			h.quit <- true
+			return
+		}
 	}
 }

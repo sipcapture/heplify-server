@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/negbie/logp"
 	"github.com/olivere/elastic"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
 )
 
 type Elasticsearch struct {
@@ -55,12 +55,6 @@ func (e *Elasticsearch) setup() error {
 	if err != nil {
 		return err
 	}
-
-	go func(e *elastic.BulkProcessor) {
-		for range time.Tick(5 * time.Minute) {
-			printStats(e)
-		}
-	}(e.bulkClient)
 
 	return nil
 }
