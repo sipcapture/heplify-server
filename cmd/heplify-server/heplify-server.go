@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -107,44 +105,24 @@ func main() {
 	}
 
 	if len(config.Setting.ConfigHTTPAddr) > 2 {
-		cfgFile := config.Setting.Config
-		tmpl := template.Must(template.New("main").Parse(configForm))
+		tmpl := template.Must(template.New("main").Parse(config.WebForm))
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
-				tmpl.Execute(w, nil)
+				tmpl.Execute(w, config.Setting)
 				return
 			}
 
-			fv := []byte(r.FormValue("config"))
-			if len(fv) < 6 || !bytes.Contains(fv, []byte("=")) {
-				tmpl.Execute(w, struct {
-					Success bool
-					Err     error
-				}{false, fmt.Errorf("Wrong format or too short! Please see https://github.com/sipcapture/heplify-server/tree/master/example")})
-				return
-			}
-
-			ioutil.WriteFile(cfgFile, fv, 0644)
-			cf := multiconfig.NewWithPath(cfgFile)
-			cfg := new(config.HeplifyServer)
-			err := cf.Load(cfg)
+			cfg, err := config.WebConfig(r)
 			if err != nil {
 				logp.Warn("Failed config reload from %v. %v", r.RemoteAddr, err)
-				tmpl.Execute(w, struct {
-					Success bool
-					Err     error
-				}{false, err})
+				tmpl.Execute(w, config.Setting)
 				return
 			}
 			logp.Info("Successfull config reloaded from %v", r.RemoteAddr)
 			endServer()
 			config.Setting = *cfg
+			tmpl.Execute(w, config.Setting)
 			startServer()
-			tmpl.Execute(w, struct {
-				Success bool
-				Err     error
-			}{true, nil})
-
 		})
 
 		go http.ListenAndServe(config.Setting.ConfigHTTPAddr, nil)
@@ -164,26 +142,3 @@ func main() {
 	<-sigCh
 	endServer()
 }
-
-var configForm = `
-<!DOCTYPE html>
-<html>
-    <head>
-		<title>heplify-server web config</title>
-    </head>
-    <body>
-        <h2>heplify-server.toml</h2>
-		{{if .Success}}
-			<h4>Success!</h4>
-		{{end}}
-		{{if not .Success}}
-			<h4>{{.Err}}</h4>
-		{{end}}
-		<form method="POST">
-			<label>Config:</label><br />
-			<textarea type="text" name="config" style="font-family: Arial;font-size: 10pt;width:80%;height:25vw"></textarea><br />
-			<input type="submit" value="Apply config" />
-		</form>
-    </body>
-</html>
-`
