@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 func cutSpace(str string) string {
@@ -18,7 +18,7 @@ func cutSpace(str string) string {
 	}, str)
 }
 
-func (p *Prometheus) loadPromConf() {
+func (p *Prometheus) reload() {
 	var fsTargetIP []string
 	var fsTargetName []string
 

@@ -18,7 +18,7 @@ type HeplifyServer struct {
 	LokiTimer          int      `default:"2"`
 	LokiBuffer         int      `default:"100000"`
 	LokiHEPFilter      []int    `default:"1,100"`
-	PromAddr           string   `default:""`
+	PromAddr           string   `default:":9096"`
 	PromTargetIP       string   `default:""`
 	PromTargetName     string   `default:""`
 	DBShema            string   `default:"homer5"`
@@ -53,59 +53,4 @@ type HeplifyServer struct {
 	LogSys             bool     `default:"false"`
 	Config             string   `default:"./heplify-server.toml"`
 	ConfigHTTPAddr     string   `default:""`
-}
-
-func NewConfig() *HeplifyServer {
-	return &HeplifyServer{
-		HEPAddr:            "0.0.0.0:9060",
-		HEPTCPAddr:         "",
-		HEPTLSAddr:         "0.0.0.0:9060",
-		ESAddr:             "",
-		ESDiscovery:        true,
-		MQDriver:           "",
-		MQAddr:             "",
-		MQTopic:            "",
-		LokiURL:            "",
-		LokiBulk:           200,
-		LokiTimer:          2,
-		PromAddr:           "",
-		PromTargetIP:       "",
-		PromTargetName:     "",
-		DBShema:            "homer5",
-		DBDriver:           "mysql",
-		DBAddr:             "localhost:3306",
-		DBUser:             "root",
-		DBPass:             "",
-		DBDataTable:        "homer_data",
-		DBConfTable:        "homer_configuration",
-		DBTableSpace:       "",
-		DBBulk:             200,
-		DBTimer:            2,
-		DBBuffer:           400000,
-		DBWorker:           8,
-		DBRotate:           true,
-		DBPartLog:          "6h",
-		DBPartIsup:         "6h",
-		DBPartSip:          "2h",
-		DBPartQos:          "12h",
-		DBDropDays:         14,
-		DBDropDaysCall:     0,
-		DBDropDaysRegister: 0,
-		DBDropDaysDefault:  0,
-		DBDropOnStart:      false,
-		Dedup:              false,
-		DiscardMethod:      nil,
-		FilterHost:         nil,
-		AlegIDs:            nil,
-		LogDbg:             "",
-		LogLvl:             "info",
-		LogStd:             false,
-		LogSys:             false,
-		Config:             "./heplify-server.toml",
-		ConfigHTTPAddr:     "",
-	}
-}
-
-func Get() *HeplifyServer {
-	return NewConfig()
 }
