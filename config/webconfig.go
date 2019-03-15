@@ -91,7 +91,41 @@ var WebForm = `
 			display: inline-block;
 			width: 160px;
 			text-align: left;
-		  }​
+		}
+
+		input[type=text], select {
+			width: 15%;
+			padding: 4px 6px;
+			margin: 4px 0;
+			display: inline-block;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			text-align: right;
+		  }
+
+		  input[type=number], select {
+			width: 15%;
+			padding: 4px 6px;
+			margin: 4px 0;
+			display: inline-block;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			text-align: right;
+		  }
+		  
+		  input[type=submit] {
+			width: 15%;
+			background-color: #4CAF50;
+			color: white;
+			padding: 14px 20px;
+			margin: 8px 0;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		  }
+
 		</style>
 
 		<div>
@@ -115,15 +149,15 @@ var WebForm = `
 			<label>LokiURL</label>
 		</div>
 		<div>
-			<input  type="text" name="LokiBulk" placeholder="{{.LokiBulk}}" value="{{.LokiBulk}}">
+			<input  type="number" name="LokiBulk" placeholder="{{.LokiBulk}}" value="{{.LokiBulk}}" min="50" max="20000">
 			<label>LokiBulk</label>
 		</div>
 		<div>
-			<input  type="text" name="LokiTimer" placeholder="{{.LokiTimer}}" value="{{.LokiTimer}}">
+			<input  type="number" name="LokiTimer" placeholder="{{.LokiTimer}}" value="{{.LokiTimer}}" min="2" max="300">
 			<label>LokiTimer</label>
 		</div>
 		<div>
-			<input  type="text" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}">
+			<input  type="number" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}" min="100" max="10000000">
 			<label>LokiBuffer</label>
 		</div>
 		<div>
@@ -147,19 +181,19 @@ var WebForm = `
 			<label>DBPass</label>
 		</div>
 		<div>
-			<input  type="text" name="DBBulk" placeholder="{{.DBBulk}}" value="{{.DBBulk}}">
+			<input  type="number" name="DBBulk" placeholder="{{.DBBulk}}" value="{{.DBBulk}}" min="1" max="20000">
 			<label>DBBulk</label>
 		</div>
 		<div>
-			<input  type="text" name="DBTimer" placeholder="{{.DBTimer}}" value="{{.DBTimer}}">
+			<input  type="number" name="DBTimer" placeholder="{{.DBTimer}}" value="{{.DBTimer}}" min="2" max="300">
 			<label>DBTimer</label>
 		</div>
 		<div>
-			<input  type="text" name="DBBuffer" placeholder="{{.DBBuffer}}" value="{{.DBBuffer}}">
+			<input  type="number" name="DBBuffer" placeholder="{{.DBBuffer}}" value="{{.DBBuffer}}" min="1000" max="10000000">
 			<label>DBBuffer</label>
 		</div>
 		<div>
-			<input  type="text" name="DBWorker" placeholder="{{.DBWorker}}" value="{{.DBWorker}}">
+			<input  type="number" name="DBWorker" placeholder="{{.DBWorker}}" value="{{.DBWorker}}" min="1" max="40">
 			<label>DBWorker</label>
 		</div>
 		<div>
@@ -167,19 +201,19 @@ var WebForm = `
 			<label>DBRotate</label>
 		</div>	
 		<div>
-			<input  type="text" name="DBDropDays" placeholder="{{.DBDropDays}}" value="{{.DBDropDays}}">
+			<input  type="number" name="DBDropDays" placeholder="{{.DBDropDays}}" value="{{.DBDropDays}}" min="0" max="3650">
 			<label>DBDropDays</label>
 		</div>	
 		<div>
-			<input  type="text" name="DBDropDaysCall" placeholder="{{.DBDropDaysCall}}" value="{{.DBDropDaysCall}}">
+			<input  type="number" name="DBDropDaysCall" placeholder="{{.DBDropDaysCall}}" value="{{.DBDropDaysCall}}" min="0" max="3650">
 			<label>DBDropDaysCall</label>
 		</div>		
 		<div>
-			<input  type="text" name="DBDropDaysRegister" placeholder="{{.DBDropDaysRegister}}" value="{{.DBDropDaysRegister}}">
+			<input  type="number" name="DBDropDaysRegister" placeholder="{{.DBDropDaysRegister}}" value="{{.DBDropDaysRegister}}" min="0" max="3650">
 			<label>DBDropDaysRegister</label>
 		</div>
 		<div>
-			<input  type="text" name="DBDropDaysDefault" placeholder="{{.DBDropDaysDefault}}" value="{{.DBDropDaysDefault}}">
+			<input  type="number" name="DBDropDaysDefault" placeholder="{{.DBDropDaysDefault}}" value="{{.DBDropDaysDefault}}" min="0" max="3650">
 			<label>DBDropDaysDefault</label>
 		</div>
 		<div>
