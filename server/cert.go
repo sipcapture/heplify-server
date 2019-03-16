@@ -62,7 +62,7 @@ func NewCertificateAuthority() *CertificateAuthority {
 	if err != nil {
 		ca, err = CertificateAuthorityFromScratch()
 		if err != nil {
-			logp.Critical("%v", err)
+			logp.Err("%v", err)
 		}
 	}
 	return ca

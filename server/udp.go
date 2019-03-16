@@ -11,12 +11,12 @@ import (
 func (h *HEPInput) serveUDP(addr string) {
 	ua, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
-		logp.Critical("%v", err)
+		logp.Err("%v", err)
 	}
 
 	uc, err := net.ListenUDP("udp", ua)
 	if err != nil {
-		logp.Critical("%v", err)
+		logp.Err("%v", err)
 	}
 	defer func() {
 		logp.Info("stopping UDP listener on %s", uc.LocalAddr())
