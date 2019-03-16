@@ -1,4 +1,4 @@
-package database
+package rotator
 
 var (
 	droplogmaria      = []string{"DROP TABLE logs_capture_all_{{date}};"}

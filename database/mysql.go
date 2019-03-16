@@ -91,7 +91,7 @@ type MySQL struct {
 }
 
 func (m *MySQL) setup() error {
-	cs, err := connectString(config.Setting.DBDataTable)
+	cs, err := ConnectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
 	}

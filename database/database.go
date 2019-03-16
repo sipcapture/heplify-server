@@ -71,7 +71,7 @@ func (d *Database) End() {
 	logp.Info("close %s channel", config.Setting.DBDriver)
 }
 
-func connectString(dbName string) (string, error) {
+func ConnectString(dbName string) (string, error) {
 	var dsn string
 	driver := config.Setting.DBDriver
 	addr := strings.Split(config.Setting.DBAddr, ":")

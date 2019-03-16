@@ -13,6 +13,7 @@ import (
 	"github.com/sipcapture/heplify-server/metric"
 	"github.com/sipcapture/heplify-server/queue"
 	"github.com/sipcapture/heplify-server/remotelog"
+	"github.com/sipcapture/heplify-server/rotator"
 )
 
 type HEPInput struct {
@@ -144,7 +145,7 @@ func (h *HEPInput) Run() {
 	}
 
 	if config.Setting.DBRotate {
-		r := database.NewRotator(h.quit)
+		r := rotator.Setup(h.quit)
 		r.Rotate()
 		defer r.End()
 	}

@@ -1,4 +1,4 @@
-package database
+package rotator
 
 import (
 	"database/sql"
@@ -10,9 +10,11 @@ import (
 	"github.com/negbie/logp"
 	"github.com/robfig/cron"
 	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/database"
 )
 
 const (
+	partitionDate      = "{{date}}"
 	partitionTime      = "{{time}}"
 	partitionMinTime   = "{{minTime}}"
 	partitionStartTime = "{{startTime}}"
@@ -41,7 +43,7 @@ type Rotator struct {
 	dropJob          *cron.Cron
 }
 
-func NewRotator(quit chan bool) *Rotator {
+func Setup(quit chan bool) *Rotator {
 	r := &Rotator{
 		quit:         quit,
 		user:         config.Setting.DBUser,
@@ -59,9 +61,9 @@ func NewRotator(quit chan bool) *Rotator {
 		dropJob:      cron.New(),
 	}
 
-	r.rootDBAddr, _ = connectString("")
-	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
-	r.dataDBAddr, _ = connectString(config.Setting.DBDataTable)
+	r.rootDBAddr, _ = database.ConnectString("")
+	r.confDBAddr, _ = database.ConnectString(config.Setting.DBConfTable)
+	r.dataDBAddr, _ = database.ConnectString(config.Setting.DBDataTable)
 	if r.dropDaysCall == 0 {
 		r.dropDaysCall = r.dropDays
 	}
@@ -116,9 +118,9 @@ func (r *Rotator) CreateDatabases() (err error) {
 }
 
 func replaceDay(d int) *strings.Replacer {
-	pn := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
+	pd := time.Now().Add(time.Hour * time.Duration(24*d)).Format("20060102")
 	return strings.NewReplacer(
-		"{{date}}", pn,
+		partitionDate, pd,
 	)
 }
 
