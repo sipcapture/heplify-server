@@ -89,14 +89,27 @@ func (h *HEPInput) Run() {
 		go h.hepWorker()
 	}
 
-	if h.useDB {
-		d := database.New(config.Setting.DBDriver)
-		d.Chan = h.dbCh
+	logp.Info("start %s with %#v\n", config.Version, config.Setting)
+	go h.logStats()
 
-		if err := d.Run(); err != nil {
+	if config.Setting.HEPAddr != "" {
+		go h.serveUDP(config.Setting.HEPAddr)
+	}
+	if config.Setting.HEPTCPAddr != "" {
+		go h.serveTCP(config.Setting.HEPTCPAddr)
+	}
+	if config.Setting.HEPTLSAddr != "" {
+		go h.serveTLS(config.Setting.HEPTLSAddr)
+	}
+
+	if h.usePM {
+		m := metric.New("prometheus")
+		m.Chan = h.pmCh
+
+		if err := m.Run(); err != nil {
 			logp.Err("%v", err)
 		}
-		defer d.End()
+		defer m.End()
 	}
 
 	if h.useMQ {
@@ -108,16 +121,6 @@ func (h *HEPInput) Run() {
 			logp.Err("%v", err)
 		}
 		defer q.End()
-	}
-
-	if h.usePM {
-		m := metric.New("prometheus")
-		m.Chan = h.pmCh
-
-		if err := m.Run(); err != nil {
-			logp.Err("%v", err)
-		}
-		defer m.End()
 	}
 
 	if h.useES {
@@ -140,18 +143,22 @@ func (h *HEPInput) Run() {
 		defer l.End()
 	}
 
-	logp.Info("start %s with %#v\n", config.Version, config.Setting)
-	go h.logStats()
+	if config.Setting.DBRotate {
+		r := database.NewRotator(h.quit)
+		r.Rotate()
+		defer r.End()
+	}
 
-	if config.Setting.HEPAddr != "" {
-		go h.serveUDP(config.Setting.HEPAddr)
+	if h.useDB {
+		d := database.New(config.Setting.DBDriver)
+		d.Chan = h.dbCh
+
+		if err := d.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer d.End()
 	}
-	if config.Setting.HEPTCPAddr != "" {
-		go h.serveTCP(config.Setting.HEPTCPAddr)
-	}
-	if config.Setting.HEPTLSAddr != "" {
-		go h.serveTLS(config.Setting.HEPTLSAddr)
-	}
+
 	h.wg.Wait()
 }
 
@@ -259,6 +266,7 @@ func (h *HEPInput) hepWorker() {
 
 func (h *HEPInput) logStats() {
 	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:

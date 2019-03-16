@@ -3,19 +3,19 @@ package database
 import (
 	"database/sql"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
 	_ "github.com/lib/pq"
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
-	"github.com/negbie/logp"
 	"github.com/valyala/bytebufferpool"
 )
 
 type Postgres struct {
 	db      *sql.DB
+	dbTimer time.Duration
 	bulkCnt int
 }
 
@@ -33,16 +33,10 @@ const (
 //var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
 //var queryValCnt = 5
 
-func (p *Postgres) setup(wg *sync.WaitGroup) error {
+func (p *Postgres) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
-	}
-
-	if config.Setting.DBRotate {
-		r := NewRotator()
-		wg.Add(1)
-		go r.Rotate(wg)
 	}
 
 	if p.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
@@ -63,6 +57,7 @@ func (p *Postgres) setup(wg *sync.WaitGroup) error {
 	if p.bulkCnt < 1 {
 		p.bulkCnt = 1
 	}
+	p.dbTimer = time.Duration(config.Setting.DBTimer) * time.Second
 
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
@@ -80,7 +75,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 		isupRows   = make([]string, 0, p.bulkCnt)
 		rtcpRows   = make([]string, 0, p.bulkCnt)
 		reportRows = make([]string, 0, p.bulkCnt)
-		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
+		maxWait    = p.dbTimer
 	)
 
 	timer := time.NewTimer(maxWait)
@@ -98,7 +93,9 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 		select {
 		case pkt, ok := <-hCh:
 			if !ok {
-				p.db.Close()
+				if p.db != nil {
+					p.db.Close()
+				}
 				return
 			}
 

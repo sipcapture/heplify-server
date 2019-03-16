@@ -22,18 +22,14 @@ type Elasticsearch struct {
 func (e *Elasticsearch) setup() error {
 	var err error
 	e.ctx = context.Background()
-	for {
-		e.client, err = elastic.NewClient(
-			elastic.SetURL(config.Setting.ESAddr),
-			elastic.SetSniff(config.Setting.ESDiscovery),
-		)
-		if err != nil {
-			logp.Err("%v", err)
-			time.Sleep(5 * time.Second)
-		} else {
-			break
-		}
+	e.client, err = elastic.NewClient(
+		elastic.SetURL(config.Setting.ESAddr),
+		elastic.SetSniff(config.Setting.ESDiscovery),
+	)
+	if err != nil {
+		return err
 	}
+
 	e.bulkClient, err = e.client.BulkProcessor().
 		Name("ESBulkProcessor").
 		Workers(runtime.NumCPU()).
@@ -70,6 +66,7 @@ func (e *Elasticsearch) start(hCh chan *decoder.HEP) {
 	}()
 
 	ticker := time.NewTicker(12 * time.Hour)
+	defer ticker.Stop()
 	for {
 		select {
 		case pkt, ok := <-hCh:
