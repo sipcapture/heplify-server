@@ -2,14 +2,14 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/robfig/cron"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 const (
@@ -20,6 +20,10 @@ const (
 )
 
 type Rotator struct {
+	quit             chan bool
+	user             string
+	dataDB           string
+	confDB           string
 	driver           string
 	rootDBAddr       string
 	confDBAddr       string
@@ -32,20 +36,32 @@ type Rotator struct {
 	dropDaysCall     int
 	dropDaysRegister int
 	dropDaysDefault  int
+	dropOnStart      bool
+	createJob        *cron.Cron
+	dropJob          *cron.Cron
 }
 
-func NewRotator() *Rotator {
-	r := &Rotator{}
-	r.driver = config.Setting.DBDriver
+func NewRotator(quit chan bool) *Rotator {
+	r := &Rotator{
+		quit:         quit,
+		user:         config.Setting.DBUser,
+		dataDB:       config.Setting.DBDataTable,
+		confDB:       config.Setting.DBConfTable,
+		driver:       config.Setting.DBDriver,
+		partLog:      setStep(config.Setting.DBPartLog),
+		partIsup:     setStep(config.Setting.DBPartIsup),
+		partQos:      setStep(config.Setting.DBPartQos),
+		partSip:      setStep(config.Setting.DBPartSip),
+		dropDays:     config.Setting.DBDropDays,
+		dropDaysCall: config.Setting.DBDropDaysCall,
+		dropOnStart:  config.Setting.DBDropOnStart,
+		createJob:    cron.New(),
+		dropJob:      cron.New(),
+	}
+
 	r.rootDBAddr, _ = connectString("")
 	r.confDBAddr, _ = connectString(config.Setting.DBConfTable)
 	r.dataDBAddr, _ = connectString(config.Setting.DBDataTable)
-	r.partLog = setStep(config.Setting.DBPartLog)
-	r.partIsup = setStep(config.Setting.DBPartIsup)
-	r.partQos = setStep(config.Setting.DBPartQos)
-	r.partSip = setStep(config.Setting.DBPartSip)
-	r.dropDays = config.Setting.DBDropDays
-	r.dropDaysCall = config.Setting.DBDropDaysCall
 	if r.dropDaysCall == 0 {
 		r.dropDaysCall = r.dropDays
 	}
@@ -61,43 +77,42 @@ func NewRotator() *Rotator {
 }
 
 func (r *Rotator) CreateDatabases() (err error) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 	for {
-		if r.driver == "mysql" {
+		select {
+		case <-r.quit:
+			r.quit <- true
+			return fmt.Errorf("stop database creation")
+		case <-ticker.C:
 			db, err := sql.Open(r.driver, r.rootDBAddr)
 			if err = db.Ping(); err != nil {
 				db.Close()
 				logp.Err("%v", err)
-				time.Sleep(5 * time.Second)
-			} else {
-				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBDataTable+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
-				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+config.Setting.DBConfTable+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
-				r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'%' IDENTIFIED BY 'homer_password';`)
-				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBDataTable+`.* TO 'homer_user'@'%';`)
-				r.dbExec(db, "GRANT ALL ON "+config.Setting.DBConfTable+`.* TO 'homer_user'@'%';`)
-				db.Close()
 				break
 			}
-		} else if r.driver == "postgres" {
-			db, err := sql.Open(r.driver, r.rootDBAddr)
-			if err = db.Ping(); err != nil {
+			if r.driver == "mysql" {
+				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+r.dataDB+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
+				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+r.confDB+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
+				r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'%' IDENTIFIED BY 'homer_password';`)
+				r.dbExec(db, "GRANT ALL ON "+r.dataDB+`.* TO 'homer_user'@'%';`)
+				r.dbExec(db, "GRANT ALL ON "+r.confDB+`.* TO 'homer_user'@'%';`)
 				db.Close()
-				logp.Err("%v", err)
-				time.Sleep(5 * time.Second)
-			} else {
-				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBDataTable)
-				r.dbExec(db, "CREATE DATABASE "+config.Setting.DBConfTable)
+				return nil
+			} else if r.driver == "postgres" {
+				r.dbExec(db, "CREATE DATABASE "+r.dataDB)
+				r.dbExec(db, "CREATE DATABASE "+r.confDB)
 				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
 				r.dbExec(db, "GRANT postgres to homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBDataTable+" TO homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+config.Setting.DBConfTable+" TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+r.dataDB+" TO homer_user;")
+				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+r.confDB+" TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
 				db.Close()
-				break
+				return nil
 			}
 		}
 	}
-	return nil
 }
 
 func replaceDay(d int) *strings.Replacer {
@@ -108,13 +123,14 @@ func replaceDay(d int) *strings.Replacer {
 }
 
 func (r *Rotator) CreateDataTables(duration int) (err error) {
+	db, err := sql.Open(r.driver, r.dataDBAddr)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
 	suffix := replaceDay(duration)
 	if r.driver == "mysql" {
-		db, err := sql.Open(r.driver, r.dataDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET time_zone = \"+00:00\";")
 		if err := r.dbExecFile(db, tbldatalogmaria, suffix, duration, r.partLog); err == nil {
@@ -128,11 +144,6 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		}
 		r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
 	} else if r.driver == "postgres" {
-		db, err := sql.Open(r.driver, r.dataDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
@@ -149,21 +160,17 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
+	db, err := sql.Open(r.driver, r.confDBAddr)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
 	suffix := replaceDay(duration)
 	if r.driver == "mysql" {
-		db, err := sql.Open(r.driver, r.confDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		r.dbExecFile(db, tblconfmaria, suffix, 0, 0)
 		r.dbExecFile(db, insconfmaria, suffix, 0, 0)
 	} else if r.driver == "postgres" {
-		db, err := sql.Open(r.driver, r.confDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		r.dbExecFile(db, idxconfpg, suffix, 0, 0)
 		r.dbExecFile(db, tblconfpg, suffix, 0, 0)
 		r.dbExecFile(db, insconfpg, suffix, 0, 0)
@@ -172,12 +179,12 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 }
 
 func (r *Rotator) DropTables() (err error) {
+	db, err := sql.Open(r.driver, r.dataDBAddr)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 	if r.driver == "mysql" {
-		db, err := sql.Open(r.driver, r.dataDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		r.dbExecFile(db, droplogmaria, replaceDay(r.dropDays*-1), 0, 0)
 		r.dbExecFile(db, dropreportmaria, replaceDay(r.dropDays*-1), 0, 0)
 		r.dbExecFile(db, droprtcpmaria, replaceDay(r.dropDays*-1), 0, 0)
@@ -185,11 +192,6 @@ func (r *Rotator) DropTables() (err error) {
 		r.dbExecFile(db, dropregistermaria, replaceDay(r.dropDaysRegister*-1), 0, 0)
 		r.dbExecFile(db, dropdefaultmaria, replaceDay(r.dropDaysDefault*-1), 0, 0)
 	} else if r.driver == "postgres" {
-		db, err := sql.Open(r.driver, r.dataDBAddr)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
 		r.dbExecFileLoop(db, droplogpg, replaceDay(r.dropDays*-1), r.dropDays, r.partLog)
 		r.dbExecFileLoop(db, dropisuppg, replaceDay(r.dropDays*-1), r.dropDays, r.partIsup)
 		r.dbExecFileLoop(db, dropreportpg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
@@ -259,13 +261,9 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 	}
 }
 
-func (r *Rotator) Rotate(wg *sync.WaitGroup) {
+func (r *Rotator) Rotate() {
 	r.createTables()
-	createJob := cron.New()
-	defer createJob.Stop()
-
-	logp.Info("schedule daily rotate job at 03:30:00\n")
-	createJob.AddFunc("0 30 03 * * *", func() {
+	r.createJob.AddFunc("0 30 03 * * *", func() {
 		if err := r.CreateDataTables(1); err != nil {
 			logp.Err("%v", err)
 		}
@@ -274,27 +272,29 @@ func (r *Rotator) Rotate(wg *sync.WaitGroup) {
 		}
 		logp.Info("finished rotate job next will run at %v\n", time.Now().Add(time.Hour*24+1))
 	})
-	createJob.Start()
+	r.createJob.Start()
 
 	if r.dropDays > 0 {
-		dropJob := cron.New()
-		defer dropJob.Stop()
-		logp.Info("schedule daily drop job at 03:45:00\n")
-		dropJob.AddFunc("0 45 03 * * *", func() {
+		r.dropJob.AddFunc("0 45 03 * * *", func() {
 			if err := r.DropTables(); err != nil {
 				logp.Err("%v", err)
 			}
 			logp.Info("finished drop job next will run at %v\n", time.Now().Add(time.Hour*24+1))
 		})
-		dropJob.Start()
+		r.dropJob.Start()
 	}
-	wg.Wait()
+}
+
+func (r *Rotator) End() {
+	r.createJob.Stop()
+	r.dropJob.Stop()
 }
 
 func (r *Rotator) createTables() {
-	if config.Setting.DBUser == "root" || config.Setting.DBUser == "admin" || config.Setting.DBUser == "postgres" {
+	if r.user == "root" || r.user == "admin" || r.user == "postgres" {
 		if err := r.CreateDatabases(); err != nil {
-			logp.Err("%v", err)
+			logp.Info("%v", err)
+			return
 		}
 	}
 	logp.Info("start creating tables (%v)\n", time.Now())
@@ -311,14 +311,14 @@ func (r *Rotator) createTables() {
 		logp.Err("%v", err)
 	}
 	logp.Info("end creating tables (%v)\n", time.Now())
-	if config.Setting.DBDropOnStart && r.dropDays != 0 {
+	if r.dropOnStart && r.dropDays != 0 {
 		if err := r.DropTables(); err != nil {
 			logp.Err("%v", err)
 		}
 	}
 	if r.dropDays == 0 {
-		logp.Warn("don't schedule daily drop job because setting DBDropDays is 0\n")
-		logp.Warn("better set DBDropDays greater 0 otherwise old data won't be deleted\n")
+		logp.Warn("don't schedule daily drop job because DBDropDays is 0\n")
+		logp.Warn("set DBDropDays greater 0 or old data won't be deleted\n")
 	}
 }
 

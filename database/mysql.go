@@ -2,13 +2,12 @@ package database
 
 import (
 	"database/sql"
-	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
-	"github.com/negbie/logp"
 )
 
 var (
@@ -86,20 +85,15 @@ var (
 type MySQL struct {
 	db         *sql.DB
 	bulkCnt    int
+	dbTimer    time.Duration
 	sipBulkVal []byte
 	rtcBulkVal []byte
 }
 
-func (m *MySQL) setup(wg *sync.WaitGroup) error {
+func (m *MySQL) setup() error {
 	cs, err := connectString(config.Setting.DBDataTable)
 	if err != nil {
 		return err
-	}
-
-	if config.Setting.DBRotate {
-		r := NewRotator()
-		wg.Add(1)
-		go r.Rotate(wg)
 	}
 
 	if m.db, err = sql.Open(config.Setting.DBDriver, cs); err != nil {
@@ -119,6 +113,7 @@ func (m *MySQL) setup(wg *sync.WaitGroup) error {
 	if m.bulkCnt < 1 {
 		m.bulkCnt = 1
 	}
+	m.dbTimer = time.Duration(config.Setting.DBTimer) * time.Second
 
 	m.sipBulkVal = sipQueryVal(m.bulkCnt)
 	m.rtcBulkVal = rtcQueryVal(m.bulkCnt)
@@ -140,7 +135,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 		logRows    = make([]interface{}, 0, m.bulkCnt)
 		rtcpRows   = make([]interface{}, 0, m.bulkCnt)
 		reportRows = make([]interface{}, 0, m.bulkCnt)
-		maxWait    = time.Duration(config.Setting.DBTimer) * time.Second
+		maxWait    = m.dbTimer
 	)
 
 	timer := time.NewTimer(maxWait)
@@ -212,7 +207,9 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 		select {
 		case pkt, ok = <-hCh:
 			if !ok {
-				m.db.Close()
+				if m.db != nil {
+					m.db.Close()
+				}
 				return
 			}
 
