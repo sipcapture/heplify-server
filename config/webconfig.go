@@ -25,14 +25,20 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		return nil, err
 	}
 	webSetting.DBShema = r.FormValue("DBShema")
-	webSetting.DBDriver = r.FormValue("DBDriver")
+	if webSetting.DBShema == "homer5" {
+		webSetting.DBDriver = "mysql"
+		webSetting.DBConfTable = "homer_configuration"
+	}
+	if webSetting.DBShema == "homer7" {
+		webSetting.DBDriver = "postgres"
+		webSetting.DBConfTable = "homer_config"
+	}
 	webSetting.DBAddr = r.FormValue("DBAddr")
 	webSetting.DBUser = r.FormValue("DBUser")
 	DBPass := r.FormValue("DBPass")
 	if DBPass != "*******" {
 		webSetting.DBPass = DBPass
 	}
-	webSetting.DBConfTable = r.FormValue("DBConfTable")
 	if webSetting.DBBulk, err = strconv.Atoi(r.FormValue("DBBulk")); err != nil {
 		return nil, err
 	}
@@ -69,6 +75,13 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	} else if Dedup == "false" {
 		webSetting.Dedup = false
 	}
+	webSetting.LogLvl = r.FormValue("LogLvl")
+	LogSys := r.FormValue("LogSys")
+	if LogSys == "true" {
+		webSetting.LogSys = true
+	} else if LogSys == "false" {
+		webSetting.LogSys = false
+	}
 
 	if reflect.DeepEqual(webSetting, Setting) {
 		return nil, fmt.Errorf("Equal config")
@@ -89,7 +102,7 @@ var WebForm = `
 		<style type="text/css">
 		label {
 			display: inline-block;
-			width: 160px;
+			width: 180px;
 			text-align: left;
 		}
 
@@ -101,7 +114,7 @@ var WebForm = `
 			border: 1px solid #ccc;
 			border-radius: 4px;
 			box-sizing: border-box;
-			text-align: right;
+			text-align: left;
 		  }
 
 		  input[type=number], select {
@@ -112,11 +125,11 @@ var WebForm = `
 			border: 1px solid #ccc;
 			border-radius: 4px;
 			box-sizing: border-box;
-			text-align: right;
+			text-align: left;
 		  }
 		  
 		  input[type=submit] {
-			width: 15%;
+			width: 25%;
 			background-color: #4CAF50;
 			color: white;
 			padding: 14px 20px;
@@ -129,101 +142,102 @@ var WebForm = `
 		</style>
 
 		<div>
-			<input  type="text" name="HEPAddr" placeholder="{{.HEPAddr}}" value="{{.HEPAddr}}">
 			<label>HEPAddr</label>
+			<input  type="text" name="HEPAddr" placeholder="{{.HEPAddr}}" value="{{.HEPAddr}}">
 		</div>
 		<div>
-			<input  type="text" name="HEPTCPAddr" placeholder="{{.HEPTCPAddr}}" value="{{.HEPTCPAddr}}">
 			<label>HEPTCPAddr</label>
+			<input  type="text" name="HEPTCPAddr" placeholder="{{.HEPTCPAddr}}" value="{{.HEPTCPAddr}}">
 		</div>
 		<div>
-			<input  type="text" name="HEPTLSAddr" placeholder="{{.HEPTLSAddr}}" value="{{.HEPTLSAddr}}">
 			<label>HEPTLSAddr</label>
+			<input  type="text" name="HEPTLSAddr" placeholder="{{.HEPTLSAddr}}" value="{{.HEPTLSAddr}}">
 		</div>
 		<div>
-			<input  type="text" name="ESAddr" placeholder="{{.ESAddr}}" value="{{.ESAddr}}">
+			<label>Dedup</label>
+			<input  type="text" name="Dedup" placeholder="{{.Dedup}}" value="{{.Dedup}}">
+		</div>
+		<div>
 			<label>ESAddr</label>
+			<input  type="text" name="ESAddr" placeholder="{{.ESAddr}}" value="{{.ESAddr}}">
 		</div>
 		<div>
-			<input  type="text" name="LokiURL" placeholder="{{.LokiURL}}" value="{{.LokiURL}}">
 			<label>LokiURL</label>
+			<input  type="text" name="LokiURL" placeholder="{{.LokiURL}}" value="{{.LokiURL}}">
 		</div>
 		<div>
-			<input  type="number" name="LokiBulk" placeholder="{{.LokiBulk}}" value="{{.LokiBulk}}" min="50" max="20000">
 			<label>LokiBulk</label>
+			<input  type="number" name="LokiBulk" placeholder="{{.LokiBulk}}" value="{{.LokiBulk}}" min="50" max="20000">
 		</div>
 		<div>
-			<input  type="number" name="LokiTimer" placeholder="{{.LokiTimer}}" value="{{.LokiTimer}}" min="2" max="300">
 			<label>LokiTimer</label>
+			<input  type="number" name="LokiTimer" placeholder="{{.LokiTimer}}" value="{{.LokiTimer}}" min="2" max="300">
 		</div>
 		<div>
-			<input  type="number" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}" min="100" max="10000000">
 			<label>LokiBuffer</label>
+			<input  type="number" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}" min="100" max="10000000">
 		</div>
 		<div>
-			<input  type="text" name="DBShema" placeholder="{{.DBShema}}" value="{{.DBShema}}">
 			<label>DBShema</label>
+			<input  type="text" name="DBShema" placeholder="{{.DBShema}}" value="{{.DBShema}}">
 		</div>
 		<div>
-			<input  type="text" name="DBDriver" placeholder="{{.DBDriver}}" value="{{.DBDriver}}">
-			<label>DBDriver</label>
-		</div>
-		<div>
-			<input  type="text" name="DBAddr" placeholder="{{.DBAddr}}" value="{{.DBAddr}}">
 			<label>DBAddr</label>
+			<input  type="text" name="DBAddr" placeholder="{{.DBAddr}}" value="{{.DBAddr}}">
 		</div>
 		<div>
-			<input  type="text" name="DBUser" placeholder="{{.DBUser}}" value="{{.DBUser}}">
 			<label>DBUser</label>
+			<input  type="text" name="DBUser" placeholder="{{.DBUser}}" value="{{.DBUser}}">
 		</div>
 		<div>
-			<input  type="text" name="DBPass" placeholder="*******" value="*******">
 			<label>DBPass</label>
+			<input  type="text" name="DBPass" placeholder="*******" value="*******">
 		</div>
 		<div>
-			<input  type="number" name="DBBulk" placeholder="{{.DBBulk}}" value="{{.DBBulk}}" min="1" max="20000">
 			<label>DBBulk</label>
+			<input  type="number" name="DBBulk" placeholder="{{.DBBulk}}" value="{{.DBBulk}}" min="1" max="20000">
 		</div>
 		<div>
-			<input  type="number" name="DBTimer" placeholder="{{.DBTimer}}" value="{{.DBTimer}}" min="2" max="300">
 			<label>DBTimer</label>
+			<input  type="number" name="DBTimer" placeholder="{{.DBTimer}}" value="{{.DBTimer}}" min="2" max="300">
 		</div>
 		<div>
-			<input  type="number" name="DBBuffer" placeholder="{{.DBBuffer}}" value="{{.DBBuffer}}" min="1000" max="10000000">
 			<label>DBBuffer</label>
+			<input  type="number" name="DBBuffer" placeholder="{{.DBBuffer}}" value="{{.DBBuffer}}" min="1000" max="10000000">
 		</div>
 		<div>
-			<input  type="number" name="DBWorker" placeholder="{{.DBWorker}}" value="{{.DBWorker}}" min="1" max="40">
 			<label>DBWorker</label>
+			<input  type="number" name="DBWorker" placeholder="{{.DBWorker}}" value="{{.DBWorker}}" min="1" max="40">
 		</div>
 		<div>
-			<input  type="text" name="DBRotate" placeholder="{{.DBRotate}}" value="{{.DBRotate}}">
 			<label>DBRotate</label>
+			<input  type="text" name="DBRotate" placeholder="{{.DBRotate}}" value="{{.DBRotate}}">
 		</div>	
 		<div>
-			<input  type="number" name="DBDropDays" placeholder="{{.DBDropDays}}" value="{{.DBDropDays}}" min="0" max="3650">
 			<label>DBDropDays</label>
+			<input  type="number" name="DBDropDays" placeholder="{{.DBDropDays}}" value="{{.DBDropDays}}" min="0" max="3650">
 		</div>	
 		<div>
-			<input  type="number" name="DBDropDaysCall" placeholder="{{.DBDropDaysCall}}" value="{{.DBDropDaysCall}}" min="0" max="3650">
 			<label>DBDropDaysCall</label>
+			<input  type="number" name="DBDropDaysCall" placeholder="{{.DBDropDaysCall}}" value="{{.DBDropDaysCall}}" min="0" max="3650">
 		</div>		
 		<div>
-			<input  type="number" name="DBDropDaysRegister" placeholder="{{.DBDropDaysRegister}}" value="{{.DBDropDaysRegister}}" min="0" max="3650">
 			<label>DBDropDaysRegister</label>
+			<input  type="number" name="DBDropDaysRegister" placeholder="{{.DBDropDaysRegister}}" value="{{.DBDropDaysRegister}}" min="0" max="3650">
 		</div>
 		<div>
-			<input  type="number" name="DBDropDaysDefault" placeholder="{{.DBDropDaysDefault}}" value="{{.DBDropDaysDefault}}" min="0" max="3650">
 			<label>DBDropDaysDefault</label>
+			<input  type="number" name="DBDropDaysDefault" placeholder="{{.DBDropDaysDefault}}" value="{{.DBDropDaysDefault}}" min="0" max="3650">
 		</div>
 		<div>
-			<input  type="text" name="DBConfTable" placeholder="{{.DBConfTable}}" value="{{.DBConfTable}}">
-			<label>DBConfTable</label>
+			<label>LogLvl</label>
+			<input  type="text" name="LogLvl" placeholder="{{.LogLvl}}" value="{{.LogLvl}}">
 		</div>
 		<div>
-			<input  type="text" name="Dedup" placeholder="{{.Dedup}}" value="{{.Dedup}}">
-			<label>Dedup</label>
+			<label>LogSys</label>
+			<input  type="text" name="LogSys" placeholder="{{.LogSys}}" value="{{.LogSys}}">
 		</div>
+	
 
 		</br><input type="submit" value="Apply config" />
 		</form>
