@@ -19,7 +19,8 @@ You have 3 options to get **heplify-server** up and running:
 
 
 ### Configuration
-**heplify-server** can be configured using command-line flags, environment variables or by defining a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/)
+**heplify-server** can be configured using command-line flags, environment variables, a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/) or via web form by setting ConfigHTTPAddr
+![image](https://user-images.githubusercontent.com/20154956/54483281-ef3f5700-4850-11e9-8da1-9b8bed6186e3.png)
 
 To setup a systemd service use the sample [service file](https://github.com/sipcapture/heplify-server/blob/master/example/) 
 and follow the instructions at the top.
