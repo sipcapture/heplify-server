@@ -3,8 +3,11 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
+
+	toml "github.com/BurntSushi/toml"
 )
 
 func WebConfig(r *http.Request) (*HeplifyServer, error) {
@@ -87,6 +90,12 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		return nil, fmt.Errorf("Equal config")
 	}
 
+	f, err := os.Create(webSetting.Config)
+	if err != nil {
+		return &webSetting, nil
+	}
+	e := toml.NewEncoder(f)
+	e.Encode(webSetting)
 	return &webSetting, nil
 }
 
