@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package logproto;
+
+import "google/protobuf/timestamp.proto";
+
+message PushRequest {
+  repeated Stream streams = 1;
+}
+
+message Stream {
+  string labels = 1;
+  repeated Entry entries = 2;
+}
+
+message Entry {
+  google.protobuf.Timestamp timestamp = 1;
+  string line = 2;
+}
