@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
-	"github.com/sipcapture/heplify-server/config"
-	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/negbie/logp"
 	"github.com/prometheus/common/model"
+	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
+	"github.com/sipcapture/heplify-server/remotelog/logproto"
 )
 
 const (
@@ -31,7 +32,7 @@ const (
 
 type entry struct {
 	labels model.LabelSet
-	logproto.Entry
+	*logproto.Entry
 }
 
 type Loki struct {
@@ -100,7 +101,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			}
 			lastPktTime = curPktTime
 			hepType = decoder.HEPTypeString(pkt.ProtoType)
-			maxWait.Reset(l.BatchWait)
 
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)
@@ -123,6 +123,12 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				keep = false
 			}
 
+			tsNano := curPktTime.UnixNano()
+			ts := &timestamp.Timestamp{
+				Seconds: tsNano / int64(time.Second),
+				Nanos:   int32(tsNano % int64(time.Second)),
+			}
+
 			switch {
 			case keep && pkt.SIP != nil && pkt.ProtoType == 1:
 				l.entry = entry{
@@ -132,8 +138,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 						"node":     model.LabelValue(pkt.Node),
 						"response": model.LabelValue(pkt.SIP.FirstMethod),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
-					logproto.Entry{
-						Timestamp: curPktTime,
+					&logproto.Entry{
+						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
 
@@ -143,8 +149,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 						"job":  jobName,
 						"type": model.LabelValue(hepType),
 						"node": model.LabelValue(pkt.Node)},
-					logproto.Entry{
-						Timestamp: curPktTime,
+					&logproto.Entry{
+						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
 			case keep && pkt.ProtoType == 112:
@@ -154,8 +160,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 						"type": model.LabelValue(pkt.CID),
 						"node": model.LabelValue(pkt.Node),
 						"host": model.LabelValue(pkt.Host)},
-					logproto.Entry{
-						Timestamp: curPktTime,
+					&logproto.Entry{
+						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
 			case pkt.ProtoType >= 1000:
@@ -163,8 +169,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					model.LabelSet{
 						"job":  jobName,
 						"type": model.LabelValue(hepType)},
-					logproto.Entry{
-						Timestamp: curPktTime,
+					&logproto.Entry{
+						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
 			default:
@@ -177,6 +183,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				}
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
+				maxWait.Reset(l.BatchWait)
 			}
 
 			batchSize += len(l.entry.Line)
@@ -198,6 +205,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				batchSize = 0
 				batch = map[model.Fingerprint]*logproto.Stream{}
 			}
+			maxWait.Reset(l.BatchWait)
 		}
 	}
 }
