@@ -121,6 +121,7 @@ func main() {
 			logp.Info("Successfull config reloaded from %v", r.RemoteAddr)
 			endServer()
 			config.Setting = *cfg
+			logp.SetToSyslog(config.Setting.LogSys, "")
 			tmpl.Execute(w, config.Setting)
 			startServer()
 		})
