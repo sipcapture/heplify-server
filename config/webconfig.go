@@ -27,12 +27,13 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	if webSetting.LokiBuffer, err = strconv.Atoi(r.FormValue("LokiBuffer")); err != nil {
 		return nil, err
 	}
-	webSetting.DBShema = r.FormValue("DBShema")
-	if webSetting.DBShema == "homer5" {
+	DBShema := r.FormValue("DBShema")
+	if DBShema == "homer5" {
+		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "mysql"
 		webSetting.DBConfTable = "homer_configuration"
-	}
-	if webSetting.DBShema == "homer7" {
+	} else if DBShema == "homer7" {
+		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "postgres"
 		webSetting.DBConfTable = "homer_config"
 	}
@@ -164,7 +165,11 @@ var WebForm = `
 		</div>
 		<div>
 			<label>Dedup</label>
-			<input  type="text" name="Dedup" placeholder="{{.Dedup}}" value="{{.Dedup}}">
+			<select name="Dedup">
+				<option value="">-- Please choose ({{.Dedup}}) --</option>
+				<option value="true">true</option>
+				<option value="false">false</option>
+			</select>
 		</div>
 		<div>
 			<label>ESAddr</label>
@@ -188,7 +193,11 @@ var WebForm = `
 		</div>
 		<div>
 			<label>DBShema</label>
-			<input  type="text" name="DBShema" placeholder="{{.DBShema}}" value="{{.DBShema}}">
+			<select name="DBShema">
+				<option value="">-- Please choose ({{.DBShema}}) --</option>
+				<option value="homer5">homer5</option>
+				<option value="homer7">homer7</option>
+			</select>
 		</div>
 		<div>
 			<label>DBAddr</label>
@@ -220,7 +229,11 @@ var WebForm = `
 		</div>
 		<div>
 			<label>DBRotate</label>
-			<input  type="text" name="DBRotate" placeholder="{{.DBRotate}}" value="{{.DBRotate}}">
+			<select name="DBRotate">
+				<option value="">-- Please choose ({{.DBRotate}}) --</option>
+				<option value="true">true</option>
+				<option value="false">false</option>
+			</select>
 		</div>	
 		<div>
 			<label>DBDropDays</label>
@@ -244,9 +257,12 @@ var WebForm = `
 		</div>
 		<div>
 			<label>LogSys</label>
-			<input  type="text" name="LogSys" placeholder="{{.LogSys}}" value="{{.LogSys}}">
+			<select name="LogSys">
+				<option value="">-- Please choose ({{.LogSys}}) --</option>
+				<option value="true">true</option>
+				<option value="false">false</option>
+			</select>
 		</div>
-	
 
 		</br><input type="submit" value="Apply config" />
 		</form>
