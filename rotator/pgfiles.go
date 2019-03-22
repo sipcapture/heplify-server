@@ -6,7 +6,7 @@ var (
 	dropisuppg     = []string{"DROP TABLE hep_proto_54_default_{{date}}_{{time}};"}
 	droprtcppg     = []string{"DROP TABLE hep_proto_5_default_{{date}}_{{time}};"}
 	dropcallpg     = []string{"DROP TABLE hep_proto_1_call_{{date}}_{{time}};"}
-	dropregisterpg = []string{"DROP TABLE hep_proto_1_register_{{date}}_{{time}};"}
+	dropregisterpg = []string{"DROP TABLE hep_proto_1_registration_{{date}}_{{time}};"}
 	dropdefaultpg  = []string{"DROP TABLE hep_proto_1_default_{{date}}_{{time}};"}
 )
 
@@ -69,20 +69,20 @@ var idxsippg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_callid ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'callid'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_method ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'method'));",
 
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_create_date ON hep_proto_1_register_{{date}}_{{time}} (create_date);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_sid ON hep_proto_1_register_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_srcIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_dstIp ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_correlation_id ON hep_proto_1_register_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_create_date ON hep_proto_1_registration_{{date}}_{{time}} (create_date);",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_sid ON hep_proto_1_registration_{{date}}_{{time}} (sid);",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_srcIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_dstIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_correlation_id ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
 
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_ruri_domain ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'ruri_domain'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_ruri_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'ruri_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_from_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'from_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_to_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'to_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_pid_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'pid_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_auth_user ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'auth_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_callid ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'callid'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}}_method ON hep_proto_1_register_{{date}}_{{time}} ((data_header->'method'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_domain ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'ruri_domain'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'ruri_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_from_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'from_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_to_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'to_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_pid_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'pid_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_auth_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'auth_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_callid ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'callid'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_method ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'method'));",
 
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_create_date ON hep_proto_1_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_sid ON hep_proto_1_default_{{date}}_{{time}} (sid);",
@@ -141,7 +141,7 @@ var parqospg = []string{
 
 var parsippg = []string{
 	"CREATE TABLE IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}} PARTITION OF hep_proto_1_call FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
-	"CREATE TABLE IF NOT EXISTS hep_proto_1_register_{{date}}_{{time}} PARTITION OF hep_proto_1_register FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
+	"CREATE TABLE IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}} PARTITION OF hep_proto_1_registration FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
 	"CREATE TABLE IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}} PARTITION OF hep_proto_1_default FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
 }
 
@@ -258,7 +258,7 @@ var tbldatapg = []string{
 		raw varchar NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
-	`CREATE TABLE IF NOT EXISTS hep_proto_1_register (
+	`CREATE TABLE IF NOT EXISTS hep_proto_1_registration (
 		id BIGSERIAL NOT NULL,
 		sid varchar NOT NULL,
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
