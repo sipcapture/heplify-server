@@ -21,7 +21,7 @@ type Postgres struct {
 
 const (
 	callCopy     = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	registerCopy = "COPY hep_proto_1_register(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	registerCopy = "COPY hep_proto_1_registration(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	defaultCopy  = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	rtcpCopy     = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	reportCopy   = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
