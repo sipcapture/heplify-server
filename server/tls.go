@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/negbie/cert"
 	"github.com/negbie/logp"
 )
 
@@ -23,7 +24,12 @@ func (h *HEPInput) serveTLS(addr string) {
 		return
 	}
 
-	ca := NewCertificateAuthority()
+	ca, err := cert.NewCertificateAuthority("heplify-server")
+	if err != nil {
+		logp.Err("%v", err)
+		return
+	}
+
 	var wg sync.WaitGroup
 
 	for {
@@ -43,6 +49,7 @@ func (h *HEPInput) serveTLS(addr string) {
 				}
 				logp.Err("failed to accept TLS connection: %v", err.Error())
 			}
+			logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 			wg.Add(1)
 			go func() {
 				h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
