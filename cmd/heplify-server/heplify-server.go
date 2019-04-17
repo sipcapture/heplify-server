@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -72,7 +73,13 @@ func tomlExists(f string) bool {
 	return err == nil
 }
 
+func useBallast(size int) func() {
+	ballast := make([]byte, size)
+	return func() { runtime.KeepAlive(ballast) }
+}
+
 func main() {
+	defer useBallast(config.Setting.GCBallast)()
 	var servers []server
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)

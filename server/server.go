@@ -85,7 +85,7 @@ func NewHEPInput() *HEPInput {
 }
 
 func (h *HEPInput) Run() {
-	for n := 0; n < runtime.NumCPU()*4; n++ {
+	for n := 0; n < runtime.NumCPU(); n++ {
 		h.wg.Add(1)
 		go h.hepWorker()
 	}

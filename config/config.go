@@ -53,4 +53,5 @@ type HeplifyServer struct {
 	LogSys             bool     `default:"false"`
 	Config             string   `default:"./heplify-server.toml"`
 	ConfigHTTPAddr     string   `default:""`
+	GCBallast          int      `default:"0"`
 }
