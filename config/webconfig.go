@@ -17,6 +17,17 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	webSetting.HEPTCPAddr = r.FormValue("HEPTCPAddr")
 	webSetting.HEPTLSAddr = r.FormValue("HEPTLSAddr")
 	webSetting.ESAddr = r.FormValue("ESAddr")
+	webSetting.ESUser = r.FormValue("ESUser")
+	ESPass := r.FormValue("ESPass")
+	if ESPass != "*******" {
+		webSetting.ESPass = ESPass
+	}
+	ESDiscovery := r.FormValue("ESDiscovery")
+	if ESDiscovery == "true" {
+		webSetting.ESDiscovery = true
+	} else if ESDiscovery == "false" {
+		webSetting.ESDiscovery = false
+	}
 	webSetting.LokiURL = r.FormValue("LokiURL")
 	if webSetting.LokiBulk, err = strconv.Atoi(r.FormValue("LokiBulk")); err != nil {
 		return nil, err
@@ -174,6 +185,22 @@ var WebForm = `
 		<div>
 			<label>ESAddr</label>
 			<input  type="text" name="ESAddr" placeholder="{{.ESAddr}}" value="{{.ESAddr}}">
+		</div>
+		<div>
+			<label>ESUser</label>
+			<input  type="text" name="ESUser" placeholder="{{.ESUser}}" value="{{.ESUser}}">
+		</div>
+		<div>
+			<label>ESPass</label>
+			<input  type="text" name="ESPass" placeholder="*******" value="*******">
+		</div>
+		<div>
+			<label>ESDiscovery</label>
+			<select name="ESDiscovery">
+				<option value="">-- Please choose ({{.ESDiscovery}}) --</option>
+				<option value="true">true</option>
+				<option value="false">false</option>
+			</select>
 		</div>
 		<div>
 			<label>LokiURL</label>
