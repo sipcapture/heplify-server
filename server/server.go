@@ -144,13 +144,13 @@ func (h *HEPInput) Run() {
 		defer l.End()
 	}
 
-	if config.Setting.DBRotate {
-		r := rotator.Setup(h.quit)
-		r.Rotate()
-		defer r.End()
-	}
 
 	if h.useDB {
+		if config.Setting.DBRotate {
+			r := rotator.Setup(h.quit)
+			r.Rotate()
+			defer r.End()
+		}
 		d := database.New(config.Setting.DBDriver)
 		d.Chan = h.dbCh
 
