@@ -66,7 +66,7 @@ var w bytes.Buffer
 // makeChuncks will construct the respective HEP chunck
 func makeChuncks(h *HEP) []byte {
 	w.Reset()
-	w.Write(hepVer)
+	w.Write([]byte{0x48, 0x45, 0x50, 0x33})
 	// hepMsg length placeholder. Will be written later
 	w.Write(hepLen)
 
