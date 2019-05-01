@@ -10,9 +10,9 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/coocood/freecache"
-	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/logp"
 	"github.com/negbie/sipparser"
+	"github.com/sipcapture/heplify-server/config"
 )
 
 // The first 4 bytes are the string "HEP3". The next 2 bytes are the length of the
