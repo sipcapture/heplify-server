@@ -303,7 +303,7 @@ func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffe
 	sb.WriteString(",\"payloadType\":")
 	sb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
 	sb.WriteString(",\"captureId\":")
-	sb.WriteString(h.Node)
+	sb.WriteString(h.NodeName)
 	sb.WriteString(",\"capturePass\":\"")
 	sb.WriteString(h.NodePW)
 	if corrID != "" {
@@ -316,10 +316,10 @@ func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffe
 
 func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("{")
-	sb.WriteString("\"host\":\"")
-	sb.WriteString(h.Host)
-	sb.WriteString("\",\"tag\":\"")
-	sb.WriteString(h.Tag)
+	sb.WriteString("\"node\":\"")
+	sb.WriteString(h.NodeName)
+	sb.WriteString("\",\"host\":\"")
+	sb.WriteString(h.HostTag)
 	sb.WriteString("\"}")
 	return sb.String()
 }

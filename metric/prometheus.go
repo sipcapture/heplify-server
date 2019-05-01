@@ -85,7 +85,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				if err != nil {
 					logp.Warn("%v", err)
 				}
-				methodResponses.WithLabelValues("", "", pkt.Node, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 			}
 
 			p.requestDelay(st, dt, pkt.CID, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod, pkt.Timestamp)
@@ -94,18 +94,18 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
 			}
 			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), pkt.Node).Inc()
+				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), pkt.NodeName).Inc()
 			}
 		} else if pkt.ProtoType == 5 {
-			p.dissectRTCPStats(pkt.Node, []byte(pkt.Payload))
+			p.dissectRTCPStats(pkt.NodeName, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 34 {
-			p.dissectRTPStats(pkt.Node, []byte(pkt.Payload))
+			p.dissectRTPStats(pkt.NodeName, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 35 {
-			p.dissectRTCPXRStats(pkt.Node, pkt.Payload)
+			p.dissectRTCPXRStats(pkt.NodeName, pkt.Payload)
 		} else if pkt.ProtoType == 38 {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		} else if pkt.ProtoType == 112 {
-			logSeverity.WithLabelValues(pkt.Node, pkt.CID, pkt.Host).Inc()
+			logSeverity.WithLabelValues(pkt.NodeName, pkt.CID, pkt.HostTag).Inc()
 		} else if pkt.ProtoType == 1032 {
 			p.dissectJanusStats([]byte(pkt.Payload))
 		}

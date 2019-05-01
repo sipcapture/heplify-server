@@ -135,7 +135,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					model.LabelSet{
 						"job":      jobName,
 						"type":     model.LabelValue(hepType),
-						"node":     model.LabelValue(pkt.Node),
+						"node":     model.LabelValue(pkt.NodeName),
 						"response": model.LabelValue(pkt.SIP.FirstMethod),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
 					&logproto.Entry{
@@ -148,7 +148,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					model.LabelSet{
 						"job":  jobName,
 						"type": model.LabelValue(hepType),
-						"node": model.LabelValue(pkt.Node)},
+						"node": model.LabelValue(pkt.NodeName)},
 					&logproto.Entry{
 						Timestamp: ts,
 						Line:      pktMeta.String(),
@@ -158,8 +158,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					model.LabelSet{
 						"job":  jobName,
 						"type": model.LabelValue(pkt.CID),
-						"node": model.LabelValue(pkt.Node),
-						"host": model.LabelValue(pkt.Host)},
+						"node": model.LabelValue(pkt.NodeName),
+						"host": model.LabelValue(pkt.HostTag)},
 					&logproto.Entry{
 						Timestamp: ts,
 						Line:      pktMeta.String(),

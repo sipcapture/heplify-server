@@ -23,11 +23,7 @@ import (
 //        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-var (
-	hepVer = []byte("HEP3")
-	webrtc = []byte("WEBRTC")
-	dedup  = freecache.NewCache(20 * 1024 * 1024)
-)
+var dedup = freecache.NewCache(20 * 1024 * 1024)
 
 // HEP chuncks
 const (
@@ -47,6 +43,7 @@ const (
 	Payload   = 15 // Chunk 0x000f Captured packet payload
 	CID       = 17 // Chunk 0x0011 Correlation ID
 	Vlan      = 18 // Chunk 0x0012 VLAN
+	NodeName  = 19 // Chunk 0x0013 NodeName
 )
 
 // HEP represents HEP packet
@@ -69,9 +66,8 @@ type HEP struct {
 	NetDstIP  net.IP
 	Timestamp time.Time
 	SIP       *sipparser.SipMsg
-	Host      string
-	Tag       string
-	Node      string
+	HostTag   string
+	NodeName  string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -86,7 +82,7 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 
 func (h *HEP) parse(packet []byte) error {
 	var err error
-	if bytes.HasPrefix(packet, hepVer) {
+	if bytes.HasPrefix(packet, []byte{0x48, 0x45, 0x50, 0x33}) {
 		err = h.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
@@ -133,12 +129,14 @@ func (h *HEP) parse(packet []byte) error {
 	} else if h.ProtoType == 112 && len(config.Setting.FilterHost) > 0 {
 		for _, host := range config.Setting.FilterHost {
 			if strings.Index(h.Payload, host) > -1 {
-				h.Host = host
+				h.HostTag = host
 				return nil
 			}
 		}
 	}
-	h.Node = strconv.FormatUint(uint64(h.NodeID), 10)
+	if h.NodeName == "" {
+		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
+	}
 	for {
 		if strings.HasSuffix(h.CID, "_b2b-1") {
 			h.CID = h.CID[:len(h.CID)-6]

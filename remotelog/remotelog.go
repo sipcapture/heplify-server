@@ -1,8 +1,8 @@
 package remotelog
 
 import (
-	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/decoder"
 )
 
 type Remotelog struct {
