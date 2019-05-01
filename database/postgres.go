@@ -423,6 +423,8 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	}
 	sb.WriteString("\",\"method\":\"")
 	sb.WriteString(h.SIP.FirstMethod)
+	sb.WriteString("\",\"user_agent\":\"")
+	sb.WriteString(h.SIP.UserAgent)
 	sb.WriteString("\",\"from_tag\":\"")
 	sb.WriteString(h.SIP.FromTag)
 	sb.WriteString("\",\"to_tag\":\"")

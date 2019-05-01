@@ -144,7 +144,7 @@ func (h *HEPInput) Run() {
 		defer l.End()
 	}
 
-	if config.Setting.DBRotate {
+	if h.useDB && config.Setting.DBRotate {
 		r := rotator.Setup(h.quit)
 		r.Rotate()
 		defer r.End()

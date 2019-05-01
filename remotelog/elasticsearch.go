@@ -22,10 +22,18 @@ type Elasticsearch struct {
 func (e *Elasticsearch) setup() error {
 	var err error
 	e.ctx = context.Background()
-	e.client, err = elastic.NewClient(
-		elastic.SetURL(config.Setting.ESAddr),
-		elastic.SetSniff(config.Setting.ESDiscovery),
-	)
+	if len(config.Setting.ESUser) > 0 {
+		e.client, err = elastic.NewClient(
+			elastic.SetURL(config.Setting.ESAddr),
+			elastic.SetSniff(config.Setting.ESDiscovery),
+			elastic.SetBasicAuth(config.Setting.ESUser, config.Setting.ESPass),
+		)
+	} else {
+		e.client, err = elastic.NewClient(
+			elastic.SetURL(config.Setting.ESAddr),
+			elastic.SetSniff(config.Setting.ESDiscovery),
+		)
+	}
 	if err != nil {
 		return err
 	}

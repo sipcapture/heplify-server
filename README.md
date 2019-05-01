@@ -17,6 +17,8 @@ You have 3 options to get **heplify-server** up and running:
 
   `go build cmd/heplify-server/heplify-server.go`
 
+### Requirements
+They depend on which features you want to use and if you use homer5 or homer7 shema. For homer5 you will need MySQL >= 5.7 or MariaDB >= 10. For homer7 you will need PostgreSQL >= 10.
 
 ### Configuration
 **heplify-server** can be configured using command-line flags, environment variables, a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/) or via web form by setting ConfigHTTPAddr  
