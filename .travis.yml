@@ -1,0 +1,17 @@
+language: go
+sudo: true
+
+go:
+  - "1.12.x"
+  - "tip"
+
+env:
+  - GO111MODULE=on
+
+matrix:
+  allow_failures:
+    - go: tip
+
+script:
+  - make test
+  - make
