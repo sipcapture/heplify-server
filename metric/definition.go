@@ -208,23 +208,23 @@ var (
 		Help: "Incoming RTCP maxLat"},
 		[]string{"sbc_name", "direction", "inc_realm", "out_realm"})
 
-	// Janus Metrics
-	janusRtt                 = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_rtt"})
-	janusLost                = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost"})
-	janusLostByRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost_by_remote"})
-	janusJitterLocal         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_local"})
-	janusJitterRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_remote"})
-	janusInLinkQuality       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_link_quality"})
-	janusInMediaLinkQuality  = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_media_link_quality"})
-	janusOutLinkQuality      = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_link_quality"})
-	janusOutMediaLinkQuality = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_media_link_quality"})
-	janusPacketsReceived     = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_received"})
-	janusPacketsSent         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_sent"})
-	janusBytesReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_received"})
-	janusBytesSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_sent"})
-	janusNacksReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_received"})
-	janusNacksSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_sent"})
-
+	/* 	// Janus Metrics
+	   	janusRtt                 = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_rtt"})
+	   	janusLost                = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost"})
+	   	janusLostByRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_lost_by_remote"})
+	   	janusJitterLocal         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_local"})
+	   	janusJitterRemote        = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_jitter_remote"})
+	   	janusInLinkQuality       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_link_quality"})
+	   	janusInMediaLinkQuality  = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_in_media_link_quality"})
+	   	janusOutLinkQuality      = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_link_quality"})
+	   	janusOutMediaLinkQuality = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_out_media_link_quality"})
+	   	janusPacketsReceived     = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_received"})
+	   	janusPacketsSent         = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_packets_sent"})
+	   	janusBytesReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_received"})
+	   	janusBytesSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_bytes_sent"})
+	   	janusNacksReceived       = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_received"})
+	   	janusNacksSent           = promauto.NewGauge(prometheus.GaugeOpts{Name: "janus_nacks_sent"})
+	*/
 	// JSON Paths
 
 	rtcpPaths = [][]string{
