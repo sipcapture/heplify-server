@@ -106,8 +106,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		} else if pkt.ProtoType == 112 {
 			logSeverity.WithLabelValues(pkt.NodeName, pkt.CID, pkt.HostTag).Inc()
-		} else if pkt.ProtoType == 1032 {
-			p.dissectJanusStats([]byte(pkt.Payload))
 		}
 	}
 }

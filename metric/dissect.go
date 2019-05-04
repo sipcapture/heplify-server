@@ -284,6 +284,7 @@ func (p *Prometheus) dissectHoraclifixStats(data []byte) {
 	}, horaclifixPaths...)
 }
 
+/*
 func (p *Prometheus) dissectJanusStats(data []byte) {
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
@@ -350,7 +351,7 @@ func (p *Prometheus) dissectJanusStats(data []byte) {
 		}
 	}, janusPaths...)
 }
-
+*/
 func normMax(val float64) float64 {
 	if val > 10000000 {
 		return 0
