@@ -7,22 +7,22 @@ import (
 	"time"
 
 	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/cdr"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/sipcapture/heplify-server/metric"
-	"github.com/sipcapture/heplify-server/queue"
 	"github.com/sipcapture/heplify-server/remotelog"
 	"github.com/sipcapture/heplify-server/rotator"
 )
 
 type HEPInput struct {
+	inputCh   chan []byte
 	dbCh      chan *decoder.HEP
-	pmCh      chan *decoder.HEP
+	promCh    chan *decoder.HEP
 	esCh      chan *decoder.HEP
-	lkCh      chan *decoder.HEP
-	inCh      chan []byte
-	mqCh      chan []byte
+	lokiCh    chan *decoder.HEP
+	cdrCh     chan *decoder.HEP
 	wg        *sync.WaitGroup
 	buffer    *sync.Pool
 	exitedTCP chan bool
@@ -33,7 +33,7 @@ type HEPInput struct {
 	quit      chan bool
 	stats     HEPStats
 	useDB     bool
-	useMQ     bool
+	useCDR    bool
 	usePM     bool
 	useES     bool
 	useLK     bool
@@ -50,7 +50,7 @@ const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		inCh:      make(chan []byte, 40000),
+		inputCh:   make(chan []byte, 40000),
 		buffer:    &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
 		wg:        &sync.WaitGroup{},
 		quit:      make(chan bool),
@@ -64,13 +64,13 @@ func NewHEPInput() *HEPInput {
 		h.useDB = true
 		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
 	}
-	if len(config.Setting.MQAddr) > 2 && len(config.Setting.MQDriver) > 2 {
-		h.useMQ = true
-		h.mqCh = make(chan []byte, 40000)
+	if len(config.Setting.CGRAddr) > 2 {
+		h.useCDR = true
+		h.cdrCh = make(chan *decoder.HEP, 40000)
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
-		h.pmCh = make(chan *decoder.HEP, 40000)
+		h.promCh = make(chan *decoder.HEP, 40000)
 	}
 	if len(config.Setting.ESAddr) > 2 {
 		h.useES = true
@@ -78,7 +78,7 @@ func NewHEPInput() *HEPInput {
 	}
 	if len(config.Setting.LokiURL) > 2 {
 		h.useLK = true
-		h.lkCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
+		h.lokiCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
 	}
 
 	return h
@@ -105,7 +105,7 @@ func (h *HEPInput) Run() {
 
 	if h.usePM {
 		m := metric.New("prometheus")
-		m.Chan = h.pmCh
+		m.Chan = h.promCh
 
 		if err := m.Run(); err != nil {
 			logp.Err("%v", err)
@@ -113,10 +113,9 @@ func (h *HEPInput) Run() {
 		defer m.End()
 	}
 
-	if h.useMQ {
-		q := queue.New(config.Setting.MQDriver)
-		q.Topic = config.Setting.MQTopic
-		q.Chan = h.mqCh
+	if h.useCDR {
+		q := cdr.New(config.Setting.CGRAddr)
+		q.Chan = h.cdrCh
 
 		if err := q.Run(); err != nil {
 			logp.Err("%v", err)
@@ -136,7 +135,7 @@ func (h *HEPInput) Run() {
 
 	if h.useLK {
 		l := remotelog.New("loki")
-		l.Chan = h.lkCh
+		l.Chan = h.lokiCh
 
 		if err := l.Run(); err != nil {
 			logp.Err("%v", err)
@@ -196,7 +195,7 @@ func (h *HEPInput) hepWorker() {
 			h.quit <- true
 			h.wg.Done()
 			return
-		case msg = <-h.inCh:
+		case msg = <-h.inputCh:
 			hepPkt, err := decoder.DecodeHEP(msg)
 			if err != nil {
 				atomic.AddUint64(&h.stats.ErrCount, 1)
@@ -220,7 +219,7 @@ func (h *HEPInput) hepWorker() {
 
 			if h.usePM {
 				select {
-				case h.pmCh <- hepPkt:
+				case h.promCh <- hepPkt:
 				default:
 					if time.Since(lastWarn) > 5e8 {
 						logp.Warn("overflowing metric channel")
@@ -229,14 +228,16 @@ func (h *HEPInput) hepWorker() {
 				}
 			}
 
-			if h.useMQ {
-				select {
-				case h.mqCh <- append([]byte{}, msg...):
-				default:
-					if time.Since(lastWarn) > 5e8 {
-						logp.Warn("overflowing queue channel")
+			if h.useCDR && hepPkt.SIP != nil {
+				if hepPkt.SIP.CseqVal == "INVITE" || hepPkt.SIP.CseqVal == "BYE" {
+					select {
+					case h.cdrCh <- hepPkt:
+					default:
+						if time.Since(lastWarn) > 5e8 {
+							logp.Warn("overflowing cdr channel")
+						}
+						lastWarn = time.Now()
 					}
-					lastWarn = time.Now()
 				}
 			}
 
@@ -253,7 +254,7 @@ func (h *HEPInput) hepWorker() {
 
 			if h.useLK {
 				select {
-				case h.lkCh <- hepPkt:
+				case h.lokiCh <- hepPkt:
 				default:
 					if time.Since(lastWarn) > 5e8 {
 						logp.Warn("overflowing loki channel")

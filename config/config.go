@@ -8,13 +8,11 @@ type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
 	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
+	CGRAddr            string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
-	ESUser             string   `default""`
-	ESPass             string   `default""`
-	MQDriver           string   `default:""`
-	MQAddr             string   `default:""`
-	MQTopic            string   `default:""`
+	ESUser             string   `default:""`
+	ESPass             string   `default:""`
 	LokiURL            string   `default:""`
 	LokiBulk           int      `default:"200"`
 	LokiTimer          int      `default:"2"`

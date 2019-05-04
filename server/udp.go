@@ -40,7 +40,7 @@ func (h *HEPInput) serveUDP(addr string) {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
 			continue
 		}
-		h.inCh <- buf[:n]
+		h.inputCh <- buf[:n]
 		atomic.AddUint64(&h.stats.PktCount, 1)
 	}
 }
