@@ -2,14 +2,15 @@ package decoder
 
 import (
 	"bytes"
+	"encoding/binary"
 	"net"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/cespare/xxhash"
-	"github.com/coocood/freecache"
+	"github.com/VictoriaMetrics/fastcache"
+
 	"github.com/negbie/logp"
 	"github.com/negbie/sipparser"
 	"github.com/sipcapture/heplify-server/config"
@@ -23,7 +24,7 @@ import (
 //        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-var dedup = freecache.NewCache(20 * 1024 * 1024)
+var dedup = fastcache.New(1)
 
 // HEP chuncks
 const (
@@ -96,17 +97,16 @@ func (h *HEP) parse(packet []byte) error {
 		}
 	}
 
-	h.normPayload()
+	t := time.Now()
+	h.normPayload(t)
 	if h.ProtoType == 0 {
 		return nil
 	}
 
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
-	t := time.Now()
 	d := t.Sub(h.Timestamp)
 	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
-		logp.Debug("heptime", "future packet timestamp: %d, now: %d, delta: %d from nodeID %d",
-			h.Timestamp.UnixNano(), t.UnixNano(), d, h.NodeID)
+		logp.Debug("hep", "got timestamp in the future with delta: %d from nodeID %d", d, h.NodeID)
 		h.Timestamp = t
 	}
 
@@ -155,18 +155,25 @@ var fixUTF8 = func(r rune) rune {
 	return r
 }
 
-func (h *HEP) normPayload() {
+func (h *HEP) normPayload(t time.Time) {
 	if config.Setting.Dedup {
-		hashVal := int64(xxhash.Sum64String(h.SrcIP)) + int64(h.SrcPort) + int64(xxhash.Sum64String(h.Payload))
-		_, err := dedup.GetInt(hashVal)
-		if err == nil {
-			h.ProtoType = 0
-			return
+		var buf []byte
+		tu := uint64(t.UnixNano())
+		k := []byte(h.SrcIP + h.Payload)
+
+		buf = dedup.Get(buf[:0], k)
+		if buf != nil {
+			i := binary.BigEndian.Uint64(buf)
+			d := tu - i
+			if d < 4e8 || d > 1e18 {
+				h.ProtoType = 0
+				return
+			}
 		}
-		err = dedup.SetInt(hashVal, nil, 2)
-		if err != nil {
-			logp.Warn("%v", err)
-		}
+		tb := make([]byte, 8)
+
+		binary.BigEndian.PutUint64(tb, tu)
+		dedup.Set(k, tb)
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)

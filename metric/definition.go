@@ -22,15 +22,15 @@ var (
 	reasonCause = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_reason_isup_total",
 		Help: "ISUP Q.850 cause from reason header"},
-		[]string{"cause", "node_id"})
+		[]string{"target_name", "direction", "node_id", "cause"})
 	srd = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_kpi_srd",
 		Help: "SIP Session Request Delay KPI"},
-		[]string{"src_target_name", "dst_target_name"})
+		[]string{"target_name", "node_id"})
 	rrd = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_kpi_rrd",
 		Help: "SIP Registration Request Delay"},
-		[]string{"src_target_name", "dst_target_name"})
+		[]string{"target_name", "node_id"})
 	logSeverity = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_severity_total",
 		Help: "Log errors and warnings"},

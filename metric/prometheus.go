@@ -1,13 +1,12 @@
 package metric
 
 import (
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/coocood/freecache"
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/VictoriaMetrics/fastcache"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
@@ -19,8 +18,7 @@ type Prometheus struct {
 	TargetName  []string
 	TargetMap   map[string]string
 	TargetConf  *sync.RWMutex
-	cache       *freecache.Cache
-	lruID       *lru.Cache
+	cache       *fastcache.Cache
 }
 
 func (p *Prometheus) setup() (err error) {
@@ -34,7 +32,7 @@ func (p *Prometheus) setup() (err error) {
 			p.TargetIP[0] = ""
 			p.TargetName[0] = ""
 			p.TargetEmpty = true
-			p.cache = freecache.NewCache(60 * 1024 * 1024)
+			p.cache = fastcache.New(1)
 		} else {
 			for i := range p.TargetName {
 				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
@@ -47,11 +45,6 @@ func (p *Prometheus) setup() (err error) {
 	} else {
 		logp.Info("please give every PromTargetIP a unique IP and PromTargetName a unique name")
 		return fmt.Errorf("faulty PromTargetIP or PromTargetName")
-	}
-
-	p.lruID, err = lru.New(1e5)
-	if err != nil {
-		return err
 	}
 
 	return err
@@ -76,26 +69,60 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				if ok {
 					methodResponses.WithLabelValues(dt, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
-			} else {
-				_, err := p.cache.Get([]byte(pkt.CID + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod))
-				if err == nil {
-					continue
-				}
-				err = p.cache.Set([]byte(pkt.CID+pkt.SIP.FirstMethod+pkt.SIP.CseqMethod), nil, 600)
-				if err != nil {
-					logp.Warn("%v", err)
-				}
-				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 			}
 
-			p.requestDelay(st, dt, pkt.CID, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod, pkt.Timestamp)
+			if (pkt.SIP.FirstMethod == "INVITE" && pkt.SIP.CseqMethod == "INVITE") ||
+				(pkt.SIP.FirstMethod == "REGISTER" && pkt.SIP.CseqMethod == "REGISTER") {
+				ik := []byte(pkt.CID)
+				if !p.cache.Has(ik) {
+					sk := []byte(pkt.SrcIP + pkt.CID)
+					tu := uint64(pkt.Timestamp.UnixNano())
+					tb := make([]byte, 8)
+
+					binary.BigEndian.PutUint64(tb, tu)
+					p.cache.Set(ik, tb)
+					p.cache.Set(sk, tb)
+				}
+			}
+
+			if (pkt.SIP.CseqMethod == "INVITE" || pkt.SIP.CseqMethod == "REGISTER") &&
+				(pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183" || pkt.SIP.FirstMethod == "200") {
+				var buf []byte
+				did := []byte(pkt.DstIP + pkt.CID)
+				buf = p.cache.Get(buf[:0], did)
+				if buf != nil {
+					i := binary.BigEndian.Uint64(buf)
+					d := (uint64(pkt.Timestamp.UnixNano()) - i) / 1e6
+
+					if st == "" {
+						st = dt
+					}
+					if pkt.SIP.CseqMethod == "INVITE" {
+						srd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
+					} else {
+						rrd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
+					}
+					p.cache.Del([]byte(pkt.CID))
+					p.cache.Del(did)
+				}
+			}
+
+			if p.TargetEmpty {
+				k := []byte(pkt.CID + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod)
+				if p.cache.Has(k) {
+					continue
+				}
+				p.cache.Set(k, nil)
+				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
+					reasonCause.WithLabelValues("", "", pkt.NodeName, extractXR("cause=", pkt.SIP.ReasonVal)).Inc()
+				}
+			}
 
 			if pkt.SIP.RTPStatVal != "" {
 				p.dissectXRTPStats(st, pkt.SIP.RTPStatVal)
 			}
-			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-				reasonCause.WithLabelValues(extractXR("cause=", pkt.SIP.ReasonVal), pkt.NodeName).Inc()
-			}
+
 		} else if pkt.ProtoType == 5 {
 			p.dissectRTCPStats(pkt.NodeName, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 34 {
@@ -106,35 +133,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			p.dissectHoraclifixStats([]byte(pkt.Payload))
 		} else if pkt.ProtoType == 112 {
 			logSeverity.WithLabelValues(pkt.NodeName, pkt.CID, pkt.HostTag).Inc()
-		}
-	}
-}
-
-func (p *Prometheus) requestDelay(st, dt, cid, sm, cm string, ts time.Time) {
-	if !p.TargetEmpty && st == "" {
-		return
-	}
-
-	//TODO: tweak performance avoid double lru add
-	if (sm == "INVITE" && cm == "INVITE") || (sm == "REGISTER" && cm == "REGISTER") {
-		_, ok := p.lruID.Get(cid)
-		if !ok {
-			p.lruID.Add(cid, ts)
-			p.lruID.Add(st+cid, ts)
-		}
-	}
-
-	if (cm == "INVITE" || cm == "REGISTER") && (sm == "180" || sm == "183" || sm == "200") {
-		did := dt + cid
-		t, ok := p.lruID.Get(did)
-		if ok {
-			if cm == "INVITE" {
-				srd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
-			} else {
-				rrd.WithLabelValues(st, dt).Set(float64(ts.Sub(t.(time.Time))))
-			}
-			p.lruID.Remove(cid)
-			p.lruID.Remove(did)
 		}
 	}
 }
