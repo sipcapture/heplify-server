@@ -22,7 +22,7 @@ var (
 	reasonCause = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_reason_isup_total",
 		Help: "ISUP Q.850 cause from reason header"},
-		[]string{"target_name", "direction", "node_id", "cause"})
+		[]string{"target_name", "node_id", "cause"})
 	srd = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_kpi_srd",
 		Help: "SIP Session Request Delay KPI"},

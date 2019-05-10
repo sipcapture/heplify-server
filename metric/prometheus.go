@@ -78,14 +78,14 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				if ok {
 					methodResponses.WithLabelValues(st, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 					if withQ {
-						reasonCause.WithLabelValues(st, "src", "", cause).Inc()
+						reasonCause.WithLabelValues(st, "", cause).Inc()
 					}
 				}
 				dt, ok = p.TargetMap[pkt.DstIP]
 				if ok {
 					methodResponses.WithLabelValues(dt, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 					if withQ {
-						reasonCause.WithLabelValues(dt, "dst", "", cause).Inc()
+						reasonCause.WithLabelValues(dt, "", cause).Inc()
 					}
 				}
 			}
@@ -133,7 +133,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				p.cache.Set(k, nil)
 				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				if withQ {
-					reasonCause.WithLabelValues("", "", pkt.NodeName, cause).Inc()
+					reasonCause.WithLabelValues("", pkt.NodeName, cause).Inc()
 				}
 			}
 
