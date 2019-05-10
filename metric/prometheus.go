@@ -12,6 +12,12 @@ import (
 	"github.com/sipcapture/heplify-server/decoder"
 )
 
+const (
+	invite    = "INVITE"
+	register  = "REGISTER"
+	cacheSize = 80 * 1024 * 1024
+)
+
 type Prometheus struct {
 	TargetEmpty bool
 	TargetIP    []string
@@ -25,6 +31,7 @@ func (p *Prometheus) setup() (err error) {
 	p.TargetConf = new(sync.RWMutex)
 	p.TargetIP = strings.Split(cutSpace(config.Setting.PromTargetIP), ",")
 	p.TargetName = strings.Split(cutSpace(config.Setting.PromTargetName), ",")
+	p.cache = fastcache.New(cacheSize)
 
 	if len(p.TargetIP) == len(p.TargetName) && p.TargetIP != nil && p.TargetName != nil {
 		if len(p.TargetIP[0]) == 0 || len(p.TargetName[0]) == 0 {
@@ -32,7 +39,6 @@ func (p *Prometheus) setup() (err error) {
 			p.TargetIP[0] = ""
 			p.TargetName[0] = ""
 			p.TargetEmpty = true
-			p.cache = fastcache.New(1)
 		} else {
 			for i := range p.TargetName {
 				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
@@ -51,6 +57,8 @@ func (p *Prometheus) setup() (err error) {
 }
 
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
+	var st, dt, cause string
+	var withQ bool
 	for pkt := range hCh {
 		labelType := decoder.HEPTypeString(pkt.ProtoType)
 
@@ -58,21 +66,32 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 		packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
-			var st, dt string
+			withQ = false
+			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
+				cause = extractXR("cause=", pkt.SIP.ReasonVal)
+				withQ = true
+			}
+
 			if !p.TargetEmpty {
 				var ok bool
 				st, ok = p.TargetMap[pkt.SrcIP]
 				if ok {
 					methodResponses.WithLabelValues(st, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					if withQ {
+						reasonCause.WithLabelValues(st, "src", "", cause).Inc()
+					}
 				}
 				dt, ok = p.TargetMap[pkt.DstIP]
 				if ok {
 					methodResponses.WithLabelValues(dt, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					if withQ {
+						reasonCause.WithLabelValues(dt, "dst", "", cause).Inc()
+					}
 				}
 			}
 
-			if (pkt.SIP.FirstMethod == "INVITE" && pkt.SIP.CseqMethod == "INVITE") ||
-				(pkt.SIP.FirstMethod == "REGISTER" && pkt.SIP.CseqMethod == "REGISTER") {
+			if (pkt.SIP.FirstMethod == invite && pkt.SIP.CseqMethod == invite) ||
+				(pkt.SIP.FirstMethod == register && pkt.SIP.CseqMethod == register) {
 				ik := []byte(pkt.CID)
 				if !p.cache.Has(ik) {
 					sk := []byte(pkt.SrcIP + pkt.CID)
@@ -85,24 +104,23 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				}
 			}
 
-			if (pkt.SIP.CseqMethod == "INVITE" || pkt.SIP.CseqMethod == "REGISTER") &&
-				(pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183" || pkt.SIP.FirstMethod == "200") {
-				var buf []byte
+			if (pkt.SIP.CseqMethod == invite && (pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183")) ||
+				(pkt.SIP.CseqMethod == register && pkt.SIP.FirstMethod == "200") {
 				did := []byte(pkt.DstIP + pkt.CID)
-				buf = p.cache.Get(buf[:0], did)
-				if buf != nil {
+				if buf := p.cache.Get(nil, did); buf != nil {
 					i := binary.BigEndian.Uint64(buf)
-					d := (uint64(pkt.Timestamp.UnixNano()) - i) / 1e6
+					c := pkt.Timestamp.UnixNano()
+					d := (uint64(c) - i) / 1e6
 
 					if st == "" {
 						st = dt
 					}
-					if pkt.SIP.CseqMethod == "INVITE" {
+					if pkt.SIP.CseqMethod == invite {
 						srd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
 					} else {
 						rrd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
+						p.cache.Del([]byte(pkt.CID))
 					}
-					p.cache.Del([]byte(pkt.CID))
 					p.cache.Del(did)
 				}
 			}
@@ -114,8 +132,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				}
 				p.cache.Set(k, nil)
 				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
-				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-					reasonCause.WithLabelValues("", "", pkt.NodeName, extractXR("cause=", pkt.SIP.ReasonVal)).Inc()
+				if withQ {
+					reasonCause.WithLabelValues("", "", pkt.NodeName, cause).Inc()
 				}
 			}
 

@@ -157,15 +157,13 @@ var fixUTF8 = func(r rune) rune {
 
 func (h *HEP) normPayload(t time.Time) {
 	if config.Setting.Dedup {
-		var buf []byte
 		tu := uint64(t.UnixNano())
-		k := []byte(h.SrcIP + h.Payload)
+		k := []byte(h.Payload)
 
-		buf = dedup.Get(buf[:0], k)
-		if buf != nil {
+		if buf := dedup.Get(nil, k); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
 			d := tu - i
-			if d < 4e8 || d > 1e18 {
+			if d < 400e6 || d > 1e18 {
 				h.ProtoType = 0
 				return
 			}
