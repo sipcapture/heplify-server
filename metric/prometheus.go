@@ -110,15 +110,16 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				if buf := p.cache.Get(nil, did); buf != nil {
 					i := binary.BigEndian.Uint64(buf)
 					c := pkt.Timestamp.UnixNano()
-					d := (uint64(c) - i) / 1e6
+					d := uint64(c) - i
 
-					if st == "" {
-						st = dt
+					if dt == "" {
+						dt = st
 					}
+
 					if pkt.SIP.CseqMethod == invite {
-						srd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
+						srd.WithLabelValues(dt, pkt.NodeName).Set(float64(d))
 					} else {
-						rrd.WithLabelValues(st, pkt.NodeName).Set(float64(d))
+						rrd.WithLabelValues(dt, pkt.NodeName).Set(float64(d))
 						p.cache.Del([]byte(pkt.CID))
 					}
 					p.cache.Del(did)
