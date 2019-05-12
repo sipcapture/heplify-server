@@ -13,6 +13,9 @@ import (
 func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	var err error
 	webSetting := Setting
+	if r.FormValue("ConfigHTTPPW") != webSetting.ConfigHTTPPW {
+		return nil, fmt.Errorf("Wrong HTTP config password")
+	}
 	webSetting.HEPAddr = r.FormValue("HEPAddr")
 	webSetting.HEPTCPAddr = r.FormValue("HEPTCPAddr")
 	webSetting.HEPTLSAddr = r.FormValue("HEPTLSAddr")
@@ -289,6 +292,10 @@ var WebForm = `
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>
+		</div>
+		<div>
+			<label>ConfigHTTPPW</label>
+			<input  type="text" name="ConfigHTTPPW">
 		</div>
 
 		</br><input type="submit" value="Apply config" />
