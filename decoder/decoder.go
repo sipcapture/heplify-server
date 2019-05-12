@@ -3,7 +3,6 @@ package decoder
 import (
 	"bytes"
 	"encoding/binary"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -49,26 +48,25 @@ const (
 
 // HEP represents HEP packet
 type HEP struct {
-	Version   uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
-	Protocol  uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
-	SrcIP     string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
-	DstIP     string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
-	SrcPort   uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
-	DstPort   uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
-	Tsec      uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
-	Tmsec     uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
-	ProtoType uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
-	NodeID    uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
-	NodePW    string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
-	Payload   string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
-	CID       string `protobuf:"bytes,13,req,name=CID" json:"CID"`
-	Vlan      uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
-	NetSrcIP  net.IP
-	NetDstIP  net.IP
-	Timestamp time.Time
-	SIP       *sipparser.SipMsg
-	HostTag   string
-	NodeName  string
+	Version     uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
+	Protocol    uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
+	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
+	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
+	SrcPort     uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
+	DstPort     uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
+	Tsec        uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
+	Tmsec       uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
+	ProtoType   uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
+	NodeID      uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
+	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
+	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
+	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID"`
+	Vlan        uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
+	ProtoString string
+	Timestamp   time.Time
+	SIP         *sipparser.SipMsg
+	HostTag     string
+	NodeName    string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -178,26 +176,4 @@ func (h *HEP) normPayload(t time.Time) {
 	} else if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
-}
-
-func HEPTypeString(pktType uint32) (label string) {
-	switch pktType {
-	case 1:
-		label = "sip"
-	case 5:
-		label = "rtcp"
-	case 34:
-		label = "rtpagent"
-	case 35:
-		label = "rtcpxr"
-	case 38:
-		label = "horaclifix"
-	case 53:
-		label = "dns"
-	case 100:
-		label = "log"
-	default:
-		label = strconv.Itoa(int(pktType))
-	}
-	return label
 }

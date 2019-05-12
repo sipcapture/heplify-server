@@ -60,10 +60,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	var st, dt, cause string
 	var withQ bool
 	for pkt := range hCh {
-		labelType := decoder.HEPTypeString(pkt.ProtoType)
-
-		packetsByType.WithLabelValues(labelType).Inc()
-		packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
+		packetsByType.WithLabelValues(pkt.ProtoString).Inc()
+		packetsBySize.WithLabelValues(pkt.ProtoString).Set(float64(len(pkt.Payload)))
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			withQ = false

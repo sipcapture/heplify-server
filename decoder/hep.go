@@ -3,6 +3,8 @@ package decoder
 import (
 	"encoding/binary"
 	"fmt"
+	"net"
+	"strconv"
 )
 
 func (h *HEP) parseHEP(packet []byte) error {
@@ -50,17 +52,13 @@ func (h *HEP) parseHEP(packet []byte) error {
 		case Protocol:
 			h.Protocol = uint32(chunkBody[0])
 		case IP4SrcIP:
-			h.NetSrcIP = chunkBody
-			h.SrcIP = h.NetSrcIP.String()
+			h.SrcIP = net.IP(chunkBody).To4().String()
 		case IP4DstIP:
-			h.NetDstIP = chunkBody
-			h.DstIP = h.NetDstIP.String()
+			h.DstIP = net.IP(chunkBody).To4().String()
 		case IP6SrcIP:
-			h.NetSrcIP = chunkBody
-			h.SrcIP = h.NetSrcIP.String()
+			h.SrcIP = net.IP(chunkBody).To16().String()
 		case IP6DstIP:
-			h.NetDstIP = chunkBody
-			h.DstIP = h.NetDstIP.String()
+			h.DstIP = net.IP(chunkBody).To16().String()
 		case SrcPort:
 			h.SrcPort = uint32(binary.BigEndian.Uint16(chunkBody))
 		case DstPort:
@@ -71,6 +69,24 @@ func (h *HEP) parseHEP(packet []byte) error {
 			h.Tmsec = binary.BigEndian.Uint32(chunkBody)
 		case ProtoType:
 			h.ProtoType = uint32(chunkBody[0])
+			switch h.ProtoType {
+			case 1:
+				h.ProtoString = "sip"
+			case 5:
+				h.ProtoString = "rtcp"
+			case 34:
+				h.ProtoString = "rtpagent"
+			case 35:
+				h.ProtoString = "rtcpxr"
+			case 38:
+				h.ProtoString = "horaclifix"
+			case 53:
+				h.ProtoString = "dns"
+			case 100:
+				h.ProtoString = "log"
+			default:
+				h.ProtoString = strconv.Itoa(int(h.ProtoType))
+			}
 		case NodeID:
 			h.NodeID = binary.BigEndian.Uint32(chunkBody)
 		case NodePW:
