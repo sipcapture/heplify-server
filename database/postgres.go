@@ -415,6 +415,12 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString(h.SIP.PaiUser)
 	sb.WriteString("\",\"auth_user\":\"")
 	sb.WriteString(h.SIP.AuthUser)
+	if len(h.SIP.CHeader) > 0 {
+		for k, v := range h.SIP.ParsCustomerHeaders {
+			sb.WriteString("\",\"" + k + "\":\"")
+			sb.WriteString(v)
+		}
+	}
 	sb.WriteString("\",\"callid\":\"")
 	if h.SIP.XCallID == "" {
 		sb.WriteString(h.CID)
