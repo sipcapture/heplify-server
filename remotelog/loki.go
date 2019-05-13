@@ -73,8 +73,6 @@ func (l *Loki) setup() error {
 func (l *Loki) start(hCh chan *decoder.HEP) {
 	var (
 		pktMeta     strings.Builder
-		keep        bool
-		hepType     string
 		curPktTime  time.Time
 		lastPktTime time.Time
 		batch       = map[model.Fingerprint]*logproto.Stream{}
@@ -87,7 +85,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			logp.Err("loki flush: %v", err)
 		}
 	}()
-
+OUT:
 	for {
 		select {
 		case pkt, ok := <-hCh:
@@ -100,7 +98,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				curPktTime = time.Now()
 			}
 			lastPktTime = curPktTime
-			hepType = decoder.HEPTypeString(pkt.ProtoType)
 
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)
@@ -116,11 +113,9 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			pktMeta.WriteString(pkt.CID)
 
 			for _, v := range l.HEPTypeFilter {
-				if pkt.ProtoType == uint32(v) {
-					keep = true
-					break
+				if pkt.ProtoType != uint32(v) {
+					goto OUT
 				}
-				keep = false
 			}
 
 			tsNano := curPktTime.UnixNano()
@@ -130,11 +125,11 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			}
 
 			switch {
-			case keep && pkt.SIP != nil && pkt.ProtoType == 1:
+			case pkt.SIP != nil && pkt.ProtoType == 1:
 				l.entry = entry{
 					model.LabelSet{
 						"job":      jobName,
-						"type":     model.LabelValue(hepType),
+						"type":     model.LabelValue(pkt.ProtoString),
 						"node":     model.LabelValue(pkt.NodeName),
 						"response": model.LabelValue(pkt.SIP.FirstMethod),
 						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
@@ -143,17 +138,17 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 						Line:      pktMeta.String(),
 					}}
 
-			case keep && pkt.ProtoType > 1 && pkt.ProtoType <= 100:
+			case pkt.ProtoType > 1 && pkt.ProtoType <= 100:
 				l.entry = entry{
 					model.LabelSet{
 						"job":  jobName,
-						"type": model.LabelValue(hepType),
+						"type": model.LabelValue(pkt.ProtoString),
 						"node": model.LabelValue(pkt.NodeName)},
 					&logproto.Entry{
 						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
-			case keep && pkt.ProtoType == 112:
+			case pkt.ProtoType == 112:
 				l.entry = entry{
 					model.LabelSet{
 						"job":  jobName,
@@ -164,15 +159,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 						Timestamp: ts,
 						Line:      pktMeta.String(),
 					}}
-			case pkt.ProtoType >= 1000:
-				l.entry = entry{
-					model.LabelSet{
-						"job":  jobName,
-						"type": model.LabelValue(hepType)},
-					&logproto.Entry{
-						Timestamp: ts,
-						Line:      pktMeta.String(),
-					}}
+
 			default:
 				continue
 			}

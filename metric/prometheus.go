@@ -57,36 +57,25 @@ func (p *Prometheus) setup() (err error) {
 }
 
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
-	var st, dt, cause string
-	var withQ bool
+	var st, dt string
 	for pkt := range hCh {
-		labelType := decoder.HEPTypeString(pkt.ProtoType)
-
-		packetsByType.WithLabelValues(labelType).Inc()
-		packetsBySize.WithLabelValues(labelType).Set(float64(len(pkt.Payload)))
+		packetsByType.WithLabelValues(pkt.ProtoString).Inc()
+		packetsBySize.WithLabelValues(pkt.ProtoString).Set(float64(len(pkt.Payload)))
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
-			withQ = false
-			if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
-				cause = extractXR("cause=", pkt.SIP.ReasonVal)
-				withQ = true
-			}
-
 			if !p.TargetEmpty {
 				var ok bool
 				st, ok = p.TargetMap[pkt.SrcIP]
 				if ok {
 					methodResponses.WithLabelValues(st, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
-					if withQ {
-						reasonCause.WithLabelValues(st, "", cause).Inc()
+
+					if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
+						reasonCause.WithLabelValues(st, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()
 					}
 				}
 				dt, ok = p.TargetMap[pkt.DstIP]
 				if ok {
 					methodResponses.WithLabelValues(dt, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
-					if withQ {
-						reasonCause.WithLabelValues(dt, "", cause).Inc()
-					}
 				}
 			}
 
@@ -133,8 +122,9 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				}
 				p.cache.Set(k, nil)
 				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
-				if withQ {
-					reasonCause.WithLabelValues("", pkt.NodeName, cause).Inc()
+
+				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
+					reasonCause.WithLabelValues(st, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()
 				}
 			}
 

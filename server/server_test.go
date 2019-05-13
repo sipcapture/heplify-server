@@ -27,6 +27,6 @@ func BenchmarkInput(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buf := hi.buffer.Get().([]byte)
 		copy(buf, hepPacket)
-		hi.inCh <- buf[:len(hepPacket)]
+		hi.inputCh <- buf[:len(hepPacket)]
 	}
 }
