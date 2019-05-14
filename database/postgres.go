@@ -416,7 +416,7 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString("\",\"auth_user\":\"")
 	sb.WriteString(h.SIP.AuthUser)
 	if len(h.SIP.CHeader) > 0 {
-		for k, v := range h.SIP.ParsCustomerHeaders {
+		for k, v := range h.SIP.CustomHeader {
 			sb.WriteString("\",\"" + k + "\":\"")
 			sb.WriteString(v)
 		}
