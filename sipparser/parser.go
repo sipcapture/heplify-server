@@ -12,18 +12,14 @@ import (
 )
 
 const (
-	sipParseStateStartLine    = "SipParseStateStartLine"
-	sipParseStateCrlf         = "SipMsgStateCrlf"
-	sipParseStateBody         = "SipMsgStateBody"
-	sipParseStateHeaders      = "SipMsgStateHeaders"
-	sipParseStateParseHeaders = "SipMsgStateParseHeaders"
-	uintCR                    = '\r'
-	uintLF                    = '\n'
-	CR                        = "\r"
-	LF                        = "\n"
-	CALLING_PARTY_DEFAULT     = "default"
-	CALLING_PARTY_RPID        = "rpid"
-	CALLING_PARTY_PAID        = "paid"
+	sipParseStateStartLine = "SipParseStateStartLine"
+	sipParseStateBody      = "SipMsgStateBody"
+	sipParseStateHeaders   = "SipMsgStateHeaders"
+	CR                     = "\r"
+	LF                     = "\n"
+	CALLING_PARTY_DEFAULT  = "default"
+	CALLING_PARTY_RPID     = "rpid"
+	CALLING_PARTY_PAID     = "paid"
 )
 
 type CallingPartyInfo struct {
