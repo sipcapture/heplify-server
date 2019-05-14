@@ -47,7 +47,7 @@ type HeplifyServer struct {
 	DiscardMethod      []string `default:""`
 	FilterHost         []string `default:""`
 	AlegIDs            []string `default:""`
-	CustomHeaders      []string `default:""`
+	CustomHeader       []string `default:""`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
