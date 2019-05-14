@@ -3,12 +3,12 @@ package decoder
 import (
 	"errors"
 
-	"github.com/aqsyonas/sipparser"
 	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/sipparser"
 )
 
 func (h *HEP) parseSIP() error {
-	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs, config.Setting.CustomHeaders...)
+	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs, config.Setting.CustomHeader)
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.CseqMethod) < 3 {

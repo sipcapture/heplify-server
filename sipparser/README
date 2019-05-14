@@ -1,0 +1,201 @@
+About
+
+sipparser is a fork from Shelby Ramsey SIP parser tweaked for
+performance and correctness. Benchmark on Intel i7-4790:
+
+Total messages: 300000
+Total time: 1.04s
+
+The library has an easy to use interface.
+
+1. call sipparser.ParseMsg(msg string)
+2. you'll get back a *SipMsg struct with the following:
+    -- State is the last parsing state
+    -- Error is an os.Error
+    -- Msg is the raw msg
+    -- CallingParty is a *CallingParty struct (see below)
+    -- Body is the body of the message
+    -- StartLine is the parsed StartLine (see below)
+    -- Headers is a slice of *Headers (see below) and will
+       only contain headers that do not get parsed
+    -- Accept is a *Accept struct (see below)
+    -- AlertInfo is just the string of the Alert-Info hdr
+    -- Allow is a slice of strings of the methods that are
+       allowed
+    -- AllowEvents is a slice of strings of the supported
+       event types
+    -- ContentDisposition is a *ContentDisposition struct
+    -- ContentLength is the value of the Content-Length hdr
+    -- ContentLengthInt is the int value of the ContentLength
+    -- ContentType is the header value for the Content-Type hdr
+    -- From is a *From struct (see below)
+    -- MaxForwards is the hdr value for the Max-Forwards hdr
+    -- MaxForwardsInt is the int value of the MaxForwards field
+    -- Organization is the value for the Organization hdr
+    -- To is a *From struct (see below)
+    -- Contact is a *From struct (see below)
+       ** NOTE ** Contact is not parsed automatically.  You
+       have to call *SipMsg.ParseContact() to get this value.
+    -- ContactVal is the raw value of the contact hdr
+    -- CallId is the call-id for the message
+    -- Cseq is a *Cseq struct (see below)
+    -- Rack is a *Rack struct (see below)
+    -- Reason is a *Reason struct
+    -- Rseq is the value of the RSeq hdr
+    -- RseqInt is the int value of the Rseq
+    -- RecordRoute is a slice of *URI's structs (see below)
+    -- Route is a slice of *URI's structs (see below)
+    -- Via is a slice of *Via structs (see below)
+    -- Require is a slice of the required extensions (string
+       values) from the Require hdr
+    -- Supported is a slice of the supported extensions (string
+       values) from the Supported hdr
+    -- Privacy is the value of the Privacy hdr
+    -- ProxyRequire is a slice of strings from the
+       Proxy-Require hdr
+    -- RemotePartyIdVal is the value from the Remote-Party-Id hdr
+    -- RemotePartyId is the RemotePartyId struct
+       ** NOTE ** In order to actually get this value you have to
+       call *SipMsg.ParseRemotePartyId()
+    -- PAssertedIdVal is the value from the P-Asserted-Identity hdr
+    -- PAssertedId is the *PAssertedId struct
+       ** NOTE ** In order to actually get this value you have to
+       call *SipMsg.ParsePAssertedId()
+    -- Unsupported is a slice of the unsupported extensions from
+       the Unsupported hdr
+    -- UserAgent is the value of the User-Agent hdr
+    -- Server is the value of the Server hdr
+    -- Subject is the value of the Subject hdr
+    -- Warning is a *Warning struct (see below)
+
+Import Types
+
+The following types are also part of the parsed SIP message.
+
+Accept is a struct with the following fields:
+-- Val is the raw value
+-- Params is a slice of AcceptParam
+
+CallingPartyInfo is a struct of calling party information.
+This is populated into the *SipMsg.CallingParty field when
+the method GetCallingParty on the *SipMsg.  See below for
+details of that method.
+CallingPartyInfo has the following fields:
+-- Name the name
+-- Number the number
+-- Anonymous a bool to see if this should be anonymous or not
+
+
+ContentDisposition is a struct with the following fields:
+-- Val is the raw value
+-- DispType is the display type
+-- Params is a slice of *Param (see below)
+
+Cseq is a struct with the following fields:
+-- Val is the raw value
+-- Method is the SIP method
+-- Digit is the digit (although in a string format)
+
+From is an important type that is used as a representation of
+the parsed hdr values for the From, To, and Contact headers.
+The From struct has the following fields:
+-- Error is an os.Error
+-- Val is the raw value
+-- Name is the name value from the hdr
+-- Tag is the value of the tag=$someval parameter
+-- URI is the *URI
+-- Params is a slice of *Param (see below)
+
+Param is a struct with the following fields:
+-- Param is the parameter
+-- Val is the value of the parameter (if any ...)
+
+PAssertedId is a struct with the following fields:
+-- Error is an os.Error
+-- Val is the raw value
+-- Name is the name from the header
+-- URI is the *URI
+-- Params is a slice of *Param
+
+Rack is a struct with the following fields:
+-- Val is the raw value
+-- RseqVal is the value of the rseq
+-- CseqVal is the value of the cseq
+-- CseqMethod is the value of the cseq method
+
+Reason is a struct with the following fields:
+-- Val is the raw value
+-- Proto is the protocol
+-- Cause is the cause code
+-- Text is the text
+
+RemotePartyId is a struct with the following fields:
+-- Error is an os.Error
+-- Val is the raw value of the hdr
+-- Name is the name from the header
+-- URI is the *URI
+-- Party is the party parameter
+-- Screen is the screen parameter
+-- Privacy is the privacy parameeter
+-- Params is a slice of *Param
+
+StartLine is a struct with the following fields:
+-- Error is an os.Error
+-- Val is the raw value
+-- Type is the type of startline (i.e. request or response)
+-- Method is the method (if request)
+-- URI is the *URI (if request)
+-- Resp is the response code (i.e. 183)
+-- RespText is the response text (i.e. "Session Progress")
+-- Proto is the protocol (should be "SIP")
+-- Version is the version (should be "2.0")
+
+URI is an important struct that is used in many places
+through a *SipMsg from the From header to the StartLine.
+It has the following fields:
+-- Error is an os.Error
+-- Scheme is the scheme (i.e. "sip", "sips", "tel")
+-- Raw is the raw value of the uri
+-- UserInfo is everything before the "@" char if anything
+-- User is the user (i.e. "bob")
+-- HostInfo is everything between the "@" char and any parameters
+-- Host is the host
+-- Port is the port
+-- UriParams is a slice of *Param
+-- Secure is a bool indicating if communication is secure
+
+Via is an important part of the *SipMsg.  It is a fundamental
+basis on which to build route-sets and do call matching.  It
+has the following structs:
+-- State is the parser state
+-- Error is an os.Error
+-- Via is the raw value
+-- Proto is the protocol (i.e. "SIP")
+-- Version is the version (i.e. "2.0")
+-- Transport is the transport method (i.e. "UDP")
+-- SentBy is a host:port combination
+-- Branch is the branch parameter
+-- Params is a slice of *Param
+
+Import Methods on the *SipMsg
+
+GetCallingParty
+
+GetCallingParty is a method that can be called with one of
+the following:
+-- rpid (abbr for remote-party-id)
+-- paid (abbr for party-associated-identity)
+If either of the above parameters are passed to the method
+then it will use one of the matching hdrs to obtain the info.
+If anything else is passed then it will pull the CallingPartyInfo
+from the from header.
+
+GetRURIParamBool
+
+GetRURIParamBool returns true or false to see if a parameter
+is present in the request URI
+
+GetRURIParamVal
+
+GetRURIParamVal returns the actual value of the parameter if
+the parameter is present in the request URI
