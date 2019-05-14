@@ -32,28 +32,6 @@ SUFFIXWS:
 	return s
 }
 
-func cleanWsOld(s string) (ns string) {
-	if s == "" {
-		return ""
-	}
-	v := strings.Split(strings.TrimSpace(s), " ")
-	if len(v) == 1 {
-		return v[0]
-	}
-	ns = v[0]
-	for i := 1; i < len(v); i++ {
-		switch {
-		case v[i] != "" && v[i-1] != "":
-			ns = ns + " " + v[i]
-		case v[i] != "" && v[i-1] == "":
-			ns = ns + v[i]
-		case v[i] == "" && v[i-1] != "":
-			ns = ns + " " + v[i]
-		}
-	}
-	return ns
-}
-
 func cleanBrack(s string) string {
 	if s == "" {
 		return ""
