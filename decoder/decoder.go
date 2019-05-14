@@ -11,7 +11,7 @@ import (
 	"github.com/VictoriaMetrics/fastcache"
 
 	"github.com/negbie/logp"
-	"github.com/negbie/sipparser"
+	"github.com/aqsyonas/sipparser"
 	"github.com/sipcapture/heplify-server/config"
 )
 

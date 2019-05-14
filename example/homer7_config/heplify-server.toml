@@ -35,6 +35,7 @@ DBDropOnStart         = false
 Dedup                 = false
 DiscardMethod         = []
 AlegIDs               = []
+CustomHeaders         = []
 LogDbg                = ""
 LogLvl                = "info"
 LogStd                = false
