@@ -3,13 +3,15 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 	"sync"
 	"syscall"
+
+	_ "net/http/pprof"
 
 	"github.com/koding/multiconfig"
 	"github.com/negbie/logp"
@@ -73,21 +75,17 @@ func tomlExists(f string) bool {
 	return err == nil
 }
 
-func useBallast(size int) func() {
-	ballast := make([]byte, size)
-	return func() { runtime.KeepAlive(ballast) }
-}
-
 func main() {
-	defer useBallast(config.Setting.GCBallast)()
 	var servers []server
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	/* 	autopprof.Capture(autopprof.CPUProfile{
-		Duration: 15 * time.Second,
-	}) */
+	if len(config.Setting.PprofHTTPAddr) > 2 {
+		go func() {
+			log.Println(http.ListenAndServe(config.Setting.PprofHTTPAddr, nil))
+		}()
+	}
 
 	startServer := func() {
 		hep := input.NewHEPInput()

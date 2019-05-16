@@ -14,14 +14,12 @@ import (
 func (h *HEPInput) serveTCP(addr string) {
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		logp.Err("%v", err)
-		return
+		logp.Critical("%v", err)
 	}
 
 	ln, err := net.ListenTCP("tcp", ta)
 	if err != nil {
-		logp.Err("%v", err)
-		return
+		logp.Critical("%v", err)
 	}
 
 	var wg sync.WaitGroup

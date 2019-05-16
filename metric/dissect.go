@@ -36,9 +36,6 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
 	plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0.0, 0.0
 
-	packetsByType.WithLabelValues("xrtp").Inc()
-	packetsBySize.WithLabelValues("xrtp").Set(float64(len(stats)))
-
 	if cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64); err == nil {
 		xrtpCS.WithLabelValues(tn).Set(cs / 1000)
 	}
