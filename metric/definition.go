@@ -10,11 +10,11 @@ var (
 	packetsByType = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_packets_total",
 		Help: "Total packets by HEP type"},
-		[]string{"type"})
+		[]string{"node_id", "type"})
 	packetsBySize = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_packets_size",
 		Help: "Packet size by HEP type"},
-		[]string{"type"})
+		[]string{"node_id", "type"})
 	methodResponses = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "heplify_method_response",
 		Help: "SIP method and response counter"},

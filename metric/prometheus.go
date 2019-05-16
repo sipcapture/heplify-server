@@ -59,8 +59,8 @@ func (p *Prometheus) setup() (err error) {
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 	var st, dt string
 	for pkt := range hCh {
-		packetsByType.WithLabelValues(pkt.ProtoString).Inc()
-		packetsBySize.WithLabelValues(pkt.ProtoString).Set(float64(len(pkt.Payload)))
+		packetsByType.WithLabelValues(pkt.NodeName, pkt.ProtoString).Inc()
+		packetsBySize.WithLabelValues(pkt.NodeName, pkt.ProtoString).Set(float64(len(pkt.Payload)))
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			if !p.TargetEmpty {
