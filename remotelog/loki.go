@@ -116,6 +116,7 @@ OUT:
 				if pkt.ProtoType != uint32(v) {
 					goto OUT
 				}
+				break
 			}
 
 			tsNano := curPktTime.UnixNano()
