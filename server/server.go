@@ -116,7 +116,7 @@ func (h *HEPInput) Run() {
 	}
 
 	if h.useCDR {
-		q := cdr.New(config.Setting.CGRAddr)
+		q := cdr.New("cgrates")
 		q.Chan = h.cdrCh
 
 		if err := q.Run(); err != nil {
@@ -231,8 +231,8 @@ func (h *HEPInput) hepWorker() {
 			}
 
 			if h.useCDR && hepPkt.SIP != nil {
-				if (hepPkt.SIP.FirstMethod == "INVITE" && hepPkt.SIP.CseqVal == "INVITE") ||
-					(hepPkt.SIP.FirstMethod == "BYE" && hepPkt.SIP.CseqVal == "BYE") {
+				if (hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "INVITE") ||
+					(hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "BYE") {
 					select {
 					case h.cdrCh <- hepPkt:
 					default:

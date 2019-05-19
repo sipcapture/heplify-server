@@ -15,7 +15,7 @@ import (
 const (
 	invite    = "INVITE"
 	register  = "REGISTER"
-	cacheSize = 80 * 1024 * 1024
+	cacheSize = 60 * 1024 * 1024
 )
 
 type Prometheus struct {
