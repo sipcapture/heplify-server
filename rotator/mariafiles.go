@@ -275,8 +275,11 @@ var tbldatasipmaria = []string{
 		node varchar(125) NOT NULL DEFAULT '',
 		msg varchar(3000) NOT NULL DEFAULT '',
 		PRIMARY KEY (id,date),
+		KEY ruri_domain (ruri_domain),
 		KEY ruri_user (ruri_user),
+		KEY from_domain (from_domain),
 		KEY from_user (from_user),
+		KEY to_domain (to_domain),
 		KEY to_user (to_user),
 		KEY pid_user (pid_user),
 		KEY auth_user (auth_user),
@@ -285,7 +288,8 @@ var tbldatasipmaria = []string{
 		KEY callid (callid),
 		KEY method (method),
 		KEY source_ip (source_ip),
-		KEY destination_ip (destination_ip)
+		KEY destination_ip (destination_ip),
+		KEY user_agent (user_agent)
 	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 	  PARTITION BY RANGE ( UNIX_TIMESTAMP(date) ) (
 		  PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
@@ -339,17 +343,16 @@ var tbldatasipmaria = []string{
 		node varchar(125) NOT NULL DEFAULT '',
 		msg varchar(3000) NOT NULL DEFAULT '',
 		PRIMARY KEY (id,date),
-		KEY ruri_user (ruri_user),
+		KEY ruri_domain (ruri_domain),
 		KEY from_user (from_user),
 		KEY to_user (to_user),
-		KEY pid_user (pid_user),
 		KEY auth_user (auth_user),
-		KEY callid_aleg (callid_aleg),
 		KEY date (date),
 		KEY callid (callid),
 		KEY method (method),
 		KEY source_ip (source_ip),
-		KEY destination_ip (destination_ip)
+		KEY destination_ip (destination_ip),
+		KEY user_agent (user_agent)
 	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 	  PARTITION BY RANGE ( UNIX_TIMESTAMP(date) ) (
 		  PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )
@@ -406,14 +409,12 @@ var tbldatasipmaria = []string{
 		KEY ruri_user (ruri_user),
 		KEY from_user (from_user),
 		KEY to_user (to_user),
-		KEY pid_user (pid_user),
-		KEY auth_user (auth_user),
-		KEY callid_aleg (callid_aleg),
 		KEY date (date),
 		KEY callid (callid),
 		KEY method (method),
 		KEY source_ip (source_ip),
-		KEY destination_ip (destination_ip)
+		KEY destination_ip (destination_ip),
+		KEY user_agent (user_agent)
 	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8
 	  PARTITION BY RANGE ( UNIX_TIMESTAMP(date) ) (
 		  PARTITION {{date}}_{{minTime}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') )

@@ -28,7 +28,6 @@ type HeplifyServer struct {
 	DBPass             string   `default:""`
 	DBDataTable        string   `default:"homer_data"`
 	DBConfTable        string   `default:"homer_configuration"`
-	DBTableSpace       string   `default:""`
 	DBBulk             int      `default:"400"`
 	DBTimer            int      `default:"4"`
 	DBBuffer           int      `default:"400000"`
