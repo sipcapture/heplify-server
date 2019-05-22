@@ -32,6 +32,7 @@ type HEPInput struct {
 	quitTLS   chan bool
 	quit      chan bool
 	stats     HEPStats
+	lokiTF    []int
 	useDB     bool
 	useCDR    bool
 	usePM     bool
@@ -59,6 +60,7 @@ func NewHEPInput() *HEPInput {
 		quitTLS:   make(chan bool),
 		exitedTCP: make(chan bool),
 		exitedTLS: make(chan bool),
+		lokiTF:    config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -114,7 +116,7 @@ func (h *HEPInput) Run() {
 	}
 
 	if h.useCDR {
-		q := cdr.New(config.Setting.CGRAddr)
+		q := cdr.New("cgrates")
 		q.Chan = h.cdrCh
 
 		if err := q.Run(); err != nil {
@@ -229,7 +231,8 @@ func (h *HEPInput) hepWorker() {
 			}
 
 			if h.useCDR && hepPkt.SIP != nil {
-				if hepPkt.SIP.CseqVal == "INVITE" || hepPkt.SIP.CseqVal == "BYE" {
+				if (hepPkt.SIP.CseqMethod == "INVITE" || hepPkt.SIP.CseqMethod == "BYE") &&
+					hepPkt.SIP.FirstMethod == "200" {
 					select {
 					case h.cdrCh <- hepPkt:
 					default:
@@ -253,13 +256,18 @@ func (h *HEPInput) hepWorker() {
 			}
 
 			if h.useLK {
-				select {
-				case h.lokiCh <- hepPkt:
-				default:
-					if time.Since(lastWarn) > 5e8 {
-						logp.Warn("overflowing loki channel")
+				for _, v := range h.lokiTF {
+					if hepPkt.ProtoType == uint32(v) {
+						select {
+						case h.lokiCh <- hepPkt:
+						default:
+							if time.Since(lastWarn) > 5e8 {
+								logp.Warn("overflowing loki channel")
+							}
+							lastWarn = time.Now()
+						}
+						break
 					}
-					lastWarn = time.Now()
 				}
 			}
 		}

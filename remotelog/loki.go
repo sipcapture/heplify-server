@@ -36,17 +36,15 @@ type entry struct {
 }
 
 type Loki struct {
-	URL           string
-	BatchWait     time.Duration
-	BatchSize     int
-	HEPTypeFilter []int
+	URL       string
+	BatchWait time.Duration
+	BatchSize int
 	entry
 }
 
 func (l *Loki) setup() error {
 	l.BatchSize = config.Setting.LokiBulk * 1024
 	l.BatchWait = time.Duration(config.Setting.LokiTimer) * time.Second
-	l.HEPTypeFilter = config.Setting.LokiHEPFilter
 	l.URL = config.Setting.LokiURL
 
 	u, err := url.Parse(l.URL)
@@ -85,7 +83,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			logp.Err("loki flush: %v", err)
 		}
 	}()
-OUT:
+
 	for {
 		select {
 		case pkt, ok := <-hCh:
@@ -101,23 +99,16 @@ OUT:
 
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)
-			pktMeta.WriteString(" SrcIP=")
+			pktMeta.WriteString(" src_ip=")
 			pktMeta.WriteString(pkt.SrcIP)
-			pktMeta.WriteString(" SrcPort=")
+			pktMeta.WriteString(" src_port=")
 			pktMeta.WriteString(strconv.Itoa(int(pkt.SrcPort)))
-			pktMeta.WriteString(" DstIP=")
+			pktMeta.WriteString(" dst_ip=")
 			pktMeta.WriteString(pkt.DstIP)
-			pktMeta.WriteString(" DstPort=")
+			pktMeta.WriteString(" dst_port=")
 			pktMeta.WriteString(strconv.Itoa(int(pkt.DstPort)))
-			pktMeta.WriteString(" CID=")
+			pktMeta.WriteString(" id=")
 			pktMeta.WriteString(pkt.CID)
-
-			for _, v := range l.HEPTypeFilter {
-				if pkt.ProtoType != uint32(v) {
-					goto OUT
-				}
-				break
-			}
 
 			tsNano := curPktTime.UnixNano()
 			ts := &timestamp.Timestamp{

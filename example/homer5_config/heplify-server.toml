@@ -18,7 +18,6 @@ DBUser                = "root"
 DBPass                = ""
 DBDataTable           = "homer_data"
 DBConfTable           = "homer_configuration"
-DBTableSpace          = ""
 DBBulk                = 200
 DBTimer               = 2
 DBBuffer              = 400000
