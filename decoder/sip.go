@@ -19,6 +19,11 @@ func (h *HEP) parseSIP() error {
 	if h.SIP.FirstMethod == "" {
 		h.SIP.FirstMethod = h.SIP.FirstResp
 	}
-	h.CID = h.SIP.CallID
+	if h.SIP.XCallID == "" {
+		h.CID = h.SIP.CallID
+	} else {
+		h.CID = h.SIP.XCallID
+	}
+
 	return nil
 }

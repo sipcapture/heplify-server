@@ -1,12 +1,16 @@
 package cdr
 
 import (
+	"crypto/rand"
+	"crypto/sha1"
 	"encoding/binary"
-	"net/rpc"
-	"net/rpc/jsonrpc"
+	"fmt"
+	"io"
+	"log"
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
+	"github.com/cgrates/rpcclient"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
@@ -17,18 +21,18 @@ const (
 )
 
 var (
-	attributeS = true
+	attributeS = false
 	ralS       = true
 	chargerS   = true
-	store      = true
-	export     = true
-	thresholdS = true
+	store      = false
+	export     = false
+	thresholdS = false
 	statS      = true
 )
 
 type CGR struct {
 	cache  *fastcache.Cache
-	client *rpc.Client
+	client *rpcclient.RpcClient
 }
 
 type ArgV1ProcessEvent struct {
@@ -57,7 +61,9 @@ type ArgDispatcher struct {
 
 func (c *CGR) setup() error {
 	var err error
-	c.client, err = jsonrpc.Dial("tcp", "localhost:2012")
+	c.client, err = rpcclient.NewRpcClient("tcp", "localhost:2013", false, "",
+		"", "", 3, 3,
+		time.Duration(1*time.Second), time.Duration(5*time.Minute), "gob", nil, false)
 	if err != nil {
 		logp.Warn("%v", err)
 		return err
@@ -93,26 +99,25 @@ func (c *CGR) send(hCh chan *decoder.HEP) {
 						AttributeS: &attributeS,
 						RALs:       &ralS,
 						ChargerS:   &chargerS,
-						// Store:      &store,
-						// Export:     &export,
+						Store:      &store,
+						Export:     &export,
 						ThresholdS: &thresholdS,
 						StatS:      &statS,
 						CGREvent: CGREvent{
 							Tenant: "cgrates.org",
+							ID:     UUIDSha1Prefix(),
+							Time:   &pkt.Timestamp,
 							Event: map[string]interface{}{
-								//"EventName":   "TEST_EVENT",
-								//"ToR":         "*voice",
-								"OriginID":    "123452",
-								"Account":     "1001",
-								"Subject":     "1001",
-								"Destination": "1003",
+								"ToR":         "*voice",
+								"OriginID":    pkt.CID,
+								"Account":     pkt.SIP.FromUser,
+								"Subject":     pkt.SIP.FromUser,
+								"Destination": pkt.SIP.ToUser,
 								"Category":    "call",
-								"Tenant":      "cgrates.org",
-								"Source":      "192.168.1.1",
-								"RequestType": "*prepaid",
-								//"SetupTime":   pkt.Timestamp.Add(-1 * d),
-								"AnswerTime": pkt.Timestamp,
-								"Usage":      d,
+								"Source":      pkt.SIP.FromHost,
+								"RequestType": "*postpaid",
+								"AnswerTime":  pkt.Timestamp.Add(-1 * d),
+								"Usage":       d,
 							},
 						},
 					}
@@ -127,4 +132,30 @@ func (c *CGR) send(hCh chan *decoder.HEP) {
 			}
 		}
 	}
+}
+
+// helper function for uuid generation
+func GenUUID() string {
+	b := make([]byte, 16)
+	_, err := io.ReadFull(rand.Reader, b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	b[6] = (b[6] & 0x0F) | 0x40
+	b[8] = (b[8] &^ 0x40) | 0x80
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
+// UUIDSha1Prefix generates a prefix of the sha1 applied to an UUID
+// prefix 8 is chosen since the probability of colision starts being minimal after 7 characters (see git commits)
+func UUIDSha1Prefix() string {
+	return Sha1(GenUUID())[:7]
+}
+
+func Sha1(attrs ...string) string {
+	hasher := sha1.New()
+	for _, attr := range attrs {
+		hasher.Write([]byte(attr))
+	}
+	return fmt.Sprintf("%x", hasher.Sum(nil))
 }

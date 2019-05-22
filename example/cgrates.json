@@ -86,11 +86,6 @@
     "sessions": {
         "enabled": true,
         "listen_bijson": "127.0.0.1:2014", // address where to listen for bidirectional JSON-RPC requests
-        "chargers_conns": [
-            {
-                "address": "*internal"
-            }
-        ],
         "rals_conns": [
             {
                 "address": "*internal"
@@ -126,8 +121,14 @@
                 "address": "*internal"
             }
         ],
+        "chargers_conns": [
+            {
+                "address": "*internal"
+            }
+        ],
+        "store_session_costs": true,
         "debit_interval": "10s",
-        "channel_sync_interval": "30s",
+        "channel_sync_interval": "7s",
     },
     "attributes": {
         "enabled": true,
