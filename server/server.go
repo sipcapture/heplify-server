@@ -231,8 +231,8 @@ func (h *HEPInput) hepWorker() {
 			}
 
 			if h.useCDR && hepPkt.SIP != nil {
-				if (hepPkt.SIP.CseqMethod == "INVITE" || hepPkt.SIP.CseqMethod == "BYE") &&
-					hepPkt.SIP.FirstMethod == "200" {
+				if (hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "INVITE") ||
+					(hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "BYE") {
 					select {
 					case h.cdrCh <- hepPkt:
 					default:

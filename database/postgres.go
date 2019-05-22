@@ -283,44 +283,46 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 }
 
 func makeProtoHeader(h *decoder.HEP, corrID string, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString("{")
-	sb.WriteString("\"protocolFamily\":")
+	sb.WriteString(`{`)
+	sb.WriteString(`"protocolFamily":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.Version), 10))
-	sb.WriteString(",\"protocol\":")
+	sb.WriteString(`,"protocol":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.Protocol), 10))
-	sb.WriteString(",\"srcIp\":\"")
+	sb.WriteString(`,"srcIp":"`)
 	sb.WriteString(h.SrcIP)
-	sb.WriteString("\",\"dstIp\":\"")
+	sb.WriteString(`","dstIp":"`)
 	sb.WriteString(h.DstIP)
-	sb.WriteString("\",\"srcPort\":")
+	sb.WriteString(`","srcPort":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.SrcPort), 10))
-	sb.WriteString(",\"dstPort\":")
+	sb.WriteString(`,"dstPort":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
-	sb.WriteString(",\"timeSeconds\":")
+	sb.WriteString(`,"timeSeconds":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.Tsec), 10))
-	sb.WriteString(",\"timeUseconds\":")
+	sb.WriteString(`,"timeUseconds":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.Tmsec), 10))
-	sb.WriteString(",\"payloadType\":")
+	sb.WriteString(`,"payloadType":`)
 	sb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
-	sb.WriteString(",\"captureId\":")
+	sb.WriteString(`,"captureId":"`)
 	sb.WriteString(h.NodeName)
-	sb.WriteString(",\"capturePass\":\"")
-	sb.WriteString(h.NodePW)
+	if h.NodePW != "" {
+		sb.WriteString(`","capturePass":"`)
+		sb.WriteString(h.NodePW)
+	}
 	if corrID != "" {
-		sb.WriteString("\",\"correlation_id\":\"")
+		sb.WriteString(`","correlation_id":"`)
 		sb.WriteString(corrID)
 	}
-	sb.WriteString("\"}")
+	sb.WriteString(`"}`)
 	return sb.String()
 }
 
 func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString("{")
-	sb.WriteString("\"node\":\"")
+	sb.WriteString(`{`)
+	sb.WriteString(`"node":"`)
 	sb.WriteString(h.NodeName)
-	sb.WriteString("\",\"host\":\"")
+	sb.WriteString(`","host":"`)
 	sb.WriteString(h.HostTag)
-	sb.WriteString("\"}")
+	sb.WriteString(`"}`)
 	return sb.String()
 }
 
@@ -402,39 +404,35 @@ func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) (string, str
 }
 
 func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString("{")
-	sb.WriteString("\"ruri_domain\":\"")
+	sb.WriteString(`{`)
+	sb.WriteString(`"ruri_domain":"`)
 	sb.WriteString(h.SIP.URIHost)
-	sb.WriteString("\",\"ruri_user\":\"")
+	sb.WriteString(`","ruri_user":"`)
 	sb.WriteString(h.SIP.URIUser)
-	sb.WriteString("\",\"from_user\":\"")
+	sb.WriteString(`","from_user":"`)
 	sb.WriteString(h.SIP.FromUser)
-	sb.WriteString("\",\"to_user\":\"")
+	sb.WriteString(`","to_user":"`)
 	sb.WriteString(h.SIP.ToUser)
-	sb.WriteString("\",\"pid_user\":\"")
+	sb.WriteString(`","pid_user":"`)
 	sb.WriteString(h.SIP.PaiUser)
-	sb.WriteString("\",\"auth_user\":\"")
+	sb.WriteString(`","auth_user":"`)
 	sb.WriteString(h.SIP.AuthUser)
 	if len(h.SIP.CHeader) > 0 {
 		for k, v := range h.SIP.CustomHeader {
-			sb.WriteString("\",\"" + k + "\":\"")
+			sb.WriteString(`","` + k + `":"`)
 			sb.WriteString(v)
 		}
 	}
-	sb.WriteString("\",\"callid\":\"")
-	if h.SIP.XCallID == "" {
-		sb.WriteString(h.CID)
-	} else {
-		sb.WriteString(h.SIP.XCallID)
-	}
-	sb.WriteString("\",\"method\":\"")
+	sb.WriteString(`","callid":"`)
+	sb.WriteString(h.SIP.CallID)
+	sb.WriteString(`","method":"`)
 	sb.WriteString(h.SIP.FirstMethod)
-	sb.WriteString("\",\"user_agent\":\"")
+	sb.WriteString(`","user_agent":"`)
 	sb.WriteString(h.SIP.UserAgent)
-	sb.WriteString("\",\"from_tag\":\"")
+	sb.WriteString(`","from_tag":"`)
 	sb.WriteString(h.SIP.FromTag)
-	sb.WriteString("\",\"to_tag\":\"")
+	sb.WriteString(`","to_tag":"`)
 	sb.WriteString(h.SIP.ToTag)
-	sb.WriteString("\"}")
+	sb.WriteString(`"}`)
 	return sb.String()
 }
