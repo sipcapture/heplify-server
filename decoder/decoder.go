@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/VictoriaMetrics/fastcache"
-
+	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/sipparser"
@@ -23,7 +23,7 @@ import (
 //        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-var dedup = fastcache.New(1)
+var dedup = fastcache.New(32 * 1024 * 1024)
 
 // HEP chuncks
 const (
@@ -155,21 +155,23 @@ var fixUTF8 = func(r rune) rune {
 
 func (h *HEP) normPayload(t time.Time) {
 	if config.Setting.Dedup {
-		tu := uint64(t.UnixNano())
-		k := []byte(h.Payload)
+		ts := uint64(t.UnixNano())
+		kh := make([]byte, 8)
+		ks := xxhash.Sum64String(h.Payload)
+		binary.BigEndian.PutUint64(kh, ks)
 
-		if buf := dedup.Get(nil, k); buf != nil {
+		if buf := dedup.Get(nil, kh); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
-			d := tu - i
+			d := ts - i
 			if d < 400e6 || d > 1e18 {
 				h.ProtoType = 0
 				return
 			}
 		}
-		tb := make([]byte, 8)
 
-		binary.BigEndian.PutUint64(tb, tu)
-		dedup.Set(k, tb)
+		tb := make([]byte, 8)
+		binary.BigEndian.PutUint64(tb, ts)
+		dedup.Set(kh, tb)
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
