@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -80,12 +79,6 @@ func main() {
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	if len(config.Setting.PprofHTTPAddr) > 2 {
-		go func() {
-			log.Println(http.ListenAndServe(config.Setting.PprofHTTPAddr, nil))
-		}()
-	}
 
 	startServer := func() {
 		hep := input.NewHEPInput()
