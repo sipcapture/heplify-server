@@ -427,8 +427,6 @@ func (s *SipMsg) parseReason(str string) {
 }
 
 func (s *SipMsg) parseRTPStat(str string) {
-	//s.RTPStat = &RTPStat{Val: str}
-	//s.RTPStat.parse()
 	s.RTPStatVal = str
 }
 
