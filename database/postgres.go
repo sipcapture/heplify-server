@@ -30,9 +30,6 @@ const (
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
 
-//var queryVal = `(sid,create_date,protocol_header,data_header,raw) VALUES `
-//var queryValCnt = 5
-
 func (p *Postgres) setup() error {
 	cs, err := ConnectString(config.Setting.DBDataTable)
 	if err != nil {
@@ -427,12 +424,10 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString(h.SIP.CallID)
 	sb.WriteString(`","method":"`)
 	sb.WriteString(h.SIP.FirstMethod)
-	sb.WriteString(`","user_agent":"`)
-	sb.WriteString(h.SIP.UserAgent)
-	sb.WriteString(`","from_tag":"`)
-	sb.WriteString(h.SIP.FromTag)
-	sb.WriteString(`","to_tag":"`)
-	sb.WriteString(h.SIP.ToTag)
+	if h.SIP.UserAgent != "" {
+		sb.WriteString(`","user_agent":"`)
+		sb.WriteString(h.SIP.UserAgent)
+	}
 	sb.WriteString(`"}`)
 	return sb.String()
 }

@@ -93,8 +93,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				}
 			}
 
-			if (pkt.SIP.CseqMethod == invite && (pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183")) ||
-				(pkt.SIP.CseqMethod == register && pkt.SIP.FirstMethod == "200") {
+			if (pkt.SIP.CseqMethod == invite || pkt.SIP.CseqMethod == register) &&
+				(pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183" || pkt.SIP.FirstMethod == "200") {
 				did := []byte(pkt.DstIP + pkt.CID)
 				if buf := p.cache.Get(nil, did); buf != nil {
 					i := binary.BigEndian.Uint64(buf)
