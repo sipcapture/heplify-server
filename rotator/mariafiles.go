@@ -33,14 +33,14 @@ var parlogmaria = []string{
 	"ALTER TABLE logs_capture_all_{{date}} ADD PARTITION (PARTITION {{date}}_{{time}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') ));",
 }
 
-var parmaxmaria = []string{
+/* var parmaxmaria = []string{
 	"ALTER TABLE logs_capture_all_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
 	"ALTER TABLE report_capture_all_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
 	"ALTER TABLE rtcp_capture_all_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
 	"ALTER TABLE sip_capture_call_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
 	"ALTER TABLE sip_capture_registration_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
 	"ALTER TABLE sip_capture_rest_{{date}} ADD PARTITION (PARTITION pmax VALUES LESS THAN MAXVALUE);",
-}
+} */
 
 var parqosmaria = []string{
 	"ALTER TABLE report_capture_all_{{date}} ADD PARTITION (PARTITION {{date}}_{{time}} VALUES LESS THAN ( UNIX_TIMESTAMP('{{endTime}}') ));",
