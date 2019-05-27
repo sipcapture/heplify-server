@@ -144,7 +144,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		if err := r.dbExecFile(db, tbldatasipmaria, suffix, duration, r.partSip); err == nil {
 			r.dbExecFileLoop(db, parsipmaria, suffix, duration, r.partSip)
 		}
-		r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
+		//r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
 	} else if r.driver == "postgres" {
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
@@ -346,7 +346,7 @@ func setStep(name string) (step int) {
 		step = 360
 	case "12h":
 		step = 720
-	case "1d":
+	case "24h", "1d":
 		step = 1440
 	default:
 		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 20m, 15m, 10m, 5m]", name)

@@ -208,23 +208,23 @@ func (h *HEPInput) hepWorker() {
 			}
 			atomic.AddUint64(&h.stats.HEPCount, 1)
 
-			if h.useDB {
-				select {
-				case h.dbCh <- hepPkt:
-				default:
-					if time.Since(lastWarn) > 5e8 {
-						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
-					}
-					lastWarn = time.Now()
-				}
-			}
-
 			if h.usePM {
 				select {
 				case h.promCh <- hepPkt:
 				default:
 					if time.Since(lastWarn) > 5e8 {
 						logp.Warn("overflowing metric channel")
+					}
+					lastWarn = time.Now()
+				}
+			}
+
+			if h.useDB {
+				select {
+				case h.dbCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 5e8 {
+						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 					}
 					lastWarn = time.Now()
 				}
