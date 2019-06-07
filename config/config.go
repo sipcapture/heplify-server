@@ -17,7 +17,7 @@ type HeplifyServer struct {
 	LokiBulk           int      `default:"400"`
 	LokiTimer          int      `default:"4"`
 	LokiBuffer         int      `default:"100000"`
-	LokiHEPFilter      []int    `default:"1,100"`
+	LokiHEPFilter      []int    `default:"1,5,100"`
 	PromAddr           string   `default:":9096"`
 	PromTargetIP       string   `default:""`
 	PromTargetName     string   `default:""`
