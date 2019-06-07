@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -101,14 +100,12 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			pktMeta.WriteString(pkt.Payload)
 			pktMeta.WriteString(" src_ip=")
 			pktMeta.WriteString(pkt.SrcIP)
-			pktMeta.WriteString(" src_port=")
-			pktMeta.WriteString(strconv.Itoa(int(pkt.SrcPort)))
 			pktMeta.WriteString(" dst_ip=")
 			pktMeta.WriteString(pkt.DstIP)
-			pktMeta.WriteString(" dst_port=")
-			pktMeta.WriteString(strconv.Itoa(int(pkt.DstPort)))
-			pktMeta.WriteString(" id=")
-			pktMeta.WriteString(pkt.CID)
+			if pkt.ProtoType < 110 {
+				pktMeta.WriteString(" id=")
+				pktMeta.WriteString(pkt.CID)
+			}
 
 			tsNano := curPktTime.UnixNano()
 			ts := &timestamp.Timestamp{
@@ -143,10 +140,10 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			case pkt.ProtoType == 112:
 				l.entry = entry{
 					model.LabelSet{
-						"job":  jobName,
-						"type": model.LabelValue(pkt.CID),
-						"node": model.LabelValue(pkt.NodeName),
-						"host": model.LabelValue(pkt.HostTag)},
+						"job":   jobName,
+						"level": model.LabelValue(pkt.CID),
+						"node":  model.LabelValue(pkt.NodeName),
+						"host":  model.LabelValue(pkt.HostTag)},
 					&logproto.Entry{
 						Timestamp: ts,
 						Line:      pktMeta.String(),
