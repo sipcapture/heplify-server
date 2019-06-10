@@ -113,45 +113,29 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				Nanos:   int32(tsNano % int64(time.Second)),
 			}
 
+			l.entry = entry{model.LabelSet{}, &logproto.Entry{Timestamp: ts}}
+
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
-				l.entry = entry{
-					model.LabelSet{
-						"job":      jobName,
-						"type":     model.LabelValue(pkt.ProtoString),
-						"node":     model.LabelValue(pkt.NodeName),
-						"response": model.LabelValue(pkt.SIP.FirstMethod),
-						"method":   model.LabelValue(pkt.SIP.CseqMethod)},
-					&logproto.Entry{
-						Timestamp: ts,
-						Line:      pktMeta.String(),
-					}}
-
-			case pkt.ProtoType > 1 && pkt.ProtoType <= 100:
-				l.entry = entry{
-					model.LabelSet{
-						"job":  jobName,
-						"type": model.LabelValue(pkt.ProtoString),
-						"node": model.LabelValue(pkt.NodeName)},
-					&logproto.Entry{
-						Timestamp: ts,
-						Line:      pktMeta.String(),
-					}}
+				l.entry.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
+				l.entry.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
+			case pkt.ProtoType == 100:
+				protocol := "udp"
+				if strings.Contains(pkt.Payload, "Fax") || strings.Contains(pkt.Payload, "T38") {
+					protocol = "fax"
+				} else if strings.Contains(pkt.Payload, "sip") {
+					protocol = "sip"
+				}
+				l.entry.labels["protocol"] = model.LabelValue(protocol)
 			case pkt.ProtoType == 112:
-				l.entry = entry{
-					model.LabelSet{
-						"job":   jobName,
-						"level": model.LabelValue(pkt.CID),
-						"node":  model.LabelValue(pkt.NodeName),
-						"host":  model.LabelValue(pkt.HostTag)},
-					&logproto.Entry{
-						Timestamp: ts,
-						Line:      pktMeta.String(),
-					}}
-
-			default:
-				continue
+				l.entry.labels["level"] = model.LabelValue(pkt.CID)
+				l.entry.labels["host"] = model.LabelValue(pkt.HostTag)
 			}
+
+			l.entry.labels["job"] = jobName
+			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
+			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
+			l.entry.Entry.Line = pktMeta.String()
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {

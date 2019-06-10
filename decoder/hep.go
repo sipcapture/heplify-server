@@ -84,6 +84,8 @@ func (h *HEP) parseHEP(packet []byte) error {
 				h.ProtoString = "dns"
 			case 100:
 				h.ProtoString = "log"
+			case 112:
+				h.ProtoString = "alert"
 			default:
 				h.ProtoString = strconv.Itoa(int(h.ProtoType))
 			}
