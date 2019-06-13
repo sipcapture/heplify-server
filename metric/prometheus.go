@@ -183,8 +183,8 @@ func (p *Prometheus) checkTargetPrefix(pkt *decoder.HEP) {
 		firstTwoChar := st[:2]
 		tnNew := st[2:]
 		
-		heplify_SIP_capture_all.WithLabelValues(tnNew, pkt.SIP.StartLine.Method, pkt.SrcIP, pkt.DstIP).Inc()
-		methodResponses.WithLabelValues(tnNew, "src", "1", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+		heplify_SIP_capture_all.WithLabelValues(tnNew, pkt.SIP.FirstMethod, pkt.SrcIP, pkt.DstIP).Inc()
+		methodResponses.WithLabelValues(tnNew, "src", "1", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 		if pkt.SIP.RTPStatVal != "" {
 			p.dissectXRTPStats(tnNew, pkt.SIP.RTPStatVal)
 		}
@@ -213,8 +213,8 @@ func (p *Prometheus) checkTargetPrefix(pkt *decoder.HEP) {
 		firstTwoChar := dt[:2]
 		tnNew := dt[2:]
 		
-		heplify_SIP_capture_all.WithLabelValues(tnNew, pkt.SIP.StartLine.Method, pkt.SrcIP, pkt.DstIP).Inc()
-		methodResponses.WithLabelValues(tnNew, "dst", "1", pkt.SIP.StartLine.Method, pkt.SIP.CseqMethod).Inc()
+		heplify_SIP_capture_all.WithLabelValues(tnNew, pkt.SIP.FirstMethod, pkt.SrcIP, pkt.DstIP).Inc()
+		methodResponses.WithLabelValues(tnNew, "dst", "1", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 		
 		switch firstTwoChar {
 			case "mo":
@@ -236,7 +236,7 @@ func (p *Prometheus) checkTargetPrefix(pkt *decoder.HEP) {
 func (p *Prometheus) ownPerformance(pkt *decoder.HEP, tnNew string, peerIP string) {
 	var errorSIP = regexp.MustCompile(`[456]..`)
 	
-	if pkt.SIP.StartLine.Method == "INVITE" {
+	if pkt.SIP.FirstMethod == "INVITE" {
 		//logp.Info("SIP INVITE message callid: %v", pkt.SIP.CallID)
 		_, err := p.CacheIMS.Get([]byte(tnNew+pkt.SIP.CallID))
 		if err != nil {
@@ -244,7 +244,7 @@ func (p *Prometheus) ownPerformance(pkt *decoder.HEP, tnNew string, peerIP strin
 			heplify_SIP_perf_raw.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, "SC.AttSession").Inc()
 			//logp.Info("%v----> INVITE message added to cache", tnNew+pkt.SrcIP+pkt.DstIP+pkt.SIP.CallID)
 		}
-	} else if pkt.SIP.StartLine.Method == "CANCEL" {
+	} else if pkt.SIP.FirstMethod == "CANCEL" {
 		value,err := p.CacheIMS.Get([]byte(tnNew+pkt.SIP.CallID))
 		if err == nil {
 			if bytes.Equal(value, []byte("INVITE")){
@@ -254,7 +254,7 @@ func (p *Prometheus) ownPerformance(pkt *decoder.HEP, tnNew string, peerIP strin
 		} else {
 			logp.Warn("Line 277 %v", err)
 		}
-	} else if pkt.SIP.StartLine.Method == "BYE" {
+	} else if pkt.SIP.FirstMethod == "BYE" {
 		//check if the call has been answer or not. If not answer then dont need to update just delete the cache.
 		//if dont have this check will cause AccumulatedCallDuration to be very big because start time is 0.
 		value, err := p.CacheIMS.Get([]byte(tnNew+pkt.SIP.CallID))
@@ -283,7 +283,7 @@ func (p *Prometheus) ownPerformance(pkt *decoder.HEP, tnNew string, peerIP strin
 		value, err := p.CacheIMS.Get([]byte(tnNew+pkt.SIP.CallID))
 		if err == nil && !bytes.Equal(value, []byte("ANSWERED")) {
 			if bytes.Equal(value, []byte("INVITE")){
-				switch pkt.SIP.StartLine.Method {
+				switch pkt.SIP.FirstMethod {
 				case "180":
 					err = p.CacheIMS.Set([]byte(tnNew+pkt.SIP.CallID), []byte("RINGING"), 43200)
 					if err != nil {
@@ -309,14 +309,14 @@ func (p *Prometheus) ownPerformance(pkt *decoder.HEP, tnNew string, peerIP strin
 					//because of this 180 counted as SC.SuccSession then 486 counted as SC.FailSessionUser, this cause NER to be calculated wrongly
 					_ = p.CacheIMS.Del([]byte(tnNew+pkt.SIP.CallID))
 					heplify_SIP_perf_raw.WithLabelValues(tnNew, pkt.DstIP, pkt.SrcIP, "SC.FailSessionUser").Inc()
-					heplify_SIPCallErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.StartLine.Method).Inc()
+					heplify_SIPCallErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.FirstMethod).Inc()
 				default:
-					if errorSIP.MatchString(pkt.SIP.StartLine.Method){
+					if errorSIP.MatchString(pkt.SIP.FirstMethod){
 						_ = p.CacheIMS.Del([]byte(tnNew+pkt.SIP.CallID))
-						heplify_SIPCallErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.StartLine.Method).Inc()
+						heplify_SIPCallErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.FirstMethod).Inc()
 					}
 				}
-			} else if pkt.SIP.StartLine.Method == "200" && bytes.Equal(value, []byte("RINGING")){
+			} else if pkt.SIP.FirstMethod == "200" && bytes.Equal(value, []byte("RINGING")){
 				err = p.CacheIMS.Set([]byte(tnNew+pkt.SIP.CallID), []byte("ANSWERED"), 43200)
 				if err != nil {
 					logp.Warn("%v", err)
@@ -340,7 +340,7 @@ func (p *Prometheus) regPerformance(pkt *decoder.HEP, tnNew string) {
 	SIPRegSessionTimer := 1800
 	SIPRegTryTimer := 180
 
-	if pkt.SIP.StartLine.Method == "REGISTER" {
+	if pkt.SIP.FirstMethod == "REGISTER" {
 		value, err := p.CacheIMSReg.Get([]byte(tnNew+pkt.SrcIP+pkt.DstIP+pkt.SIP.FromUser))
 		if err != nil {
 			//[]byte("0") means 1st time register
@@ -364,7 +364,7 @@ func (p *Prometheus) regPerformance(pkt *decoder.HEP, tnNew string) {
 	} else if pkt.SIP.CseqMethod == "REGISTER"{
 		value, err := p.CacheIMSReg.Get([]byte(tnNew+pkt.DstIP+pkt.SrcIP+pkt.SIP.FromUser))
 		if err == nil {
-			if pkt.SIP.StartLine.Method == "200" {
+			if pkt.SIP.FirstMethod == "200" {
 				cache2go.Cache(tnNew).Add(tnNew+pkt.SIP.FromUser, 1800*time.Second, nil)
 				
 				heplify_SIP_REG_perf_raw.WithLabelValues(tnNew, "1", "1", "RG.RegisteredUsers").Set(float64(cache2go.Cache(tnNew).Count()))
@@ -381,9 +381,9 @@ func (p *Prometheus) regPerformance(pkt *decoder.HEP, tnNew string) {
 					heplify_SIP_REG_perf_raw.WithLabelValues(tnNew, pkt.DstIP, pkt.SrcIP, "RG.UNREGAttemptSuccess").Inc()
 					_ = p.CacheIMSReg.Del([]byte(tnNew+pkt.DstIP+pkt.SrcIP+pkt.SIP.FromUser))
 				}
-			} else if errorSIP.MatchString(pkt.SIP.StartLine.Method){
-				heplify_SIPRegisterErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.StartLine.Method).Inc()
-				switch pkt.SIP.StartLine.Method {
+			} else if errorSIP.MatchString(pkt.SIP.FirstMethod){
+				heplify_SIPRegisterErrorResponse.WithLabelValues(tnNew, pkt.SrcIP, pkt.DstIP, pkt.SIP.FirstMethod).Inc()
+				switch pkt.SIP.FirstMethod {
 				case "401", "423":
 					//do nothing
 				default:
