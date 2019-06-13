@@ -60,6 +60,7 @@ type SipMsg struct {
 	ToUser           string
 	ToHost           string
 	ToTag            string
+	Expires			 string
 	Contact          *From
 	ContactVal       string
 	ContactUser      string
@@ -224,6 +225,7 @@ func (s *SipMsg) addHdr(str string) {
 	case s.hdr == "X-RTP-Stat":
 		s.parseRTPStat(s.hdrv)
 	case s.hdr == "Expires":
+		s.Expires = s.hdrv
 	default:
 		if len(s.XHeader) > 0 {
 			for i := range s.XHeader {
