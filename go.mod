@@ -7,6 +7,8 @@ require (
 	github.com/VictoriaMetrics/fastcache v1.5.0
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23
+	github.com/cespare/xxhash/v2 v2.0.1-0.20190104013014-3767db7a7e18
+	github.com/cgrates/rpcclient v0.0.0-20190505150825-8fcc68b2c38b
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
