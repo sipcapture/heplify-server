@@ -17,6 +17,7 @@ type Postgres struct {
 	db      *sql.DB
 	dbTimer time.Duration
 	bulkCnt int
+	forceHEPPayload []int
 }
 
 const (
@@ -50,6 +51,9 @@ func (p *Postgres) setup() error {
 	p.db.SetMaxIdleConns(config.Setting.DBWorker)
 
 	p.bulkCnt = config.Setting.DBBulk
+
+	/* force JSON payload to data header */
+	p.forceHEPPayload = config.Setting.ForceHEPPayload;
 
 	if p.bulkCnt < 1 {
 		p.bulkCnt = 1
@@ -173,7 +177,22 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				default:
 					stop()
 					timer.Reset(1e9)
-					reportRows = append(reportRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					var ForcePayload = false
+
+					for _, v := range p.forceHEPPayload {
+						if pkt.ProtoType == uint32(v) {
+							ForcePayload = true
+							break;
+						}
+					}					
+					
+					if ForcePayload {
+						reportRows = append(reportRows, pkt.CID, date, pHeader, pkt.Payload, dHeader)
+					} else {
+						reportRows = append(reportRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					}
+					
+					
 					reportCnt++
 					if reportCnt == p.bulkCnt {
 						p.bulkInsert(reportCopy, reportRows)
