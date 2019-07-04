@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"strconv"
 	"time"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	_ "github.com/lib/pq"
@@ -440,7 +441,7 @@ func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 		}
 	}
 	sb.WriteString(`","callid":"`)
-	sb.WriteString(h.SIP.CallID)
+	sb.WriteString(strings.Replace(h.SIP.CallID, "\"", "\\\"", -1))
 	sb.WriteString(`","method":"`)
 	sb.WriteString(h.SIP.FirstMethod)
 	if h.SIP.UserAgent != "" {
