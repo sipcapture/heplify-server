@@ -156,90 +156,113 @@ func (s *SipMsg) addHdr(str string) {
 		// No header value
 		s.hdrv = ""
 	}
-	switch {
-	case s.hdr == "Call-ID" || s.hdr == "CALL-ID" || s.hdr == "Call-Id" || s.hdr == "Call-id" || s.hdr == "call-id" || s.hdr == "I" || s.hdr == "i":
-		s.CallID = s.hdrv
-	case s.hdr == "CSeq" || s.hdr == "CSEQ" || s.hdr == "Cseq" || s.hdr == "cseq":
-		s.CseqVal = s.hdrv
-		s.parseCseq(s.hdrv)
-	case s.hdr == "From" || s.hdr == "FROM" || s.hdr == "from" || s.hdr == "F" || s.hdr == "f":
-		s.parseFrom(s.hdrv)
-	case s.hdr == "To" || s.hdr == "TO" || s.hdr == "to" || s.hdr == "T" || s.hdr == "t":
+
+	if len(s.hdr) == 1 {
+		switch {
+		case s.hdr == "I" || s.hdr == "i":
+			s.CallID = s.hdrv
+		case s.hdr == "F" || s.hdr == "f":
+			s.parseFrom(s.hdrv)
+		case s.hdr == "T" || s.hdr == "t":
+			s.parseTo(s.hdrv)
+		case s.hdr == "M" || s.hdr == "m":
+			s.ContactVal = s.hdrv
+			s.parseContact(str)
+		case s.hdr == "V" || s.hdr == "v":
+			s.parseVia(s.hdrv)
+		case s.hdr == "C" || s.hdr == "c":
+			s.ContentType = s.hdrv
+		case s.hdr == "L" || s.hdr == "l":
+			s.ContentLength = s.hdrv
+		case s.hdr == "u":
+		}
+	} else if len(s.hdr) == 2 {
+		// To header
 		s.parseTo(s.hdrv)
-	case s.hdr == "Server" || s.hdr == "server":
-		s.Server = s.hdrv
-	case s.hdr == "Contact" || s.hdr == "CONTACT" || s.hdr == "contact" || s.hdr == "M" || s.hdr == "m":
-		s.ContactVal = s.hdrv
-		s.parseContact(str)
-	case s.hdr == "User-Agent" || s.hdr == "USER-AGENT" || s.hdr == "user-agent":
-		s.UserAgent = s.hdrv
-	case s.hdr == "Via" || s.hdr == "VIA" || s.hdr == "via" || s.hdr == "V" || s.hdr == "v":
-		s.parseVia(s.hdrv)
-	case s.hdr == "Content-Type" || s.hdr == "CONTENT-TYPE" || s.hdr == "content-type" || s.hdr == "C" || s.hdr == "c":
-		s.ContentType = s.hdrv
-	case s.hdr == "Content-Length" || s.hdr == "CONTENT-LENGTH" || s.hdr == "content-length" || s.hdr == "L" || s.hdr == "l":
-		s.ContentLength = s.hdrv
-	case s.hdr == "Accept" || s.hdr == "Accept-Encoding" || s.hdr == "Accept-Language":
-		//s.parseAccept(s.hdrv)
-	case s.hdr == "Allow":
-		//s.parseAllow(s.hdrv)
-	case s.hdr == "Allow‑Events" || s.hdr == "u":
-		//s.parseAllowEvents(s.hdrv)
-	case s.hdr == "Authorization" || s.hdr == "authorization" || s.hdr == "Proxy-Authorization" || s.hdr == "proxy-authorization":
-		s.parseAuthorization(s.hdrv)
-	case s.hdr == "Content-Disposition":
-		//s.parseContentDisposition(s.hdrv)
-	case s.hdr == "Route":
-		//s.parseRoute(s.hdrv)
-	case s.hdr == "Record-Route":
-		//s.parseRecordRoute(s.hdrv)
-	case s.hdr == "Max-Forwards" || s.hdr == "MAX-FORWARDS" || s.hdr == "max-forwards":
-		s.MaxForwards = s.hdrv
-	case s.hdr == "Organization" || s.hdr == "organization":
-		s.Organization = s.hdrv
-	case s.hdr == "P-Asserted-Identity" || s.hdr == "p-asserted-identity":
-		s.PAssertedIdVal = s.hdrv
-		s.parsePAssertedId(s.hdrv)
-	case s.hdr == "Proxy-Authenticate" || s.hdr == "proxy-authenticate":
-		//s.parseProxyAuthenticate(s.hdrv)
-	case s.hdr == "RAck":
-		//s.parseRack(s.hdrv)
-	case s.hdr == "Reason" || s.hdr == "reason":
-		s.ReasonVal = s.hdrv
-		//s.parseReason(s.hdrv)
-	case s.hdr == "Remote-Party-Id" || s.hdr == "remote-party-id":
-		s.RemotePartyIdVal = s.hdrv
-	case s.hdr == "Diversion" || s.hdr == "diversion":
-		s.DiversionVal = s.hdrv
-	case s.hdr == "Supported":
-		//s.parseSupported(s.hdrv)
-	case s.hdr == "Unsupported":
-		//s.parseUnsupported(s.hdrv)
-	case s.hdr == "Warning":
-		//s.parseWarning(s.hdrv)
-	case s.hdr == "WWW-Authenticate":
-		//s.parseWWWAuthenticate(s.hdrv)
-	case s.hdr == "Privacy" || s.hdr == "privacy":
-		s.Privacy = s.hdrv
-	case s.hdr == "X-RTP-Stat":
-		s.parseRTPStat(s.hdrv)
-	case s.hdr == "Expires":
-	default:
-		if len(s.XHeader) > 0 {
-			for i := range s.XHeader {
-				if s.hdr == s.XHeader[i] {
-					s.XCallID = s.hdrv
+	} else {
+		switch {
+		case s.hdr == "Via" || s.hdr == "VIA" || s.hdr == "via":
+			s.parseVia(s.hdrv)
+		case s.hdr == "From" || s.hdr == "FROM" || s.hdr == "from":
+			s.parseFrom(s.hdrv)
+		case s.hdr == "Call-ID" || s.hdr == "CALL-ID" || s.hdr == "Call-Id" || s.hdr == "Call-id" || s.hdr == "call-id":
+			s.CallID = s.hdrv
+		case s.hdr == "CSeq" || s.hdr == "CSEQ" || s.hdr == "Cseq" || s.hdr == "cseq":
+			s.CseqVal = s.hdrv
+			s.parseCseq(s.hdrv)
+		case s.hdr == "Contact" || s.hdr == "CONTACT" || s.hdr == "contact":
+			s.ContactVal = s.hdrv
+			s.parseContact(str)
+		case s.hdr == "User-Agent" || s.hdr == "USER-AGENT" || s.hdr == "user-agent":
+			s.UserAgent = s.hdrv
+		case s.hdr == "Server" || s.hdr == "server":
+			s.Server = s.hdrv
+		case s.hdr == "Content-Type" || s.hdr == "CONTENT-TYPE" || s.hdr == "content-type":
+			s.ContentType = s.hdrv
+		case s.hdr == "Content-Length" || s.hdr == "CONTENT-LENGTH" || s.hdr == "content-length":
+			s.ContentLength = s.hdrv
+		case s.hdr == "Accept" || s.hdr == "Accept-Encoding" || s.hdr == "Accept-Language":
+			//s.parseAccept(s.hdrv)
+		case s.hdr == "Allow":
+			//s.parseAllow(s.hdrv)
+		case s.hdr == "Allow‑Events":
+			//s.parseAllowEvents(s.hdrv)
+		case s.hdr == "Authorization" || s.hdr == "authorization" || s.hdr == "Proxy-Authorization" || s.hdr == "proxy-authorization":
+			s.parseAuthorization(s.hdrv)
+		case s.hdr == "Content-Disposition":
+			//s.parseContentDisposition(s.hdrv)
+		case s.hdr == "Route":
+			//s.parseRoute(s.hdrv)
+		case s.hdr == "Record-Route":
+			//s.parseRecordRoute(s.hdrv)
+		case s.hdr == "Max-Forwards" || s.hdr == "MAX-FORWARDS" || s.hdr == "max-forwards":
+			s.MaxForwards = s.hdrv
+		case s.hdr == "Organization" || s.hdr == "organization":
+			s.Organization = s.hdrv
+		case s.hdr == "P-Asserted-Identity" || s.hdr == "p-asserted-identity":
+			s.PAssertedIdVal = s.hdrv
+			s.parsePAssertedId(s.hdrv)
+		case s.hdr == "Proxy-Authenticate" || s.hdr == "proxy-authenticate":
+			//s.parseProxyAuthenticate(s.hdrv)
+		case s.hdr == "RAck":
+			//s.parseRack(s.hdrv)
+		case s.hdr == "Reason" || s.hdr == "reason":
+			s.ReasonVal = s.hdrv
+			//s.parseReason(s.hdrv)
+		case s.hdr == "Remote-Party-Id" || s.hdr == "remote-party-id":
+			s.RemotePartyIdVal = s.hdrv
+		case s.hdr == "Diversion" || s.hdr == "diversion":
+			s.DiversionVal = s.hdrv
+		case s.hdr == "Supported":
+			//s.parseSupported(s.hdrv)
+		case s.hdr == "Unsupported":
+			//s.parseUnsupported(s.hdrv)
+		case s.hdr == "Warning":
+			//s.parseWarning(s.hdrv)
+		case s.hdr == "WWW-Authenticate":
+			//s.parseWWWAuthenticate(s.hdrv)
+		case s.hdr == "Privacy" || s.hdr == "privacy":
+			s.Privacy = s.hdrv
+		case s.hdr == "X-RTP-Stat":
+			s.parseRTPStat(s.hdrv)
+		case s.hdr == "Expires":
+		default:
+			if len(s.XHeader) > 0 {
+				for i := range s.XHeader {
+					if s.hdr == s.XHeader[i] {
+						s.XCallID = s.hdrv
+					}
 				}
 			}
-		}
-		if len(s.CHeader) > 0 {
-			if s.CustomHeader == nil {
-				s.CustomHeader = make(map[string]string)
-			}
+			if len(s.CHeader) > 0 {
+				if s.CustomHeader == nil {
+					s.CustomHeader = make(map[string]string)
+				}
 
-			for i := range s.CHeader {
-				if s.hdr == s.CHeader[i] {
-					s.CustomHeader[s.hdr] = s.hdrv
+				for i := range s.CHeader {
+					if s.hdr == s.CHeader[i] {
+						s.CustomHeader[s.hdr] = s.hdrv
+					}
 				}
 			}
 		}
