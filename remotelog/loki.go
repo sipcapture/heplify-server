@@ -127,9 +127,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					protocol = "sip"
 				}
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
-			case pkt.ProtoType == 112:
-				l.entry.labels["level"] = model.LabelValue(pkt.CID)
-				l.entry.labels["host"] = model.LabelValue(pkt.HostTag)
 			}
 
 			l.entry.labels["job"] = jobName

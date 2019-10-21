@@ -65,7 +65,6 @@ type HEP struct {
 	ProtoString string
 	Timestamp   time.Time
 	SIP         *sipparser.SipMsg
-	HostTag     string
 	NodeName    string
 	SID         string
 }
@@ -125,14 +124,8 @@ func (h *HEP) parse(packet []byte) error {
 				}
 			}
 		}
-	} else if h.ProtoType == 112 && len(config.Setting.FilterHost) > 0 {
-		for _, host := range config.Setting.FilterHost {
-			if strings.Index(h.Payload, host) > -1 {
-				h.HostTag = host
-				return nil
-			}
-		}
 	}
+
 	if h.NodeName == "" {
 		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
 	}
