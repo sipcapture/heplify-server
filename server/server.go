@@ -202,7 +202,7 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.promCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing metric channel")
 					}
 					lastWarn = time.Now()
@@ -213,7 +213,7 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.dbCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 					}
 					lastWarn = time.Now()
@@ -226,7 +226,7 @@ func (h *HEPInput) hepWorker() {
 					select {
 					case h.cdrCh <- hepPkt:
 					default:
-						if time.Since(lastWarn) > 5e8 {
+						if time.Since(lastWarn) > 1e9 {
 							logp.Warn("overflowing cdr channel")
 						}
 						lastWarn = time.Now()
@@ -238,7 +238,7 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.esCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing elasticsearch channel")
 					}
 					lastWarn = time.Now()
@@ -251,7 +251,7 @@ func (h *HEPInput) hepWorker() {
 						select {
 						case h.lokiCh <- hepPkt:
 						default:
-							if time.Since(lastWarn) > 5e8 {
+							if time.Since(lastWarn) > 1e9 {
 								logp.Warn("overflowing loki channel")
 							}
 							lastWarn = time.Now()
