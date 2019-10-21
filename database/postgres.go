@@ -109,7 +109,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				dHeader := makeSIPDataHeader(pkt, bpd)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
-					callRows = append(callRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					callRows = append(callRows, pkt.SIP.CallID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
 					if callCnt == p.bulkCnt {
 						p.bulkInsert(callCopy, callRows)
@@ -117,7 +117,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						callCnt = 0
 					}
 				case "REGISTER":
-					regRows = append(regRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					regRows = append(regRows, pkt.SIP.CallID, date, pHeader, dHeader, pkt.Payload)
 					regCnt++
 					if regCnt == p.bulkCnt {
 						p.bulkInsert(registerCopy, regRows)
@@ -125,7 +125,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						regCnt = 0
 					}
 				default:
-					defRows = append(defRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					defRows = append(defRows, pkt.SIP.CallID, date, pHeader, dHeader, pkt.Payload)
 					defCnt++
 					if defCnt == p.bulkCnt {
 						p.bulkInsert(defaultCopy, defRows)

@@ -135,14 +135,13 @@ func (h *HEP) parse(packet []byte) error {
 	if h.NodeName == "" {
 		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
 	}
-	/* for {
+	for {
 		if strings.HasSuffix(h.CID, "_b2b-1") {
 			h.CID = h.CID[:len(h.CID)-6]
 			continue
 		}
 		break
 	}
-	*/
 	logp.Debug("hep", "%+v\n\n", h)
 	return nil
 }
