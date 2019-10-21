@@ -87,14 +87,14 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			if !skip && ((pkt.SIP.FirstMethod == invite && pkt.SIP.CseqMethod == invite) ||
 				(pkt.SIP.FirstMethod == register && pkt.SIP.CseqMethod == register)) {
 				ptn := pkt.Timestamp.UnixNano()
-				ik := []byte(pkt.CID)
-				buf := p.cache.Get(nil, ik)
+				sid := []byte(pkt.SID)
+				buf := p.cache.Get(nil, sid)
 				if buf == nil || buf != nil && (uint64(ptn) < binary.BigEndian.Uint64(buf)) {
-					sk := []byte(pkt.SrcIP + pkt.CID)
+					sk := []byte(pkt.SrcIP + pkt.SID)
 					tb := make([]byte, 8)
 
 					binary.BigEndian.PutUint64(tb, uint64(ptn))
-					p.cache.Set(ik, tb)
+					p.cache.Set(sid, tb)
 					p.cache.Set(sk, tb)
 				}
 			}
@@ -102,7 +102,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			if !skip && ((pkt.SIP.CseqMethod == invite || pkt.SIP.CseqMethod == register) &&
 				(pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183" || pkt.SIP.FirstMethod == "200")) {
 				ptn := pkt.Timestamp.UnixNano()
-				did := []byte(pkt.DstIP + pkt.CID)
+				did := []byte(pkt.DstIP + pkt.SID)
 				if buf := p.cache.Get(nil, did); buf != nil {
 					d := uint64(ptn) - binary.BigEndian.Uint64(buf)
 
@@ -114,14 +114,14 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 						srd.WithLabelValues(dt, pkt.NodeName).Set(float64(d))
 					} else {
 						rrd.WithLabelValues(dt, pkt.NodeName).Set(float64(d))
-						p.cache.Del([]byte(pkt.CID))
+						p.cache.Del([]byte(pkt.SID))
 					}
 					p.cache.Del(did)
 				}
 			}
 
 			if p.TargetEmpty {
-				k := []byte(pkt.CID + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod)
+				k := []byte(pkt.SID + pkt.SIP.FirstMethod + pkt.SIP.CseqMethod)
 				if p.cache.Has(k) {
 					continue
 				}

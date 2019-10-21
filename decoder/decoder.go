@@ -67,7 +67,7 @@ type HEP struct {
 	SIP         *sipparser.SipMsg
 	HostTag     string
 	NodeName    string
-	SID	    string
+	SID         string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -137,8 +137,8 @@ func (h *HEP) parse(packet []byte) error {
 		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
 	}
 	for {
-		if strings.HasSuffix(h.CID, "_b2b-1") {
-			h.CID = h.CID[:len(h.CID)-6]
+		if strings.HasSuffix(h.SID, "_b2b-1") {
+			h.SID = h.SID[:len(h.SID)-6]
 			continue
 		}
 		break
