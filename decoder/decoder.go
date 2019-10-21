@@ -67,6 +67,7 @@ type HEP struct {
 	SIP         *sipparser.SipMsg
 	HostTag     string
 	NodeName    string
+	SID	    string
 }
 
 // DecodeHEP returns a parsed HEP message

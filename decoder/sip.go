@@ -28,5 +28,9 @@ func (h *HEP) parseSIP() error {
 		}
 	}
 	
+	if h.SID == "" {
+		h.SID = h.SIP.CallID
+	}
+	
 	return nil
 }
