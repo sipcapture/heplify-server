@@ -45,7 +45,6 @@ type HeplifyServer struct {
 	DBDropOnStart      bool     `default:"false"`
 	Dedup              bool     `default:"false"`
 	DiscardMethod      []string `default:""`
-	FilterHost         []string `default:""`
 	AlegIDs            []string `default:""`
 	CustomHeader       []string `default:""`
 	LogDbg             string   `default:""`

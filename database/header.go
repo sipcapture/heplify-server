@@ -77,8 +77,8 @@ func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	sb.WriteString(`{`)
 	sb.WriteString(`"node":"`)
 	sb.WriteString(h.NodeName)
-	sb.WriteString(`","host":"`)
-	sb.WriteString(h.HostTag)
+	sb.WriteString(`","proto":"`)
+	sb.WriteString(h.ProtoString)
 	sb.WriteString(`"}`)
 	return sb.String()
 }
