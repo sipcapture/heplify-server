@@ -25,6 +25,10 @@ func (h *HEP) parseSIP() error {
 	} else if h.SIP.XCallID != "" {
 		h.CID = h.SIP.XCallID
 	}
-
+	
+	if h.SID == "" {
+		h.SID = h.SIP.CallID
+	}
+	
 	return nil
 }
