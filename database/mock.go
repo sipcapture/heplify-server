@@ -80,7 +80,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		bpp := bytebufferpool.Get()
 		bpd := bytebufferpool.Get()
 		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-			pHeader := makeProtoHeader(pkt, pkt.SIP.XCallID, bpp)
+			pHeader := makeProtoHeader(pkt, bpp)
 			dHeader := makeSIPDataHeader(pkt, bpd)
 			switch pkt.SIP.CseqMethod {
 			case "INVITE":
