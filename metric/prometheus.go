@@ -86,8 +86,8 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 
 			callID := pkt.SID
 			for {
-				if strings.HasSuffix(pkt.SID, "_b2b-1") {
-					callID = pkt.SID[:len(pkt.SID)-6]
+				if strings.HasSuffix(callID, "_b2b-1") {
+					callID = callID[:len(callID)-6]
 					continue
 				}
 				break
