@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/negbie/logp"
-	"github.com/sipcapture/heplify-server/cdr"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 	"github.com/sipcapture/heplify-server/decoder"
@@ -22,7 +21,6 @@ type HEPInput struct {
 	promCh  chan *decoder.HEP
 	esCh    chan *decoder.HEP
 	lokiCh  chan *decoder.HEP
-	cdrCh   chan *decoder.HEP
 	wg      *sync.WaitGroup
 	buffer  *sync.Pool
 	exitTCP chan bool
@@ -32,7 +30,6 @@ type HEPInput struct {
 	stats   HEPStats
 	lokiTF  []int
 	useDB   bool
-	useCDR  bool
 	usePM   bool
 	useES   bool
 	useLK   bool
@@ -60,10 +57,6 @@ func NewHEPInput() *HEPInput {
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
 		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
-	}
-	if len(config.Setting.CGRAddr) > 2 {
-		h.useCDR = true
-		h.cdrCh = make(chan *decoder.HEP, 40000)
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
@@ -108,16 +101,6 @@ func (h *HEPInput) Run() {
 			logp.Err("%v", err)
 		}
 		defer m.End()
-	}
-
-	if h.useCDR {
-		q := cdr.New("cgrates")
-		q.Chan = h.cdrCh
-
-		if err := q.Run(); err != nil {
-			logp.Err("%v", err)
-		}
-		defer q.End()
 	}
 
 	if h.useES {
@@ -217,20 +200,6 @@ func (h *HEPInput) hepWorker() {
 						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 					}
 					lastWarn = time.Now()
-				}
-			}
-
-			if h.useCDR && hepPkt.SIP != nil {
-				if (hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "INVITE") ||
-					(hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "BYE") {
-					select {
-					case h.cdrCh <- hepPkt:
-					default:
-						if time.Since(lastWarn) > 1e9 {
-							logp.Warn("overflowing cdr channel")
-						}
-						lastWarn = time.Now()
-					}
 				}
 			}
 

@@ -19,6 +19,8 @@ func init() {
 	config.Setting.DBBulk = 10000
 	config.Setting.DBDriver = "mock"
 	config.Setting.DBShema = "mock"
+	config.Setting.DataHeader = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method"}
+
 	go func() {
 		db := New("mock")
 		db.Chan = dbCh

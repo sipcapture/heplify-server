@@ -1,9 +1,12 @@
 package database
 
 import (
+	"time"
+
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
+	"github.com/valyala/fasttemplate"
 )
 
 type Mock struct {
@@ -25,9 +28,12 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		callCnt, defCnt int
 		callRows        = make([]interface{}, 0, m.bulkCnt)
 		defRows         = make([]interface{}, 0, m.bulkCnt)
-		_               = defRows
 		defRowsString   = make([]string, 0, m.bulkCnt)
+		callRowsString  = make([]string, 0, m.bulkCnt)
+		_               = defRows
 		_               = defRowsString
+		_               = callRows
+		_               = callRowsString
 	)
 
 	addSIPRow := func(r []interface{}) []interface{} {
@@ -74,27 +80,41 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		return r
 	}
 
+	_ = addSIPRow
+
+	var dataTemplate string
+	for _, v := range config.Setting.DataHeader {
+		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
+	}
+
+	if len(dataTemplate) > 0 {
+		dataTemplate = dataTemplate[:len(dataTemplate)-1]
+	}
+
+	t := fasttemplate.New(dataTemplate, "{{", "}}")
+
 	for pkt := range hCh {
-		//date := pkt.Timestamp.Format("2006-01-02 15:04:05.999999")
-		date := pkt.Timestamp.String()
+		date := pkt.Timestamp.Format(time.RFC3339Nano)
 		bpp := bytebufferpool.Get()
 		bpd := bytebufferpool.Get()
 		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 			pHeader := makeProtoHeader(pkt, bpp)
-			dHeader := makeSIPDataHeader(pkt, bpd)
+			dHeader := makeSIPDataHeader(pkt, bpd, t)
 			switch pkt.SIP.CseqMethod {
 			case "INVITE":
-				callRows = addSIPRow(callRows)
+				//callRows = addSIPRow(callRows)
+				callRowsString = append(callRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 				callCnt++
 				if callCnt == m.bulkCnt {
-					m.bulkInsert(callCopy, callRows)
+					m.bulkInsert(callCopy, callRowsString)
 					callRows = []interface{}{}
+					callRowsString = []string{}
 					callCnt = 0
 				}
 
 			default:
 				//defRows = append(defRows, []interface{}{pkt.CID, date, pHeader, dHeader, pkt.Payload}...)
-				defRowsString = append(defRowsString, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+				defRowsString = append(defRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 
 				defCnt++
 				if defCnt == m.bulkCnt {
@@ -113,7 +133,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 	}
 }
 
-func (m *Mock) bulkInsert(query string, rows []interface{}) {
+func (m *Mock) bulkInsert(query string, rows []string) {
 	m.db[query] = rows
 }
 

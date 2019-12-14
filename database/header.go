@@ -1,12 +1,14 @@
 package database
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/buger/jsonparser"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
+	"github.com/valyala/fasttemplate"
 )
 
 func makeProtoHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
@@ -41,35 +43,46 @@ func makeProtoHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 	return sb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
+func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
 	sb.WriteString(`{`)
-	sb.WriteString(`"ruri_domain":"`)
-	sb.WriteString(h.SIP.URIHost)
-	sb.WriteString(`","ruri_user":"`)
-	sb.WriteString(h.SIP.URIUser)
-	sb.WriteString(`","from_user":"`)
-	sb.WriteString(h.SIP.FromUser)
-	sb.WriteString(`","to_user":"`)
-	sb.WriteString(h.SIP.ToUser)
-	sb.WriteString(`","pid_user":"`)
-	sb.WriteString(h.SIP.PaiUser)
-	sb.WriteString(`","auth_user":"`)
-	sb.WriteString(h.SIP.AuthUser)
+
+	t.ExecuteFunc(sb, func(w io.Writer, tag string) (int, error) {
+		switch tag {
+		case "ruri_user":
+			return w.Write([]byte(h.SIP.URIUser))
+		case "ruri_domain":
+			return w.Write([]byte(h.SIP.URIHost))
+		case "from_user":
+			return w.Write([]byte(h.SIP.FromUser))
+		case "from_domain":
+			return w.Write([]byte(h.SIP.FromHost))
+		case "to_user":
+			return w.Write([]byte(h.SIP.ToUser))
+		case "to_domain":
+			return w.Write([]byte(h.SIP.ToHost))
+		case "pid_user":
+			return w.Write([]byte(h.SIP.PaiUser))
+		case "auth_user":
+			return w.Write([]byte(h.SIP.AuthUser))
+		case "callid":
+			return w.Write([]byte(h.SIP.CallID))
+		case "method":
+			return w.Write([]byte(h.SIP.FirstMethod))
+		case "user_agent":
+			return w.Write([]byte(h.SIP.UserAgent))
+		default:
+			return w.Write([]byte(""))
+		}
+	})
+
 	if len(h.SIP.CHeader) > 0 {
 		for k, v := range h.SIP.CustomHeader {
-			sb.WriteString(`","` + k + `":"`)
-			sb.WriteString(v)
+			sb.WriteString(`,"` + k + `":"`)
+			sb.WriteString(v + `"`)
 		}
 	}
-	sb.WriteString(`","callid":"`)
-	sb.WriteString(h.SIP.CallID)
-	sb.WriteString(`","method":"`)
-	sb.WriteString(h.SIP.FirstMethod)
-	if h.SIP.UserAgent != "" {
-		sb.WriteString(`","user_agent":"`)
-		sb.WriteString(h.SIP.UserAgent)
-	}
-	sb.WriteString(`"}`)
+
+	sb.WriteString(`}`)
 	return sb.String()
 }
 
