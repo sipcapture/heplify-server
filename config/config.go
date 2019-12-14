@@ -8,7 +8,6 @@ type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
 	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
-	CGRAddr            string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
 	ESUser             string   `default:""`
@@ -47,6 +46,7 @@ type HeplifyServer struct {
 	DiscardMethod      []string `default:""`
 	AlegIDs            []string `default:""`
 	CustomHeader       []string `default:""`
+	DataHeader         []string `default:"ruri_user,ruri_domain,from_user,from_domain,to_user,callid,method"`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
