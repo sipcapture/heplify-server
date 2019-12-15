@@ -10,62 +10,65 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
-func makeProtoHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString(`{`)
-	sb.WriteString(`"protocolFamily":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.Version), 10))
-	sb.WriteString(`,"protocol":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.Protocol), 10))
-	sb.WriteString(`,"srcIp":"`)
-	sb.WriteString(h.SrcIP)
-	sb.WriteString(`","dstIp":"`)
-	sb.WriteString(h.DstIP)
-	sb.WriteString(`","srcPort":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.SrcPort), 10))
-	sb.WriteString(`,"dstPort":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
-	sb.WriteString(`,"timeSeconds":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.Tsec), 10))
-	sb.WriteString(`,"timeUseconds":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.Tmsec), 10))
-	sb.WriteString(`,"payloadType":`)
-	sb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
-	sb.WriteString(`,"captureId":"`)
-	sb.WriteString(h.NodeName)
+func makeProtoHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
+	bb.Reset()
+	bb.WriteString(`{`)
+	bb.WriteString(`"protocolFamily":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.Version), 10))
+	bb.WriteString(`,"protocol":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.Protocol), 10))
+	bb.WriteString(`,"srcIp":"`)
+	bb.WriteString(h.SrcIP)
+	bb.WriteString(`","dstIp":"`)
+	bb.WriteString(h.DstIP)
+	bb.WriteString(`","srcPort":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.SrcPort), 10))
+	bb.WriteString(`,"dstPort":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
+	bb.WriteString(`,"timeSeconds":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.Tsec), 10))
+	bb.WriteString(`,"timeUseconds":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.Tmsec), 10))
+	bb.WriteString(`,"payloadType":`)
+	bb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
+	bb.WriteString(`,"captureId":"`)
+	bb.WriteString(h.NodeName)
 	if h.NodePW != "" {
-		sb.WriteString(`","capturePass":"`)
-		sb.WriteString(h.NodePW)
+		bb.WriteString(`","capturePass":"`)
+		bb.WriteString(h.NodePW)
 	}
-	sb.WriteString(`","correlation_id":"`)
-	sb.WriteString(h.CID)
-	sb.WriteString(`"}`)
-	return sb.String()
+	bb.WriteString(`","correlation_id":"`)
+	bb.WriteString(h.CID)
+	bb.WriteString(`"}`)
+	return bb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
-	sb.WriteString(`{`)
+func makeSIPDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
+	bb.Reset()
+	bb.WriteString(`{`)
 
-	t.ExecuteFunc(sb, h.EscapeFields)
+	t.ExecuteFunc(bb, h.EscapeFields)
 
 	if len(h.SIP.CHeader) > 0 {
 		for k, v := range h.SIP.CustomHeader {
-			sb.WriteString(`,"` + k + `":"`)
-			sb.WriteString(v + `"`)
+			bb.WriteString(`,"` + k + `":"`)
+			bb.WriteString(v + `"`)
 		}
 	}
 
-	sb.WriteString(`}`)
-	return sb.String()
+	bb.WriteString(`}`)
+	return bb.String()
 }
 
-func makeRTCDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
-	sb.WriteString(`{`)
-	sb.WriteString(`"node":"`)
-	sb.WriteString(h.NodeName)
-	sb.WriteString(`","proto":"`)
-	sb.WriteString(h.ProtoString)
-	sb.WriteString(`"}`)
-	return sb.String()
+func makeRTCDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
+	bb.Reset()
+	bb.WriteString(`{`)
+	bb.WriteString(`"node":"`)
+	bb.WriteString(h.NodeName)
+	bb.WriteString(`","proto":"`)
+	bb.WriteString(h.ProtoString)
+	bb.WriteString(`"}`)
+	return bb.String()
 }
 
 var IsupPaths = [][]string{
@@ -77,7 +80,8 @@ var IsupPaths = [][]string{
 	[]string{"calling_number", "num"},
 }
 
-func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) (string, string) {
+func makeISUPDataHeader(data []byte, bb *bytebufferpool.ByteBuffer) (string, string) {
+	bb.Reset()
 	var msg_name, called_number, calling_number, callid string
 	var cic, dpc, opc int64
 
@@ -125,22 +129,22 @@ func makeISUPDataHeader(data []byte, sb *bytebufferpool.ByteBuffer) (string, str
 		callid += sdpc + ":" + scic
 	}
 
-	sb.WriteString(`{`)
-	sb.WriteString(`"cic":`)
-	sb.WriteString(scic)
-	sb.WriteString(`,"dpc":`)
-	sb.WriteString(sdpc)
-	sb.WriteString(`,"opc":`)
-	sb.WriteString(sopc)
-	sb.WriteString(`,"msg_name":"`)
-	sb.WriteString(msg_name)
-	sb.WriteString(`","called_number":"`)
-	sb.WriteString(called_number)
-	sb.WriteString(`","calling_number":"`)
-	sb.WriteString(calling_number)
-	sb.WriteString(`","callid":"`)
-	sb.WriteString(callid)
-	sb.WriteString(`"}`)
+	bb.WriteString(`{`)
+	bb.WriteString(`"cic":`)
+	bb.WriteString(scic)
+	bb.WriteString(`,"dpc":`)
+	bb.WriteString(sdpc)
+	bb.WriteString(`,"opc":`)
+	bb.WriteString(sopc)
+	bb.WriteString(`,"msg_name":"`)
+	bb.WriteString(msg_name)
+	bb.WriteString(`","called_number":"`)
+	bb.WriteString(called_number)
+	bb.WriteString(`","calling_number":"`)
+	bb.WriteString(calling_number)
+	bb.WriteString(`","callid":"`)
+	bb.WriteString(callid)
+	bb.WriteString(`"}`)
 
-	return callid, sb.String()
+	return callid, bb.String()
 }
