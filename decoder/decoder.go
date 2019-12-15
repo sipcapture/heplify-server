@@ -3,6 +3,7 @@ package decoder
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,12 @@ import (
 //        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-var dedup = fastcache.New(32 * 1024 * 1024)
+var (
+	dedup       = fastcache.New(32 * 1024 * 1024)
+	strQuote    = []byte("\"")
+	strEscQuote = []byte("\\\"")
+	noVal       = []byte("")
+)
 
 // HEP chuncks
 const (
@@ -165,5 +171,59 @@ func (h *HEP) normPayload(t time.Time) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	} else if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
+	}
+}
+
+func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
+	escape := func(s string) (b []byte) {
+		if strings.ContainsRune(s, '"') {
+			return bytes.Replace([]byte(s), strQuote, strEscQuote, -1)
+		}
+		return []byte(s)
+	}
+
+	switch tag {
+	case "callid":
+		return w.Write(escape(h.SIP.CallID))
+	case "method":
+		return w.Write([]byte(h.SIP.FirstMethod))
+	case "ruri_user":
+		return w.Write([]byte(h.SIP.URIUser))
+	case "ruri_domain":
+		return w.Write([]byte(h.SIP.URIHost))
+	case "from_user":
+		return w.Write([]byte(h.SIP.FromUser))
+	case "from_domain":
+		return w.Write([]byte(h.SIP.FromHost))
+	case "from_tag":
+		return w.Write([]byte(h.SIP.FromTag))
+	case "to_user":
+		return w.Write([]byte(h.SIP.ToUser))
+	case "to_domain":
+		return w.Write([]byte(h.SIP.ToHost))
+	case "to_tag":
+		return w.Write([]byte(h.SIP.ToTag))
+	case "via":
+		return w.Write([]byte(h.SIP.ViaOne))
+	case "contact_user":
+		return w.Write([]byte(h.SIP.ContactUser))
+	case "contact_domain":
+		return w.Write([]byte(h.SIP.ContactHost))
+	case "user_agent":
+		return w.Write(escape(h.SIP.UserAgent))
+	case "pid_user":
+		return w.Write([]byte(h.SIP.PaiUser))
+	case "auth_user":
+		return w.Write([]byte(h.SIP.AuthUser))
+	case "server":
+		return w.Write(escape(h.SIP.Server))
+	case "content_type":
+		return w.Write(escape(h.SIP.ContentType))
+	case "reason":
+		return w.Write(escape(h.SIP.ReasonVal))
+	case "diversion":
+		return w.Write([]byte(h.SIP.DiversionVal))
+	default:
+		return w.Write(noVal)
 	}
 }

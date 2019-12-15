@@ -1,7 +1,6 @@
 package database
 
 import (
-	"io"
 	"strconv"
 
 	"github.com/buger/jsonparser"
@@ -46,53 +45,7 @@ func makeProtoHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer) string {
 func makeSIPDataHeader(h *decoder.HEP, sb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
 	sb.WriteString(`{`)
 
-	t.ExecuteFunc(sb, func(w io.Writer, tag string) (int, error) {
-		switch tag {
-		case "callid":
-			return w.Write([]byte(h.SIP.CallID))
-		case "method":
-			return w.Write([]byte(h.SIP.FirstMethod))
-		case "ruri_user":
-			return w.Write([]byte(h.SIP.URIUser))
-		case "ruri_domain":
-			return w.Write([]byte(h.SIP.URIHost))
-		case "from_user":
-			return w.Write([]byte(h.SIP.FromUser))
-		case "from_domain":
-			return w.Write([]byte(h.SIP.FromHost))
-		case "from_tag":
-			return w.Write([]byte(h.SIP.FromTag))
-		case "to_user":
-			return w.Write([]byte(h.SIP.ToUser))
-		case "to_domain":
-			return w.Write([]byte(h.SIP.ToHost))
-		case "to_tag":
-			return w.Write([]byte(h.SIP.ToTag))
-		case "via":
-			return w.Write([]byte(h.SIP.ViaOne))
-		case "contact_user":
-			return w.Write([]byte(h.SIP.ContactUser))
-		case "contact_domain":
-			return w.Write([]byte(h.SIP.ContactHost))
-		case "user_agent":
-			return w.Write([]byte(h.SIP.UserAgent))
-		case "pid_user":
-			return w.Write([]byte(h.SIP.PaiUser))
-		case "auth_user":
-			return w.Write([]byte(h.SIP.AuthUser))
-		case "server":
-			return w.Write([]byte(h.SIP.Server))
-		case "content_type":
-			return w.Write([]byte(h.SIP.ContentType))
-		case "reason":
-			return w.Write([]byte(h.SIP.ReasonVal))
-		case "diversion":
-			return w.Write([]byte(h.SIP.DiversionVal))
-
-		default:
-			return w.Write([]byte(""))
-		}
-	})
+	t.ExecuteFunc(sb, h.EscapeFields)
 
 	if len(h.SIP.CHeader) > 0 {
 		for k, v := range h.SIP.CustomHeader {
