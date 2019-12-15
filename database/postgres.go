@@ -100,6 +100,9 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 
 	t := fasttemplate.New(dataTemplate, "{{", "}}")
 
+	bb := bytebufferpool.Get()
+	defer bytebufferpool.Put(bb)
+
 	for {
 		select {
 		case pkt, ok := <-hCh:
@@ -111,12 +114,10 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 			}
 
 			date := pkt.Timestamp.Format(time.RFC3339Nano)
-			bpp := bytebufferpool.Get()
-			bpd := bytebufferpool.Get()
 
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-				pHeader := makeProtoHeader(pkt, bpp)
-				dHeader := makeSIPDataHeader(pkt, bpd, t)
+				pHeader := makeProtoHeader(pkt, bb)
+				dHeader := makeSIPDataHeader(pkt, bb, t)
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = append(callRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
@@ -144,8 +145,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			} else if pkt.ProtoType == 54 && pkt.Payload != "" {
-				pHeader := makeProtoHeader(pkt, bpp)
-				sid, dHeader := makeISUPDataHeader([]byte(pkt.Payload), bpd)
+				pHeader := makeProtoHeader(pkt, bb)
+				sid, dHeader := makeISUPDataHeader([]byte(pkt.Payload), bb)
 
 				isupRows = append(isupRows, sid, date, pHeader, dHeader, pkt.Payload)
 				isupCnt++
@@ -156,8 +157,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				}
 
 			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
-				pHeader := makeProtoHeader(pkt, bpp)
-				dHeader := makeRTCDataHeader(pkt, bpd)
+				pHeader := makeProtoHeader(pkt, bb)
+				dHeader := makeRTCDataHeader(pkt, bb)
 				switch pkt.ProtoType {
 				case 5:
 					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
@@ -210,8 +211,6 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					}
 				}
 			}
-			bytebufferpool.Put(bpp)
-			bytebufferpool.Put(bpd)
 		case <-timer.C:
 			timer.Reset(maxWait)
 			if callCnt > 0 {

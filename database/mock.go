@@ -93,13 +93,14 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 
 	t := fasttemplate.New(dataTemplate, "{{", "}}")
 
+	bb := bytebufferpool.Get()
+	defer bytebufferpool.Put(bb)
+
 	for pkt := range hCh {
 		date := pkt.Timestamp.Format(time.RFC3339Nano)
-		bpp := bytebufferpool.Get()
-		bpd := bytebufferpool.Get()
 		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
-			pHeader := makeProtoHeader(pkt, bpp)
-			dHeader := makeSIPDataHeader(pkt, bpd, t)
+			pHeader := makeProtoHeader(pkt, bb)
+			dHeader := makeSIPDataHeader(pkt, bb, t)
 			switch pkt.SIP.CseqMethod {
 			case "INVITE":
 				//callRows = addSIPRow(callRows)
@@ -127,9 +128,6 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 				}
 			}
 		}
-		bytebufferpool.Put(bpp)
-		bytebufferpool.Put(bpd)
-
 	}
 }
 
