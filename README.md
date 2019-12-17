@@ -51,7 +51,7 @@ docker-compose up -d
 ### Screenshots
 ![sip_metrics](https://user-images.githubusercontent.com/20154956/39880524-57838c04-547e-11e8-8dec-262184192742.png)
 ![xrtp](https://user-images.githubusercontent.com/20154956/39880861-4b1a2b34-547f-11e8-8d38-69fa88713aa9.png)
-![loki](https://user-images.githubusercontent.com/20154956/50091227-0b5c3980-020b-11e9-988a-f49719ede10f.png)
+![loki](https://user-images.githubusercontent.com/20154956/70985139-ee777200-20bb-11ea-867b-200cd7e1b6b8.png)
 ----
 #### Made by Humans
 This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patreons.<br>
