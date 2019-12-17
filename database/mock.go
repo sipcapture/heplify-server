@@ -83,7 +83,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 	_ = addSIPRow
 
 	var dataTemplate string
-	for _, v := range config.Setting.DataHeader {
+	for _, v := range config.Setting.SIPHeader {
 		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
 	}
 

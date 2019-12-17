@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.12"
+const Version = "heplify-server 1.13"
 
 var Setting HeplifyServer
 
@@ -46,7 +46,7 @@ type HeplifyServer struct {
 	DiscardMethod      []string `default:""`
 	AlegIDs            []string `default:""`
 	CustomHeader       []string `default:""`
-	DataHeader         []string `default:"ruri_user,ruri_domain,from_user,from_domain,to_user,callid,method"`
+	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_domain,to_user,callid,method,user_agent"`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`

@@ -90,7 +90,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	defer stop()
 
 	var dataTemplate string
-	for _, v := range config.Setting.DataHeader {
+	for _, v := range config.Setting.SIPHeader {
 		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
 	}
 
@@ -119,7 +119,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				pHeader := makeProtoHeader(pkt, bb)
 				dHeader := makeSIPDataHeader(pkt, bb, t)
 				switch pkt.SIP.CseqMethod {
-				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
+				case "INVITE", "ACK", "BYE", "CANCEL", "UPDATE", "PRACK", "REFER", "INFO":
 					callRows = append(callRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
 					if callCnt == p.bulkCnt {
@@ -176,7 +176,6 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						dnsRows = []string{}
 						dnsCnt = 0
 					}
-
 				case 100:
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
