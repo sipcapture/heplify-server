@@ -34,7 +34,11 @@ func (h *HEPInput) serveUDP(addr string) {
 		buf := h.buffer.Get().([]byte)
 		n, err := uc.Read(buf)
 		if err != nil {
-			continue
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				continue
+			} else {
+				return
+			}
 		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
