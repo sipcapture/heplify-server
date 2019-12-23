@@ -176,7 +176,7 @@ func (h *HEP) normPayload(t time.Time) {
 
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	escape := func(s string) (b []byte) {
-		if strings.ContainsRune(s, '"') {
+		if len(s) > 0 && strings.ContainsRune(s, '"') {
 			return bytes.Replace([]byte(s), strQuote, strEscQuote, -1)
 		}
 		return []byte(s)
@@ -186,35 +186,35 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	case "callid":
 		return w.Write(escape(h.SIP.CallID))
 	case "method":
-		return w.Write([]byte(h.SIP.FirstMethod))
+		return w.Write(escape(h.SIP.FirstMethod))
 	case "ruri_user":
-		return w.Write([]byte(h.SIP.URIUser))
+		return w.Write(escape(h.SIP.URIUser))
 	case "ruri_domain":
 		return w.Write(escape(h.SIP.URIHost))
 	case "from_user":
-		return w.Write([]byte(h.SIP.FromUser))
+		return w.Write(escape(h.SIP.FromUser))
 	case "from_domain":
-		return w.Write([]byte(h.SIP.FromHost))
+		return w.Write(escape(h.SIP.FromHost))
 	case "from_tag":
-		return w.Write([]byte(h.SIP.FromTag))
+		return w.Write(escape(h.SIP.FromTag))
 	case "to_user":
-		return w.Write([]byte(h.SIP.ToUser))
+		return w.Write(escape(h.SIP.ToUser))
 	case "to_domain":
-		return w.Write([]byte(h.SIP.ToHost))
+		return w.Write(escape(h.SIP.ToHost))
 	case "to_tag":
-		return w.Write([]byte(h.SIP.ToTag))
+		return w.Write(escape(h.SIP.ToTag))
 	case "via":
-		return w.Write([]byte(h.SIP.ViaOne))
+		return w.Write(escape(h.SIP.ViaOne))
 	case "contact_user":
-		return w.Write([]byte(h.SIP.ContactUser))
+		return w.Write(escape(h.SIP.ContactUser))
 	case "contact_domain":
-		return w.Write([]byte(h.SIP.ContactHost))
+		return w.Write(escape(h.SIP.ContactHost))
 	case "user_agent":
 		return w.Write(escape(h.SIP.UserAgent))
 	case "pid_user":
-		return w.Write([]byte(h.SIP.PaiUser))
+		return w.Write(escape(h.SIP.PaiUser))
 	case "auth_user":
-		return w.Write([]byte(h.SIP.AuthUser))
+		return w.Write(escape(h.SIP.AuthUser))
 	case "server":
 		return w.Write(escape(h.SIP.Server))
 	case "content_type":
@@ -222,7 +222,7 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	case "reason":
 		return w.Write(escape(h.SIP.ReasonVal))
 	case "diversion":
-		return w.Write([]byte(h.SIP.DiversionVal))
+		return w.Write(escape(h.SIP.DiversionVal))
 	default:
 		return w.Write(noVal)
 	}
