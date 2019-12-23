@@ -190,7 +190,7 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	case "ruri_user":
 		return w.Write([]byte(h.SIP.URIUser))
 	case "ruri_domain":
-		return w.Write([]byte(h.SIP.URIHost))
+		return w.Write(escape(h.SIP.URIHost))
 	case "from_user":
 		return w.Write([]byte(h.SIP.FromUser))
 	case "from_domain":

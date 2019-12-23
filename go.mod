@@ -17,20 +17,18 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/lib/pq v1.2.0
+	github.com/lib/pq v1.3.0
 	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
 	github.com/olivere/elastic v6.2.26+incompatible
-	github.com/prometheus/client_golang v1.2.1
-	github.com/prometheus/client_model v0.0.0-20191202183732-d1d2010b5bee // indirect
+	github.com/prometheus/client_golang v1.3.0
 	github.com/prometheus/common v0.7.0
-	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/robfig/cron v1.2.0
 	github.com/stretchr/testify v1.3.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	golang.org/x/sys v0.0.0-20191220220014-0732a990476f // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect

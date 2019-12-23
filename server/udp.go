@@ -37,6 +37,7 @@ func (h *HEPInput) serveUDP(addr string) {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
 			} else {
+				logp.Err("%v", err)
 				return
 			}
 		} else if n > maxPktLen {
