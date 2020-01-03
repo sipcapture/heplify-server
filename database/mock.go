@@ -107,7 +107,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 				callRowsString = append(callRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 				callCnt++
 				if callCnt == m.bulkCnt {
-					m.bulkInsert(callCopy, callRowsString)
+					m.bulkInsert(callInsert, callRowsString)
 					callRows = []interface{}{}
 					callRowsString = []string{}
 					callCnt = 0
@@ -119,8 +119,8 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 
 				defCnt++
 				if defCnt == m.bulkCnt {
-					//m.bulkInsert(defaultCopy, defRows)
-					m.bulkInsertString(defaultCopy, defRowsString)
+					//m.bulkInsert(defaultInsert, defRows)
+					m.bulkInsertString(defaultInsert, defRowsString)
 
 					defRows = []interface{}{}
 					defRowsString = []string{}

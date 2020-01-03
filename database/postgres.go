@@ -20,14 +20,14 @@ type Postgres struct {
 }
 
 const (
-	callCopy     = "COPY hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	registerCopy = "COPY hep_proto_1_registration(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	defaultCopy  = "COPY hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	rtcpCopy     = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	reportCopy   = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	dnsCopy      = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	isupCopy     = "COPY hep_proto_54_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
-	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	callInsert     = "INSERT INTO hep_proto_1_call(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	registerInsert = "INSERT INTO hep_proto_1_registration(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	defaultInsert  = "INSERT INTO hep_proto_1_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	rtcpInsert     = "INSERT INTO hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	reportInsert   = "INSERT INTO hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	dnsInsert      = "INSERT INTO hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	isupInsert     = "INSERT INTO hep_proto_54_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
+	logInsert      = "INSERT INTO hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) VALUES ($1,$2,$3,$4,$5)"
 )
 
 func (p *Postgres) setup() error {
@@ -123,7 +123,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					callRows = append(callRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
 					if callCnt == p.bulkCnt {
-						p.bulkInsert(callCopy, callRows)
+						p.bulkInsert(callInsert, callRows)
 						callRows = []string{}
 						callCnt = 0
 					}
@@ -131,7 +131,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					regRows = append(regRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					regCnt++
 					if regCnt == p.bulkCnt {
-						p.bulkInsert(registerCopy, regRows)
+						p.bulkInsert(registerInsert, regRows)
 						regRows = []string{}
 						regCnt = 0
 					}
@@ -139,7 +139,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					defRows = append(defRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					defCnt++
 					if defCnt == p.bulkCnt {
-						p.bulkInsert(defaultCopy, defRows)
+						p.bulkInsert(defaultInsert, defRows)
 						defRows = []string{}
 						defCnt = 0
 					}
@@ -151,7 +151,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				isupRows = append(isupRows, sid, date, pHeader, dHeader, pkt.Payload)
 				isupCnt++
 				if isupCnt == p.bulkCnt {
-					p.bulkInsert(isupCopy, isupRows)
+					p.bulkInsert(isupInsert, isupRows)
 					isupRows = []string{}
 					isupCnt = 0
 				}
@@ -164,7 +164,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					rtcpCnt++
 					if rtcpCnt == p.bulkCnt {
-						p.bulkInsert(rtcpCopy, rtcpRows)
+						p.bulkInsert(rtcpInsert, rtcpRows)
 						rtcpRows = []string{}
 						rtcpCnt = 0
 					}
@@ -172,7 +172,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					dnsRows = append(dnsRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					dnsCnt++
 					if dnsCnt == p.bulkCnt {
-						p.bulkInsert(dnsCopy, dnsRows)
+						p.bulkInsert(dnsInsert, dnsRows)
 						dnsRows = []string{}
 						dnsCnt = 0
 					}
@@ -180,7 +180,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
 					if logCnt == p.bulkCnt {
-						p.bulkInsert(logCopy, logRows)
+						p.bulkInsert(logInsert, logRows)
 						logRows = []string{}
 						logCnt = 0
 					}
@@ -204,7 +204,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 
 					reportCnt++
 					if reportCnt == p.bulkCnt {
-						p.bulkInsert(reportCopy, reportRows)
+						p.bulkInsert(reportInsert, reportRows)
 						reportRows = []string{}
 						reportCnt = 0
 					}
@@ -214,49 +214,49 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 			timer.Reset(maxWait)
 			if callCnt > 0 {
 				l := len(callRows)
-				p.bulkInsert(callCopy, callRows[:l])
+				p.bulkInsert(callInsert, callRows[:l])
 				callRows = []string{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
-				p.bulkInsert(registerCopy, regRows[:l])
+				p.bulkInsert(registerInsert, regRows[:l])
 				regRows = []string{}
 				regCnt = 0
 			}
 			if defCnt > 0 {
 				l := len(defRows)
-				p.bulkInsert(defaultCopy, defRows[:l])
+				p.bulkInsert(defaultInsert, defRows[:l])
 				defRows = []string{}
 				defCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
-				p.bulkInsert(rtcpCopy, rtcpRows[:l])
+				p.bulkInsert(rtcpInsert, rtcpRows[:l])
 				rtcpRows = []string{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
-				p.bulkInsert(reportCopy, reportRows[:l])
+				p.bulkInsert(reportInsert, reportRows[:l])
 				reportRows = []string{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
-				p.bulkInsert(dnsCopy, dnsRows[:l])
+				p.bulkInsert(dnsInsert, dnsRows[:l])
 				dnsRows = []string{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
-				p.bulkInsert(logCopy, logRows[:l])
+				p.bulkInsert(logInsert, logRows[:l])
 				logRows = []string{}
 				logCnt = 0
 			}
 			if isupCnt > 0 {
 				l := len(isupRows)
-				p.bulkInsert(isupCopy, isupRows[:l])
+				p.bulkInsert(isupInsert, isupRows[:l])
 				isupRows = []string{}
 				isupCnt = 0
 			}
@@ -289,10 +289,6 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 		}
 	}
 
-	_, err = stmt.Exec()
-	if err != nil {
-		logp.Err("%v", err)
-	}
 	err = stmt.Close()
 	if err != nil {
 		logp.Err("%v", err)
