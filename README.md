@@ -1,12 +1,3 @@
-Fork from original Version 1.10.
-
-Aim: to scale down and only focus on accurate performance metrics. Will be caching subscirber registeration and call information to give an accurate performance metric.
-
-heplify-proxy to be use to mirror UDP traffic to 
-1. heplify-server(original) -- all feature used except for metrics
-2. heplify-server(performance metric) -- record own metrics based on own configuration
-
-
 ![image](https://user-images.githubusercontent.com/1423657/38167610-1bccc596-3538-11e8-944c-8bd9ee0433b2.png)
 
 **heplify-server** is a stand-alone **HOMER** capture server developed in Go, optimized for speed and simplicity. Distributed as a single binary ready to capture TLS and UDP **HEP**, Protobuf encapsulated packets from [heplify](https://github.com/sipcapture/heplify) or any other [HEP](https://github.com/sipcapture/hep) enabled agent, indexing to database and rotating using H5 or H7 table format. **heplify-server** provides precise SIP and RTCP metrics with the help of Prometheus and Grafana. It gives you the possibility to get a global view on your network and individual SIP trunk monitoring.
@@ -60,7 +51,7 @@ docker-compose up -d
 ### Screenshots
 ![sip_metrics](https://user-images.githubusercontent.com/20154956/39880524-57838c04-547e-11e8-8dec-262184192742.png)
 ![xrtp](https://user-images.githubusercontent.com/20154956/39880861-4b1a2b34-547f-11e8-8d38-69fa88713aa9.png)
-![loki](https://user-images.githubusercontent.com/20154956/50091227-0b5c3980-020b-11e9-988a-f49719ede10f.png)
+![loki](https://user-images.githubusercontent.com/20154956/70985139-ee777200-20bb-11ea-867b-200cd7e1b6b8.png)
 ----
 #### Made by Humans
 This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patreons.<br>
