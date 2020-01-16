@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/negbie/logp"
-	"github.com/sipcapture/heplify-server/cdr"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 	"github.com/sipcapture/heplify-server/decoder"
@@ -17,27 +16,23 @@ import (
 )
 
 type HEPInput struct {
-	inputCh   chan []byte
-	dbCh      chan *decoder.HEP
-	promCh    chan *decoder.HEP
-	esCh      chan *decoder.HEP
-	lokiCh    chan *decoder.HEP
-	cdrCh     chan *decoder.HEP
-	wg        *sync.WaitGroup
-	buffer    *sync.Pool
-	exitedTCP chan bool
-	exitedTLS chan bool
-	quitUDP   chan bool
-	quitTCP   chan bool
-	quitTLS   chan bool
-	quit      chan bool
-	stats     HEPStats
-	lokiTF    []int
-	useDB     bool
-	useCDR    bool
-	usePM     bool
-	useES     bool
-	useLK     bool
+	inputCh chan []byte
+	dbCh    chan *decoder.HEP
+	promCh  chan *decoder.HEP
+	esCh    chan *decoder.HEP
+	lokiCh  chan *decoder.HEP
+	wg      *sync.WaitGroup
+	buffer  *sync.Pool
+	exitTCP chan bool
+	exitTLS chan bool
+	quit    chan bool
+	stopped uint32
+	stats   HEPStats
+	lokiTF  []int
+	useDB   bool
+	usePM   bool
+	useES   bool
+	useLK   bool
 }
 
 type HEPStats struct {
@@ -51,24 +46,17 @@ const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		inputCh:   make(chan []byte, 40000),
-		buffer:    &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
-		wg:        &sync.WaitGroup{},
-		quit:      make(chan bool),
-		quitUDP:   make(chan bool),
-		quitTCP:   make(chan bool),
-		quitTLS:   make(chan bool),
-		exitedTCP: make(chan bool),
-		exitedTLS: make(chan bool),
-		lokiTF:    config.Setting.LokiHEPFilter,
+		inputCh: make(chan []byte, 40000),
+		buffer:  &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
+		wg:      &sync.WaitGroup{},
+		quit:    make(chan bool),
+		exitTCP: make(chan bool),
+		exitTLS: make(chan bool),
+		lokiTF:  config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
 		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
-	}
-	if len(config.Setting.CGRAddr) > 2 {
-		h.useCDR = true
-		h.cdrCh = make(chan *decoder.HEP, 40000)
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
@@ -95,13 +83,13 @@ func (h *HEPInput) Run() {
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
 
-	if config.Setting.HEPAddr != "" {
+	if len(config.Setting.HEPAddr) > 2 {
 		go h.serveUDP(config.Setting.HEPAddr)
 	}
-	if config.Setting.HEPTCPAddr != "" {
+	if len(config.Setting.HEPTCPAddr) > 2 {
 		go h.serveTCP(config.Setting.HEPTCPAddr)
 	}
-	if config.Setting.HEPTLSAddr != "" {
+	if len(config.Setting.HEPTLSAddr) > 2 {
 		go h.serveTLS(config.Setting.HEPTLSAddr)
 	}
 
@@ -113,16 +101,6 @@ func (h *HEPInput) Run() {
 			logp.Err("%v", err)
 		}
 		defer m.End()
-	}
-
-	if h.useCDR {
-		q := cdr.New("cgrates")
-		q.Chan = h.cdrCh
-
-		if err := q.Run(); err != nil {
-			logp.Err("%v", err)
-		}
-		defer q.End()
 	}
 
 	if h.useES {
@@ -165,19 +143,14 @@ func (h *HEPInput) Run() {
 }
 
 func (h *HEPInput) End() {
+	atomic.StoreUint32(&h.stopped, 1)
 	logp.Info("stopping heplify-server...")
 
-	if config.Setting.HEPAddr != "" {
-		h.quitUDP <- true
-		<-h.quitUDP
+	if len(config.Setting.HEPTCPAddr) > 2 {
+		<-h.exitTCP
 	}
-	if config.Setting.HEPTCPAddr != "" {
-		close(h.quitTCP)
-		<-h.exitedTCP
-	}
-	if config.Setting.HEPTLSAddr != "" {
-		close(h.quitTLS)
-		<-h.exitedTLS
+	if len(config.Setting.HEPTLSAddr) > 2 {
+		<-h.exitTLS
 	}
 
 	h.quit <- true
@@ -212,7 +185,7 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.promCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing metric channel")
 					}
 					lastWarn = time.Now()
@@ -223,24 +196,10 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.dbCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 					}
 					lastWarn = time.Now()
-				}
-			}
-
-			if h.useCDR && hepPkt.SIP != nil {
-				if (hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "INVITE") ||
-					(hepPkt.SIP.FirstMethod == "200" && hepPkt.SIP.CseqMethod == "BYE") {
-					select {
-					case h.cdrCh <- hepPkt:
-					default:
-						if time.Since(lastWarn) > 5e8 {
-							logp.Warn("overflowing cdr channel")
-						}
-						lastWarn = time.Now()
-					}
 				}
 			}
 
@@ -248,7 +207,7 @@ func (h *HEPInput) hepWorker() {
 				select {
 				case h.esCh <- hepPkt:
 				default:
-					if time.Since(lastWarn) > 5e8 {
+					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing elasticsearch channel")
 					}
 					lastWarn = time.Now()
@@ -261,7 +220,7 @@ func (h *HEPInput) hepWorker() {
 						select {
 						case h.lokiCh <- hepPkt:
 						default:
-							if time.Since(lastWarn) > 5e8 {
+							if time.Since(lastWarn) > 1e9 {
 								logp.Warn("overflowing loki channel")
 							}
 							lastWarn = time.Now()

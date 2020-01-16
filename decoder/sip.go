@@ -21,10 +21,14 @@ func (h *HEP) parseSIP() error {
 	}
 
 	if h.CID == "" {
-		h.CID = h.SIP.CallID
-	} else if h.SIP.XCallID != "" {
-		h.CID = h.SIP.XCallID
+		if h.SIP.XCallID != "" {
+			h.CID = h.SIP.XCallID
+		} else {
+			h.CID = h.SIP.CallID
+		}
 	}
+
+	h.SID = h.SIP.CallID
 
 	return nil
 }

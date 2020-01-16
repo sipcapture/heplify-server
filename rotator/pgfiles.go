@@ -1,13 +1,23 @@
 package rotator
 
 var (
-	droplogpg      = []string{"DROP TABLE hep_proto_100_default_{{date}}_{{time}};"}
-	dropreportpg   = []string{"DROP TABLE hep_proto_35_default_{{date}}_{{time}};"}
-	dropisuppg     = []string{"DROP TABLE hep_proto_54_default_{{date}}_{{time}};"}
-	droprtcppg     = []string{"DROP TABLE hep_proto_5_default_{{date}}_{{time}};"}
-	dropcallpg     = []string{"DROP TABLE hep_proto_1_call_{{date}}_{{time}};"}
-	dropregisterpg = []string{"DROP TABLE hep_proto_1_registration_{{date}}_{{time}};"}
-	dropdefaultpg  = []string{"DROP TABLE hep_proto_1_default_{{date}}_{{time}};"}
+	listdroplogpg      = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_100_default_%' and tablename < 'hep_proto_100_default_{{date}}_{{time}}';"}
+	listdropreportpg   = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_35_default_%' and tablename < 'hep_proto_35_default_{{date}}_{{time}}';"}
+	listdropisuppg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_54_default_%' and tablename < 'hep_proto_54_default_{{date}}_{{time}}';"}
+	listdroprtcppg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_5_default_%' and tablename < 'hep_proto_5_default_{{date}}_{{time}}';"}
+	listdropcallpg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_call_%' and tablename < 'hep_proto_1_call_{{date}}_{{time}}';"}
+	listdropregisterpg = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_registration_%' and tablename < 'hep_proto_1_registration_{{date}}_{{time}}';"}
+	listdropdefaultpg  = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_default_%' and tablename < 'hep_proto_1_default_{{date}}_{{time}}';"}
+)
+
+var (
+	droplogpg      = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	dropreportpg   = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	dropisuppg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	droprtcppg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	dropcallpg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	dropregisterpg = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	dropdefaultpg  = []string{"DROP TABLE IF EXISTS {{partName}};"}
 )
 
 var idxconfpg = []string{
@@ -21,83 +31,83 @@ var idxconfpg = []string{
 var idxlogpg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_create_date ON hep_proto_100_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_sid ON hep_proto_100_default_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_srcIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_dstIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_correlation_id ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_srcIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_dstIp ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_100_default_{{date}}_{{time}}_correlation_id ON hep_proto_100_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 }
 
 var idxisuppg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_create_date ON hep_proto_54_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_sid ON hep_proto_54_default_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_correlation_id ON hep_proto_54_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_called_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'called_number'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_calling_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'calling_number'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_opc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'opc'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_dpc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'dpc'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_cic ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'cic'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_msg_name ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'msg_name'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_callid ON hep_proto_54_default_{{date}}_{{time}} ((data_header->'callid'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_correlation_id ON hep_proto_54_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_called_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'called_number'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_calling_number ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'calling_number'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_opc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'opc'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_dpc ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'dpc'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_cic ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'cic'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_msg_name ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'msg_name'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_callid ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'callid'));",
 }
 
 var idxqospg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_create_date ON hep_proto_35_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_sid ON hep_proto_35_default_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_srcIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_dstIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_correlation_id ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_srcIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_dstIp ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}}_correlation_id ON hep_proto_35_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 
 	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_create_date ON hep_proto_5_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_sid ON hep_proto_5_default_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_srcIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_dstIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_correlation_id ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_srcIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_dstIp ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}}_correlation_id ON hep_proto_5_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 }
 
 var idxsippg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_create_date ON hep_proto_1_call_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_sid ON hep_proto_1_call_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_srcIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_dstIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_correlation_id ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_srcIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_dstIp ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_correlation_id ON hep_proto_1_call_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_domain ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'ruri_domain'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'ruri_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_from_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'from_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_to_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'to_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_pid_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'pid_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_auth_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'auth_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_callid ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'callid'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_method ON hep_proto_1_call_{{date}}_{{time}} ((data_header->'method'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_domain ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'ruri_domain'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_ruri_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'ruri_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_from_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'from_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_to_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'to_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_pid_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'pid_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_auth_user ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'auth_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_callid ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'callid'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_call_{{date}}_{{time}}_method ON hep_proto_1_call_{{date}}_{{time}} ((data_header->>'method'));",
 
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_create_date ON hep_proto_1_registration_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_sid ON hep_proto_1_registration_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_srcIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_dstIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_correlation_id ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_srcIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_dstIp ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_correlation_id ON hep_proto_1_registration_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_domain ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'ruri_domain'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'ruri_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_from_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'from_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_to_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'to_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_pid_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'pid_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_auth_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'auth_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_callid ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'callid'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_method ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->'method'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_domain ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'ruri_domain'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_ruri_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'ruri_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_from_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'from_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_to_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'to_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_pid_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'pid_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_auth_user ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'auth_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_callid ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'callid'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_registration_{{date}}_{{time}}_method ON hep_proto_1_registration_{{date}}_{{time}} ((data_header->>'method'));",
 
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_create_date ON hep_proto_1_default_{{date}}_{{time}} (create_date);",
 	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_sid ON hep_proto_1_default_{{date}}_{{time}} (sid);",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_srcIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'srcIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_dstIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'dstIp'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_correlation_id ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->'correlation_id'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_srcIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_dstIp ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_correlation_id ON hep_proto_1_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_domain ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'ruri_domain'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'ruri_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_from_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'from_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_to_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'to_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_pid_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'pid_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_auth_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'auth_user'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_callid ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'callid'));",
-	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_method ON hep_proto_1_default_{{date}}_{{time}} ((data_header->'method'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_domain ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'ruri_domain'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_ruri_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'ruri_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_from_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'from_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_to_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'to_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_pid_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'pid_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_auth_user ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'auth_user'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_callid ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'callid'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_1_default_{{date}}_{{time}}_method ON hep_proto_1_default_{{date}}_{{time}} ((data_header->>'method'));",
 }
 
 var insconfpg = []string{

@@ -19,6 +19,8 @@ func init() {
 	config.Setting.DBBulk = 10000
 	config.Setting.DBDriver = "mock"
 	config.Setting.DBShema = "mock"
+	config.Setting.SIPHeader = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method", "user_agent"}
+
 	go func() {
 		db := New("mock")
 		db.Chan = dbCh
@@ -34,7 +36,9 @@ func BenchmarkInsert(b *testing.B) {
 		b.Error(err)
 	}
 
-	//hep.SIP.CseqMethod = "INVITE"
+	hep.SIP.CseqMethod = "INVITE"
+	hep.SIP.CallID = "te\"st\""
+	hep.SIP.UserAgent = "F\"box\"!"
 	runtime.GC()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

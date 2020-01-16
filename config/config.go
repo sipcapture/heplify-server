@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.11"
+const Version = "heplify-server 1.13"
 
 var Setting HeplifyServer
 
@@ -8,7 +8,6 @@ type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
 	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
-	CGRAddr            string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
 	ESUser             string   `default:""`
@@ -18,6 +17,7 @@ type HeplifyServer struct {
 	LokiTimer          int      `default:"4"`
 	LokiBuffer         int      `default:"100000"`
 	LokiHEPFilter      []int    `default:"1,5,100"`
+	ForceHEPPayload    []int    `default:""`
 	PromAddr           string   `default:":9096"`
 	PromTargetIP       string   `default:""`
 	PromTargetName     string   `default:""`
@@ -44,9 +44,9 @@ type HeplifyServer struct {
 	DBDropOnStart      bool     `default:"false"`
 	Dedup              bool     `default:"false"`
 	DiscardMethod      []string `default:""`
-	FilterHost         []string `default:""`
 	AlegIDs            []string `default:""`
 	CustomHeader       []string `default:""`
+	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_domain,to_user,callid,method,user_agent"`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
