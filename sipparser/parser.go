@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"regexp"
 )
 
 const (
@@ -60,6 +61,7 @@ type SipMsg struct {
 	ToUser           string
 	ToHost           string
 	ToTag            string
+	Expires          string
 	Contact          *From
 	ContactVal       string
 	ContactUser      string
@@ -246,12 +248,26 @@ func (s *SipMsg) addHdr(str string) {
 		case s.hdr == "X-RTP-Stat":
 			s.parseRTPStat(s.hdrv)
 		case s.hdr == "Expires":
+			s.Expires = s.hdrv
 		default:
 			if len(s.XHeader) > 0 {
 				for i := range s.XHeader {
-					if s.hdr == s.XHeader[i] {
-						s.XCallID = s.hdrv
+					XHeaderSplit := strings.Split(s.XHeader[i], ",")
+					if len(XHeaderSplit) > 1 {
+						if s.hdr == XHeaderSplit[0] {
+							filter := regexp.MustCompile(XHeaderSplit[1])
+							if filter.MatchString(s.hdrv){
+								s.XCallID = filter.FindStringSubmatch(s.hdrv)[1]
+							} else {
+								s.XCallID = "ERR: "+s.hdrv
+							}
+						}
+					} else {
+						if s.hdr == s.XHeader[i] {
+							s.XCallID = s.hdrv
+						}
 					}
+					
 				}
 			}
 			if len(s.CHeader) > 0 {
