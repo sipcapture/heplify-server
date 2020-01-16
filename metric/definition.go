@@ -35,26 +35,6 @@ var (
 		Name: "heplify_log_alert_total",
 		Help: "Log errors and warnings"},
 		[]string{"node_id", "level", "host"})
-	heplify_SIP_perf_raw = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "heplify_SIP_perf_raw", 
-		Help: "IMS Call performance"}, 
-		[]string{"target_name","source_ip", "destination_ip", "type"})
-	heplify_SIPCallErrorResponse = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "heplify_SIPCallErrorResponse", 
-		Help: "IMS Call Error [456]xx performance"}, 
-		[]string{"target_name","source_ip", "destination_ip", "response"})
-	heplify_SIP_REG_perf_raw = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "heplify_SIP_REG_perf_raw", 
-		Help: "IMS REGISTER performance"}, 
-		[]string{"target_name","source_ip", "destination_ip", "type"})
-	heplify_SIPRegisterErrorResponse = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "heplify_SIPRegisterErrorResponse", 
-		Help: "IMS Register Error [456]xx performance"}, 
-		[]string{"target_name","source_ip", "destination_ip", "response"})
-	heplify_SIP_capture_all = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "heplify_SIP_capture_all", 
-		Help: "All SIP message counter"}, 
-		[]string{"target_name", "method", "source_ip", "destination_ip"})
 
 	// X-RTP-Stat Metrics
 	xrtpCS = promauto.NewGaugeVec(prometheus.GaugeOpts{
