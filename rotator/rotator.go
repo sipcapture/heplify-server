@@ -19,6 +19,7 @@ const (
 	partitionMinTime   = "{{minTime}}"
 	partitionStartTime = "{{startTime}}"
 	partitionEndTime   = "{{endTime}}"
+	partitionName      = "{{partName}}"
 )
 
 type Rotator struct {
@@ -175,34 +176,68 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 	} else if r.driver == "postgres" {
 		r.dbExecFile(db, idxconfpg, suffix, 0, 0)
 		r.dbExecFile(db, tblconfpg, suffix, 0, 0)
-		r.dbExecFile(db, insconfpg, suffix, 0, 0)
+		r.dbExecFile(db, insconfpg, suffix, 0, 0)		
 	}
 	return nil
 }
 
 func (r *Rotator) DropTables() (err error) {
+	logp.Debug("rotator", "start drop tables (%v)\n", time.Now())
 	db, err := sql.Open(r.driver, r.dataDBAddr)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 	if r.driver == "mysql" {
-		r.dbExecFile(db, droplogmaria, replaceDay(r.dropDays*-1), 0, 0)
-		r.dbExecFile(db, dropreportmaria, replaceDay(r.dropDays*-1), 0, 0)
-		r.dbExecFile(db, droprtcpmaria, replaceDay(r.dropDays*-1), 0, 0)
-		r.dbExecFile(db, dropcallmaria, replaceDay(r.dropDaysCall*-1), 0, 0)
-		r.dbExecFile(db, dropregistermaria, replaceDay(r.dropDaysRegister*-1), 0, 0)
-		r.dbExecFile(db, dropdefaultmaria, replaceDay(r.dropDaysDefault*-1), 0, 0)
+		r.dbExecDropTables(db, listdroplogmaria, droplogmaria, r.dropDays)
+		r.dbExecDropTables(db, listdropreportmaria, dropreportmaria, r.dropDays)
+		r.dbExecDropTables(db, listdroprtcpmaria, droprtcpmaria, r.dropDays)
+		r.dbExecDropTables(db, listdropcallmaria, dropcallmaria, r.dropDaysCall)
+		r.dbExecDropTables(db, listdropregistermaria, dropregistermaria, r.dropDaysRegister)
+		r.dbExecDropTables(db, listdropdefaultmaria, dropdefaultmaria, r.dropDaysDefault)
 	} else if r.driver == "postgres" {
-		r.dbExecFileLoop(db, droplogpg, replaceDay(r.dropDays*-1), r.dropDays, r.partLog)
-		r.dbExecFileLoop(db, dropisuppg, replaceDay(r.dropDays*-1), r.dropDays, r.partIsup)
-		r.dbExecFileLoop(db, dropreportpg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
-		r.dbExecFileLoop(db, droprtcppg, replaceDay(r.dropDays*-1), r.dropDays, r.partQos)
-		r.dbExecFileLoop(db, dropcallpg, replaceDay(r.dropDaysCall*-1), r.dropDaysCall, r.partSip)
-		r.dbExecFileLoop(db, dropregisterpg, replaceDay(r.dropDaysRegister*-1), r.dropDaysRegister, r.partSip)
-		r.dbExecFileLoop(db, dropdefaultpg, replaceDay(r.dropDaysDefault*-1), r.dropDaysDefault, r.partSip)
+		r.dbExecDropTables(db, listdroplogpg, droplogpg, r.dropDays)
+		r.dbExecDropTables(db, listdropisuppg, dropisuppg, r.dropDays)
+		r.dbExecDropTables(db, listdropreportpg, dropreportpg, r.dropDays)
+		r.dbExecDropTables(db, listdroprtcppg, droprtcppg, r.dropDays)
+		r.dbExecDropTables(db, listdropcallpg, dropcallpg, r.dropDaysCall)
+		r.dbExecDropTables(db, listdropregisterpg, dropregisterpg, r.dropDaysRegister)
+		r.dbExecDropTables(db, listdropdefaultpg, dropdefaultpg, r.dropDaysDefault)
 	}
+	logp.Debug("rotator", "finished drop tables (%v)\n", time.Now())
 	return nil
+}
+
+func (r *Rotator) dbExecDropTables(db * sql.DB, listfile []string, dropfile []string, d int) error {
+	t := time.Now().Add(time.Hour * time.Duration(-24*(d-1)))
+	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+        partDate := t.Format("20060102")
+	partTime := t.Format("1504")
+        var rows *sql.Rows
+        var lastErr error
+	for _, listquery := range listfile {
+		listquery = strings.Replace(listquery, partitionDate, partDate, -1)
+		listquery = strings.Replace(listquery, partitionTime, partTime, -1)
+		rows, lastErr = db.Query(listquery)
+		if !checkDBErr(lastErr) {
+			for rows.Next() {
+				var partName string
+				lastErr = rows.Scan(&partName)
+				if !checkDBErr(lastErr) {
+					for _, dropquery := range dropfile {
+						dropquery = strings.Replace(dropquery, partitionName, partName, -1)
+		                                logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
+						_, lastErr = db.Exec(dropquery)
+						if checkDBErr(lastErr) {
+							break;
+						}
+					}
+				}
+			}
+			rows.Close()
+		}
+	}
+	return lastErr
 }
 
 func (r *Rotator) dbExec(db *sql.DB, query string) {
@@ -300,9 +335,11 @@ func (r *Rotator) createTables() {
 		}
 	}
 	logp.Info("start creating tables (%v)\n", time.Now())
-	if err := r.CreateConfTables(0); err != nil {
+	/* create config not needed any more */
+	/* if err := r.CreateConfTables(0); err != nil {
 		logp.Err("%v", err)
 	}
+	*/
 	if err := r.CreateDataTables(-1); err != nil {
 		logp.Err("%v", err)
 	}
@@ -355,7 +392,7 @@ func setStep(name string) (step int) {
 	return
 }
 
-func checkDBErr(err error) {
+func checkDBErr(err error) bool {
 	if err != nil {
 		if mErr, ok := err.(*mysql.MySQLError); ok && (mErr.Number == 1050 ||
 			mErr.Number == 1062 || mErr.Number == 1481 || mErr.Number == 1517) {
@@ -363,5 +400,8 @@ func checkDBErr(err error) {
 		} else {
 			logp.Warn("%s\n\n", err)
 		}
+		return true;
+	} else {
+		return false;
 	}
 }
