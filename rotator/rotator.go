@@ -102,17 +102,6 @@ func (r *Rotator) CreateDatabases() (err error) {
 				r.dbExec(db, "GRANT ALL ON "+r.confDB+`.* TO 'homer_user'@'%';`)
 				db.Close()
 				return nil
-			} else if r.driver == "postgres" {
-				r.dbExec(db, "CREATE DATABASE "+r.dataDB)
-				r.dbExec(db, "CREATE DATABASE "+r.confDB)
-				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
-				r.dbExec(db, "GRANT postgres to homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+r.dataDB+" TO homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON DATABASE "+r.confDB+" TO homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO homer_user;")
-				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
-				db.Close()
-				return nil
 			}
 		}
 	}
