@@ -54,7 +54,7 @@ ConfigHTTPAddr        = ""
 # PromAddr        = "0.0.0.0:8899"
 # PromTargetIP    = "10.1.2.111,10.1.2.4,10.1.2.5,10.1.2.6,10.12.44.222"
 # PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
-# AlegIDs         = ["X-CID","P-Charging-Vector","X-BroadWorks-Correlation-Info"]
+# AlegIDs         = ["X-CID","P-Charging-Vector,icid-value=\"?(.*?)(?:\"|;|$)","X-BroadWorks-Correlation-Info"]
 # DiscardMethod   = ["OPTIONS","NOTIFY"]
 # CustomHeader    = ["X-CustomerIP","X-Billing"]
 # SIPHeader      = ["callid","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user"]

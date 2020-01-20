@@ -44,6 +44,8 @@ func init() {
 	} else {
 		fmt.Println("Could not find toml config file, use flag defaults.", err)
 	}
+	
+	config.Setting.AlegIDs = config.GenerateRegexMap(config.Setting.AlegIDs)
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
 	logp.ToStderr = &config.Setting.LogStd
