@@ -173,10 +173,6 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 	if r.driver == "mysql" {
 		r.dbExecFile(db, tblconfmaria, suffix, 0, 0)
 		r.dbExecFile(db, insconfmaria, suffix, 0, 0)
-	} else if r.driver == "postgres" {
-		r.dbExecFile(db, idxconfpg, suffix, 0, 0)
-		r.dbExecFile(db, tblconfpg, suffix, 0, 0)
-		r.dbExecFile(db, insconfpg, suffix, 0, 0)		
 	}
 	return nil
 }
@@ -208,13 +204,13 @@ func (r *Rotator) DropTables() (err error) {
 	return nil
 }
 
-func (r *Rotator) dbExecDropTables(db * sql.DB, listfile []string, dropfile []string, d int) error {
+func (r *Rotator) dbExecDropTables(db *sql.DB, listfile []string, dropfile []string, d int) error {
 	t := time.Now().Add(time.Hour * time.Duration(-24*(d-1)))
 	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-        partDate := t.Format("20060102")
+	partDate := t.Format("20060102")
 	partTime := t.Format("1504")
-        var rows *sql.Rows
-        var lastErr error
+	var rows *sql.Rows
+	var lastErr error
 	for _, listquery := range listfile {
 		listquery = strings.Replace(listquery, partitionDate, partDate, -1)
 		listquery = strings.Replace(listquery, partitionTime, partTime, -1)
@@ -226,10 +222,10 @@ func (r *Rotator) dbExecDropTables(db * sql.DB, listfile []string, dropfile []st
 				if !checkDBErr(lastErr) {
 					for _, dropquery := range dropfile {
 						dropquery = strings.Replace(dropquery, partitionName, partName, -1)
-		                                logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
+						logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
 						_, lastErr = db.Exec(dropquery)
 						if checkDBErr(lastErr) {
-							break;
+							break
 						}
 					}
 				}
@@ -335,11 +331,9 @@ func (r *Rotator) createTables() {
 		}
 	}
 	logp.Info("start creating tables (%v)\n", time.Now())
-	/* create config not needed any more */
-	/* if err := r.CreateConfTables(0); err != nil {
+	if err := r.CreateConfTables(0); err != nil {
 		logp.Err("%v", err)
 	}
-	*/
 	if err := r.CreateDataTables(-1); err != nil {
 		logp.Err("%v", err)
 	}
@@ -400,8 +394,8 @@ func checkDBErr(err error) bool {
 		} else {
 			logp.Warn("%s\n\n", err)
 		}
-		return true;
+		return true
 	} else {
-		return false;
+		return false
 	}
 }
