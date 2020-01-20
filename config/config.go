@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.13"
+const Version = "heplify-server 1.14"
 
 var Setting HeplifyServer
 
@@ -54,4 +54,5 @@ type HeplifyServer struct {
 	Config             string   `default:"./heplify-server.toml"`
 	ConfigHTTPAddr     string   `default:""`
 	ConfigHTTPPW       string   `default:""`
+	Version            bool     `default:"false"`
 }
