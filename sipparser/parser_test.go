@@ -11,8 +11,6 @@ import (
 	//"fmt"
 	"testing"
 	"github.com/sipcapture/heplify-server/config"
-	"strings"
-	"regexp"
 )
 
 var testInviteMsg = "INVITE sip:15554440000@X.X.X.X:5060;user=phone SIP/2.0\r\nVia: SIP/2.0/UDP X.X.X.X:5060;branch=z9hG4bK34133a599ll241207INV21d7d0684e84a2d2\r\nMax-Forwards: 35\r\nContact: <sip:X.X.X.X:5060>\r\nTo: <sip:15554440000@X.X.X.X;user=phone;noa=national>\r\nFrom: \"Unavailable\"<sip:X.X.X.X;user=phone;noa=national>;tag=21d7d068-co2149-FOOI003\r\nCall-ID: 1393184968_47390262@domain.com\r\nCSeq: 214901 INVITE\r\nAuthorization: Digest username=\"foobaruser124\", realm=\"FOOBAR\", algorithm=MD5, uri=\"sip:foo.bar.com\", nonce=\"4f6d7a1d\", response=\"6a79a5c75572b0f6a18963ae04e971cf\", opaque=\"\"\r\nAllow: INVITE,ACK,CANCEL,BYE,REFER,OPTIONS,NOTIFY,SUBSCRIBE,PRACK,INFO\r\nContent-Type: application/sdp\r\nDate: Thu, 29 Sep 2011 16:54:42 GMT\r\nUser-Agent: FAKE-UA-DATA\r\nP-Asserted-Identity: \"Unavailable\"<sip:Restricted@X.X.X.X:5060>\r\nContent-Length: 322\r\n\r\nv=0\r\no=- 567791720 567791720 IN IP4 X.X.X.X\r\ns=FAKE-DATA\r\nc=IN IP4 X.X.X.X\r\nt=0 0\r\nm=audio 17354 RTP/AVP 0 8 86 18 96\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:86 G726-32/8000\r\na=rtpmap:18 G729/8000\r\na=rtpmap:96 telephone-event/8000\r\na=maxptime:20\r\na=fmtp:18 annexb=yes\r\na=fmtp:96 0-15\r\na=sendrecv\r\n"
@@ -132,20 +130,7 @@ func TestParseMsg(t *testing.T) {
 		"Contact: something\r\nAuthorization: Digest username=\"foobaruser124\", realm=\"FOOBAR\"\r\nProxy-Authorization: Digest username=\"foobaruser124\", realm=\"FOOBAR\"\r\n" +
 		"X-RTP-Stat: CS=0;PS=1433;ES=1525;OS=229280;SP=0/0;SO=0;QS=-;PR=1522;ER=1525;OR=243520;CR=0;SR=0;QR=-;PL=0,0;BL=0;LS=0;RB=0/0;SB=-/-;EN=PCMA,FAX;DE=PCMA;JI=23,2;DL=20,20,21;IP=83.138.49.179:7082,102.183.157.163:25132\r\nX-RTP-Stat-Add: DQ=31;DSS=0;DS=0;PLCS=288;JS=1\r\n\r\nv=0\r\no=Dialogic_SDP 1452654 0 IN IP4 0.0.0.0\r\ns=Dialogic-SIP\r\nc=IN IP4 4.71.122.135\r\nt=0 0\r\nm=audio 11676 RTP/AVP 0 101\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:101 telephone-event/8000\r\na=fmtp:101 0-15\r\na=silenceSupp:off - - - -\r\na=ptime:20\r\n"
 	
-	if len(x) > 0 {
-		//rexStore := config.RegexData{RegexMap: make(map[string]*regexp.Regexp)}
-		//config.CompileStore = *rexStore
-		config.CompileStore = config.RegexData{RegexMap: make(map[string]*regexp.Regexp)}
-		
-		for i := range x {
-			AlegSplit := strings.Split(x[i], ",")
-			//assigned back the AlegIDs without the regex
-			x[i] = AlegSplit[0]
-			if len(AlegSplit) > 1 {
-				config.CompileStore.RegexMap[AlegSplit[0]] = regexp.MustCompile(AlegSplit[1])
-			}
-		}
-	}
+	x = config.GenerateRegexMap(x)
 	
 	s = ParseMsg(m, x, y)
 	//fmt.Println(s.StartLine.Val)

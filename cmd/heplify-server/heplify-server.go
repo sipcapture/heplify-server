@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"regexp"
 
 	_ "net/http/pprof"
 
@@ -46,21 +45,7 @@ func init() {
 		fmt.Println("Could not find toml config file, use flag defaults.", err)
 	}
 	
-	
-	if len(config.Setting.AlegIDs) > 0 {
-		//rexStore := config.RegexData{RegexMap: make(map[string]*regexp.Regexp)}
-		//config.CompileStore = *rexStore
-		config.CompileStore = config.RegexData{RegexMap: make(map[string]*regexp.Regexp)}
-		
-		for i := range config.Setting.AlegIDs {
-			AlegSplit := strings.Split(config.Setting.AlegIDs[i], ",")
-			//assigned back the AlegIDs without the regex
-			config.Setting.AlegIDs[i] = AlegSplit[0]
-			if len(AlegSplit) > 1 {
-				config.CompileStore.RegexMap[AlegSplit[0]] = regexp.MustCompile(AlegSplit[1])
-			}
-		}
-	}
+	config.Setting.AlegIDs = config.GenerateRegexMap(config.Setting.AlegIDs)
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
 	logp.ToStderr = &config.Setting.LogStd

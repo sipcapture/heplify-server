@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"regexp"
 	
 	"github.com/sipcapture/heplify-server/config"
 )
@@ -255,9 +254,7 @@ func (s *SipMsg) addHdr(str string) {
 			if len(s.XHeader) > 0 {
 				for i := range s.XHeader {
 					if s.hdr == s.XHeader[i] {
-						var filter *regexp.Regexp
-						var ok bool
-						filter, ok = config.CompileStore.RegexMap[s.XHeader[i]]
+						filter, ok := config.CompileStore.RegexMap[s.XHeader[i]]
 						if ok {
 							if filter.MatchString(s.hdrv){
 								s.XCallID = filter.FindStringSubmatch(s.hdrv)[1]
