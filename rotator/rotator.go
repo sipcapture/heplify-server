@@ -176,7 +176,7 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 	} else if r.driver == "postgres" {
 		r.dbExecFile(db, idxconfpg, suffix, 0, 0)
 		r.dbExecFile(db, tblconfpg, suffix, 0, 0)
-		r.dbExecFile(db, insconfpg, suffix, 0, 0)
+		r.dbExecFile(db, insconfpg, suffix, 0, 0)		
 	}
 	return nil
 }
@@ -335,9 +335,11 @@ func (r *Rotator) createTables() {
 		}
 	}
 	logp.Info("start creating tables (%v)\n", time.Now())
-	if err := r.CreateConfTables(0); err != nil {
+	/* create config not needed any more */
+	/* if err := r.CreateConfTables(0); err != nil {
 		logp.Err("%v", err)
 	}
+	*/
 	if err := r.CreateDataTables(-1); err != nil {
 		logp.Err("%v", err)
 	}
