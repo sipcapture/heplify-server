@@ -258,8 +258,6 @@ func (s *SipMsg) addHdr(str string) {
 						if ok {
 							if filter.MatchString(s.hdrv){
 								s.XCallID = filter.FindStringSubmatch(s.hdrv)[1]
-							} else {
-								s.XCallID = "ERR: "+s.hdrv
 							}
 						} else {
 							s.XCallID = s.hdrv
