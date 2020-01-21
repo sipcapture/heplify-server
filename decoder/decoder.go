@@ -223,6 +223,8 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 		return w.Write(escape(h.SIP.ReasonVal))
 	case "diversion":
 		return w.Write(escape(h.SIP.DiversionVal))
+	case "expires":
+		return w.Write(escape(h.SIP.Expires))
 	default:
 		return w.Write(noVal)
 	}
