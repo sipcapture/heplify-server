@@ -19,7 +19,7 @@ bindir: "/usr/local/bin"
 files:
   /tmp/pkg/heplify-server: "/usr/local/bin/heplify-server"
 config_files:
-  /tmp/pkg/example/heplify-server.service: "/etc/systemd/system/heplify-server.service"
+  /tmp/pkg/example/heplify-server.service: "/lib/systemd/system/heplify-server.service"
   /tmp/pkg/example/homer7_config/heplify-server.toml: "/etc/heplify-server.toml"
 #overrides:
 #  rpm:
