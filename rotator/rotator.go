@@ -80,6 +80,9 @@ func Setup(quit chan bool) *Rotator {
 }
 
 func (r *Rotator) CreateDatabases() (err error) {
+	if r.driver == "postgres" {
+		return nil
+	}
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	for {
