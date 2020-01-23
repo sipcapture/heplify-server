@@ -90,7 +90,12 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	defer stop()
 
 	var dataTemplate string
-	for _, v := range config.Setting.SIPHeader {
+	sh := config.Setting.SIPHeader
+	if len(sh) < 1 {
+		sh = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method", "user_agent"}
+	}
+
+	for _, v := range sh {
 		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
 	}
 
