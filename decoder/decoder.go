@@ -141,7 +141,7 @@ func (h *HEP) parse(packet []byte) error {
 }
 
 var fixUTF8 = func(r rune) rune {
-	if r == utf8.RuneError || r == '\x00' {
+	if r == utf8.RuneError || r == '\x00' || r == '\x09' {
 		return -1
 	}
 	return r
@@ -169,7 +169,9 @@ func (h *HEP) normPayload(t time.Time) {
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
-	} else if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
+	}
+	if config.Setting.DBDriver == "postgres" &&
+		(strings.Index(h.Payload, "\x00") > -1 || strings.Index(h.Payload, "\x09") > -1) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
 }
