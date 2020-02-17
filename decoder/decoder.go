@@ -3,11 +3,14 @@ package decoder
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
+	reflect "reflect"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/VictoriaMetrics/fastcache"
 	xxhash "github.com/cespare/xxhash/v2"
@@ -25,10 +28,17 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	dedup       = fastcache.New(32 * 1024 * 1024)
-	strQuote    = []byte("\"")
-	strEscQuote = []byte("\\\"")
-	noVal       = []byte("")
+	dedup                 = fastcache.New(32 * 1024 * 1024)
+	strBackslashQuote     = []byte(`\"`)
+	strBackslashBackslash = []byte(`\\`)
+	strBackslashN         = []byte(`\n`)
+	strBackslashR         = []byte(`\r`)
+	strBackslashT         = []byte(`\t`)
+	strBackslashF         = []byte(`\u000c`)
+	strBackslashB         = []byte(`\u0008`)
+	strBackslashLT        = []byte(`\u003c`)
+	strBackslashQ         = []byte(`\u0027`)
+	strEmpty              = []byte(``)
 )
 
 // HEP chuncks
@@ -141,7 +151,7 @@ func (h *HEP) parse(packet []byte) error {
 }
 
 var fixUTF8 = func(r rune) rune {
-	if r == utf8.RuneError || r == '\x00' || r == '\x09' {
+	if r == utf8.RuneError || r == '\x00' {
 		return -1
 	}
 	return r
@@ -170,64 +180,125 @@ func (h *HEP) normPayload(t time.Time) {
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
-	if config.Setting.DBDriver == "postgres" &&
-		(strings.Index(h.Payload, "\x00") > -1 || strings.Index(h.Payload, "\x09") > -1) {
+	if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
 }
 
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
-	escape := func(s string) (b []byte) {
-		if len(s) > 0 && strings.ContainsRune(s, '"') {
-			return bytes.Replace([]byte(s), strQuote, strEscQuote, -1)
-		}
-		return []byte(s)
-	}
-
 	switch tag {
 	case "callid":
-		return w.Write(escape(h.SIP.CallID))
+		return writeJSONString(w, h.SIP.CallID)
 	case "method":
-		return w.Write(escape(h.SIP.FirstMethod))
+		return writeJSONString(w, h.SIP.FirstMethod)
 	case "ruri_user":
-		return w.Write(escape(h.SIP.URIUser))
+		return writeJSONString(w, h.SIP.URIUser)
 	case "ruri_domain":
-		return w.Write(escape(h.SIP.URIHost))
+		return writeJSONString(w, h.SIP.URIHost)
 	case "from_user":
-		return w.Write(escape(h.SIP.FromUser))
+		return writeJSONString(w, h.SIP.FromUser)
 	case "from_domain":
-		return w.Write(escape(h.SIP.FromHost))
+		return writeJSONString(w, h.SIP.FromHost)
 	case "from_tag":
-		return w.Write(escape(h.SIP.FromTag))
+		return writeJSONString(w, h.SIP.FromTag)
 	case "to_user":
-		return w.Write(escape(h.SIP.ToUser))
+		return writeJSONString(w, h.SIP.ToUser)
 	case "to_domain":
-		return w.Write(escape(h.SIP.ToHost))
+		return writeJSONString(w, h.SIP.ToHost)
 	case "to_tag":
-		return w.Write(escape(h.SIP.ToTag))
+		return writeJSONString(w, h.SIP.ToTag)
 	case "via":
-		return w.Write(escape(h.SIP.ViaOne))
+		return writeJSONString(w, h.SIP.ViaOne)
 	case "contact_user":
-		return w.Write(escape(h.SIP.ContactUser))
+		return writeJSONString(w, h.SIP.ContactUser)
 	case "contact_domain":
-		return w.Write(escape(h.SIP.ContactHost))
+		return writeJSONString(w, h.SIP.ContactHost)
 	case "user_agent":
-		return w.Write(escape(h.SIP.UserAgent))
+		return writeJSONString(w, h.SIP.UserAgent)
 	case "pid_user":
-		return w.Write(escape(h.SIP.PaiUser))
+		return writeJSONString(w, h.SIP.PaiUser)
 	case "auth_user":
-		return w.Write(escape(h.SIP.AuthUser))
+		return writeJSONString(w, h.SIP.AuthUser)
 	case "server":
-		return w.Write(escape(h.SIP.Server))
+		return writeJSONString(w, h.SIP.Server)
 	case "content_type":
-		return w.Write(escape(h.SIP.ContentType))
+		return writeJSONString(w, h.SIP.ContentType)
 	case "reason":
-		return w.Write(escape(h.SIP.ReasonVal))
+		return writeJSONString(w, h.SIP.ReasonVal)
 	case "diversion":
-		return w.Write(escape(h.SIP.DiversionVal))
+		return writeJSONString(w, h.SIP.DiversionVal)
 	case "expires":
-		return w.Write(escape(h.SIP.Expires))
+		return writeJSONString(w, h.SIP.Expires)
 	default:
-		return w.Write(noVal)
+		return w.Write(strEmpty)
 	}
+}
+
+func writeJSONString(w io.Writer, s string) (int, error) {
+	write := w.Write
+	b := stb(s)
+	j := 0
+	n := len(b)
+	if n > 0 {
+		// Hint the compiler to remove bounds checks in the loop below.
+		_ = b[n-1]
+	}
+	for i := 0; i < n; i++ {
+		switch b[i] {
+		case '"':
+			write(b[j:i])
+			write(strBackslashQuote)
+			j = i + 1
+		case '\\':
+			write(b[j:i])
+			write(strBackslashBackslash)
+			j = i + 1
+		case '\n':
+			write(b[j:i])
+			write(strBackslashN)
+			j = i + 1
+		case '\r':
+			write(b[j:i])
+			write(strBackslashR)
+			j = i + 1
+		case '\t':
+			write(b[j:i])
+			write(strBackslashT)
+			j = i + 1
+		case '\f':
+			write(b[j:i])
+			write(strBackslashF)
+			j = i + 1
+		case '\b':
+			write(b[j:i])
+			write(strBackslashB)
+			j = i + 1
+		case '<':
+			write(b[j:i])
+			write(strBackslashLT)
+			j = i + 1
+		case '\'':
+			write(b[j:i])
+			write(strBackslashQ)
+			j = i + 1
+		default:
+			if b[i] < 32 {
+				write(b[j:i])
+				fmt.Fprintf(w, "\\u%0.4x", b[i])
+				j = i + 1
+				continue
+			}
+		}
+	}
+	return write(b[j:])
+}
+
+func stb(s string) []byte {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }

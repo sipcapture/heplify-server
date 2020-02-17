@@ -39,6 +39,7 @@ func BenchmarkInsert(b *testing.B) {
 	hep.SIP.CseqMethod = "INVITE"
 	hep.SIP.CallID = "te\"st\""
 	hep.SIP.UserAgent = "F\"box\"!"
+	hep.SIP.FromHost = "192.168.111.111\x00"
 	runtime.GC()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
