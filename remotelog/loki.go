@@ -24,7 +24,8 @@ import (
 const (
 	contentType  = "application/x-protobuf"
 	postPath     = "/api/prom/push"
-	getPath      = "/api/prom/label"
+	postPathOne  = "/loki/api/v1/push"
+	getPath      = "/loki/api/v1/label"
 	jobName      = model.LabelValue("heplify-server")
 	maxErrMsgLen = 1024
 )
@@ -56,6 +57,7 @@ func (l *Loki) setup() error {
 		u.RawQuery = q.Encode()
 		l.URL = u.String()
 	}
+	l.URL = strings.Replace(l.URL, postPath, postPathOne, -1)
 	u.Path = getPath
 	q := u.Query()
 	u.RawQuery = q.Encode()
