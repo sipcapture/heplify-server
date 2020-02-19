@@ -273,14 +273,6 @@ func writeJSONString(w io.Writer, s string) (int, error) {
 			write(b[j:i])
 			write(strBackslashB)
 			j = i + 1
-		case '<':
-			write(b[j:i])
-			write(strBackslashLT)
-			j = i + 1
-		case '\'':
-			write(b[j:i])
-			write(strBackslashQ)
-			j = i + 1
 		default:
 			if b[i] < 32 {
 				write(b[j:i])

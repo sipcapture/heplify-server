@@ -90,8 +90,8 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 		} else {
 			size := binary.BigEndian.Uint16(hb[4:6])
 			if size > maxPktLen {
-				logp.Warn("unexpected packet, did you send TLS into plain TCP input?")
-				return
+				logp.Warn("wrong or too big HEP packet size with %d bytes", size)
+				continue
 			}
 			n, err := readBytes(buf[:size])
 			if err != nil || n > maxPktLen {
