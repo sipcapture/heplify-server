@@ -79,7 +79,7 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 		}
 
 		c.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
+
 		hb, err := r.Peek(6)
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
@@ -91,8 +91,10 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 			size := binary.BigEndian.Uint16(hb[4:6])
 			if size > maxPktLen {
 				logp.Warn("wrong or too big HEP packet size with %d bytes", size)
+				r.Reset(c)
 				continue
 			}
+			buf := h.buffer.Get().([]byte)
 			n, err := readBytes(buf[:size])
 			if err != nil || n > maxPktLen {
 				logp.Warn("%v, unusal packet size with %d bytes", err, n)
