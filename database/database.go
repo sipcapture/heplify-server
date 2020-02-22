@@ -8,6 +8,7 @@ import (
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
+	"github.com/valyala/fasttemplate"
 )
 
 type Database struct {
@@ -114,4 +115,22 @@ func ConnectString(dbName string) (string, error) {
 			" password=" + config.Setting.DBPass
 	}
 	return dsn, nil
+}
+
+func buildTemplate() *fasttemplate.Template {
+	var dataTemplate string
+	sh := config.Setting.SIPHeader
+	if len(sh) < 1 {
+		sh = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method", "user_agent"}
+	}
+
+	for _, v := range sh {
+		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
+	}
+
+	if len(dataTemplate) > 0 {
+		dataTemplate = dataTemplate[:len(dataTemplate)-1]
+	}
+
+	return fasttemplate.New(dataTemplate, "{{", "}}")
 }

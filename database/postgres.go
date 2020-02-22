@@ -9,7 +9,6 @@ import (
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
-	"github.com/valyala/fasttemplate"
 )
 
 type Postgres struct {
@@ -89,22 +88,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	}
 	defer stop()
 
-	var dataTemplate string
-	sh := config.Setting.SIPHeader
-	if len(sh) < 1 {
-		sh = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method", "user_agent"}
-	}
-
-	for _, v := range sh {
-		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
-	}
-
-	if len(dataTemplate) > 0 {
-		dataTemplate = dataTemplate[:len(dataTemplate)-1]
-	}
-
-	t := fasttemplate.New(dataTemplate, "{{", "}}")
-
+	t := buildTemplate()
 	bb := bytebufferpool.Get()
 	defer bytebufferpool.Put(bb)
 
