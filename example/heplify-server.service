@@ -8,8 +8,8 @@ Description=HEP Server & Switch in Go
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/heplify-server
-ExecStart=/opt/heplify-server/heplify-server
+Environment="HEPLIFY_CONFIG=-config=/etc/heplify-server.toml"
+ExecStart=/usr/local/bin/heplify-server $HEPLIFY_CONFIG
 ExecStop=/bin/kill ${MAINPID}
 Restart=on-failure
 RestartSec=10s

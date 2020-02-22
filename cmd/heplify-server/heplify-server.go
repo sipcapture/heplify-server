@@ -44,7 +44,7 @@ func init() {
 	} else {
 		fmt.Println("Could not find toml config file, use flag defaults.", err)
 	}
-	
+
 	config.Setting.AlegIDs = config.GenerateRegexMap(config.Setting.AlegIDs)
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
@@ -81,6 +81,11 @@ func main() {
 	var wg sync.WaitGroup
 	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	if config.Setting.Version {
+		fmt.Printf("VERSION: %s\r\n", config.Version)
+		os.Exit(0)
+	}
 
 	startServer := func() {
 		hep := input.NewHEPInput()
