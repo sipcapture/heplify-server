@@ -111,7 +111,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				r.dbExec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO homer_user;")
 				db.Close()
 				return nil
-			}			
+			}
 		}
 	}
 }
@@ -363,22 +363,22 @@ func setStep(name string) (step int) {
 		step = 15
 	case "20m":
 		step = 20
-	case "30m":
+	case "25m", "30m":
 		step = 30
-	case "45m":
+	case "35m", "40m", "45m":
 		step = 45
-	case "1h":
+	case "50m", "55m", "60m", "1h":
 		step = 60
-	case "2h":
+	case "120m", "2h":
 		step = 120
-	case "6h":
+	case "3h", "4h", "5h", "6h":
 		step = 360
-	case "12h":
+	case "7h", "8h", "9h", "10h", "11h", "12h":
 		step = 720
 	case "24h", "1d":
 		step = 1440
 	default:
-		logp.Warn("Not allowed rotation step %s please use [1d, 12h, 6h, 2h, 1h, 30m, 20m, 15m, 10m, 5m]", name)
+		logp.Warn("Unallowed rotation step %s please use 5m or 1h steps", name)
 		step = 120
 	}
 	return
