@@ -11,24 +11,19 @@ import (
 )
 
 type Mock struct {
-	db         *sync.Map
-	bulkCnt    int
-	sipBulkVal []byte
+	db      *sync.Map
+	bulkCnt int
 }
 
 func (m *Mock) setup() error {
 	m.db = new(syncmap.Map)
-	m.bulkCnt = 1
-	m.sipBulkVal = sipQueryVal(m.bulkCnt)
+	m.bulkCnt = 200
 	return nil
 }
 
 func (m *Mock) insert(hCh chan *decoder.HEP) {
-	var (
-		callCnt        int
-		callRowsString = make([]string, 0, m.bulkCnt)
-	)
-
+	callCnt := 0
+	callRowsString := make([]string, 0, m.bulkCnt)
 	t := buildTemplate()
 	bb := bytebufferpool.Get()
 	defer bytebufferpool.Put(bb)
@@ -50,11 +45,6 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 }
 
 func (m *Mock) bulkInsert(query string, rows []string) {
-	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
-	m.db.Store(query, rows)
-}
-
-func (m *Mock) bulkInsertString(query string, rows []string) {
 	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 	m.db.Store(query, rows)
 }
