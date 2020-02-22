@@ -123,7 +123,7 @@ func (h *HEPInput) Run() {
 		defer l.End()
 	}
 
-	if h.useDB && config.Setting.DBRotate {
+	if h.useDB && config.Setting.DBRotate && config.Setting.DBDriver != "mock" {
 		r := rotator.Setup(h.quit)
 		r.Rotate()
 		defer r.End()
