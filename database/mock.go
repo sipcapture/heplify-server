@@ -5,10 +5,8 @@ import (
 	"time"
 
 	"github.com/negbie/logp"
-	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
-	"github.com/valyala/fasttemplate"
 	"golang.org/x/sync/syncmap"
 )
 
@@ -20,7 +18,7 @@ type Mock struct {
 
 func (m *Mock) setup() error {
 	m.db = new(syncmap.Map)
-	m.bulkCnt = config.Setting.DBBulk
+	m.bulkCnt = 1
 	m.sipBulkVal = sipQueryVal(m.bulkCnt)
 	return nil
 }
@@ -31,17 +29,7 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		callRowsString = make([]string, 0, m.bulkCnt)
 	)
 
-	var dataTemplate string
-	for _, v := range config.Setting.SIPHeader {
-		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
-	}
-
-	if len(dataTemplate) > 0 {
-		dataTemplate = dataTemplate[:len(dataTemplate)-1]
-	}
-
-	t := fasttemplate.New(dataTemplate, "{{", "}}")
-
+	t := buildTemplate()
 	bb := bytebufferpool.Get()
 	defer bytebufferpool.Put(bb)
 
