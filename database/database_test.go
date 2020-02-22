@@ -7,7 +7,6 @@ import (
 
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
-	"github.com/valyala/bytebufferpool"
 )
 
 var dbCh = make(chan *decoder.HEP, 20000)
@@ -47,6 +46,7 @@ func BenchmarkInsert(b *testing.B) {
 	}
 }
 
+/*
 func TestMakeISUPDataHeader(t *testing.T) {
 	bpp := bytebufferpool.Get()
 	defer bytebufferpool.Put(bpp)
@@ -65,3 +65,4 @@ func BenchmarkMakeISUPDataHeader(b *testing.B) {
 		_, _ = makeISUPDataHeader(jsonIsup, bpp)
 	}
 }
+*/

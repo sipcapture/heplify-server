@@ -307,5 +307,5 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 		logp.Err("%v", err)
 	}
 
-	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
+	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }

@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
@@ -26,9 +27,8 @@ func (m *Mock) setup() error {
 
 func (m *Mock) insert(hCh chan *decoder.HEP) {
 	var (
-		callCnt, defCnt int
-		defRowsString   = make([]string, 0, m.bulkCnt)
-		callRowsString  = make([]string, 0, m.bulkCnt)
+		callCnt        int
+		callRowsString = make([]string, 0, m.bulkCnt)
 	)
 
 	var dataTemplate string
@@ -50,34 +50,23 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 			pHeader := makeProtoHeader(pkt, bb)
 			dHeader := makeSIPDataHeader(pkt, bb, t)
-			switch pkt.SIP.CseqMethod {
-			case "INVITE":
-				callRowsString = append(callRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
-				callCnt++
-				if callCnt == m.bulkCnt {
-					m.bulkInsert(callCopy, callRowsString)
-					callRowsString = []string{}
-					callCnt = 0
-				}
-
-			default:
-				defRowsString = append(defRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
-
-				defCnt++
-				if defCnt == m.bulkCnt {
-					m.bulkInsertString(defaultCopy, defRowsString)
-					defRowsString = []string{}
-					defCnt = 0
-				}
+			callRowsString = append(callRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)
+			callCnt++
+			if callCnt == m.bulkCnt {
+				m.bulkInsert(callCopy, callRowsString)
+				callRowsString = []string{}
+				callCnt = 0
 			}
 		}
 	}
 }
 
 func (m *Mock) bulkInsert(query string, rows []string) {
+	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 	m.db.Store(query, rows)
 }
 
 func (m *Mock) bulkInsertString(query string, rows []string) {
+	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 	m.db.Store(query, rows)
 }
