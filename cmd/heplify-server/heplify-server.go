@@ -12,7 +12,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/koding/multiconfig"
+	"github.com/negbie/multiconfig"
 	"github.com/negbie/logp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sipcapture/heplify-server/config"
