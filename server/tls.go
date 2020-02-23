@@ -12,6 +12,8 @@ import (
 )
 
 func (h *HEPInput) serveTLS(addr string) {
+	defer close(h.exitTLS)
+
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
@@ -37,7 +39,6 @@ func (h *HEPInput) serveTLS(addr string) {
 			logp.Info("stopping TLS listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
-			close(h.exitTLS)
 			return
 		}
 

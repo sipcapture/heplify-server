@@ -12,6 +12,8 @@ import (
 )
 
 func (h *HEPInput) serveTCP(addr string) {
+	defer close(h.exitTCP)
+
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
@@ -31,7 +33,6 @@ func (h *HEPInput) serveTCP(addr string) {
 			logp.Info("stopping TCP listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
-			close(h.exitTCP)
 			return
 		}
 
