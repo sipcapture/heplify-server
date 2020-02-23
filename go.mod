@@ -3,23 +3,21 @@ module github.com/sipcapture/heplify-server
 go 1.13
 
 require (
-	github.com/BurntSushi/toml v0.3.1
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929
 	github.com/cespare/xxhash/v2 v2.1.1
-	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.3
 	github.com/golang/snappy v0.0.1
-	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lib/pq v1.3.0
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
+	github.com/negbie/multiconfig v0.0.0-20200120091302-0526e6894a28
 	github.com/olivere/elastic v6.2.27+incompatible
+	github.com/pelletier/go-toml v1.6.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.4.1
 	github.com/prometheus/common v0.9.1

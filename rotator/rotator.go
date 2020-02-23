@@ -125,10 +125,10 @@ func replaceDay(d int) *strings.Replacer {
 
 func (r *Rotator) CreateDataTables(duration int) (err error) {
 	db, err := sql.Open(r.driver, r.dataDBAddr)
-	if err != nil {
+	defer db.Close()
+	if err = db.Ping(); err != nil {
 		return err
 	}
-	defer db.Close()
 
 	suffix := replaceDay(duration)
 	if r.driver == "mysql" {
@@ -161,14 +161,14 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 }
 
 func (r *Rotator) CreateConfTables(duration int) (err error) {
-	db, err := sql.Open(r.driver, r.confDBAddr)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	suffix := replaceDay(duration)
 	if r.driver == "mysql" {
+		db, err := sql.Open(r.driver, r.confDBAddr)
+		defer db.Close()
+		if err = db.Ping(); err != nil {
+			return err
+		}
+
+		suffix := replaceDay(duration)
 		r.dbExecFile(db, tblconfmaria, suffix, 0, 0)
 		r.dbExecFile(db, insconfmaria, suffix, 0, 0)
 	}
@@ -176,12 +176,13 @@ func (r *Rotator) CreateConfTables(duration int) (err error) {
 }
 
 func (r *Rotator) DropTables() (err error) {
-	logp.Debug("rotator", "start drop tables (%v)\n", time.Now())
 	db, err := sql.Open(r.driver, r.dataDBAddr)
-	if err != nil {
+	defer db.Close()
+	if err = db.Ping(); err != nil {
 		return err
 	}
-	defer db.Close()
+
+	logp.Debug("rotator", "start drop tables (%v)\n", time.Now())
 	if r.driver == "mysql" {
 		r.dbExecDropTables(db, listdroplogmaria, droplogmaria, r.dropDays)
 		r.dbExecDropTables(db, listdropreportmaria, dropreportmaria, r.dropDays)
