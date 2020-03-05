@@ -189,6 +189,8 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	switch tag {
 	case "callid":
 		return writeJSONString(w, h.SIP.CallID)
+	case "cseq":
+		return writeJSONString(w, h.SIP.CseqVal)
 	case "method":
 		return writeJSONString(w, h.SIP.FirstMethod)
 	case "ruri_user":
