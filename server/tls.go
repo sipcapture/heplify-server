@@ -73,15 +73,11 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 			return
 		}
 
-		c.SetReadDeadline(time.Now().Add(1e9))
 		buf := h.buffer.Get().([]byte)
 		n, err := c.Read(buf)
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
+			logp.Warn("%v from %s", err, c.RemoteAddr())
+			return
 		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)
