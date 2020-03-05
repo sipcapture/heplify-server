@@ -79,15 +79,10 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 			return
 		}
 
-		c.SetReadDeadline(time.Now().Add(1e9))
-
 		hb, err := r.Peek(6)
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
+			logp.Warn("%v from %s", err, c.RemoteAddr())
+			return
 		} else {
 			size := binary.BigEndian.Uint16(hb[4:6])
 			if size > maxPktLen {
