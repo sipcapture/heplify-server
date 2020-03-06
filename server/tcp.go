@@ -36,13 +36,17 @@ func (h *HEPInput) serveTCP(addr string) {
 			return
 		}
 
-		ln.SetDeadline(time.Now().Add(1e9))
+		if err := ln.SetDeadline(time.Now().Add(1e9)); err != nil {
+			logp.Err("%v", err)
+			break
+		}
+
 		conn, err := ln.Accept()
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
+			if opErr, ok := err.(*net.OpError); !ok || !opErr.Timeout() {
+				logp.Err("failed to accept TCP connection: %v", err.Error())
 			}
-			logp.Err("failed to accept TCP connection: %v", err.Error())
+			continue
 		}
 		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
