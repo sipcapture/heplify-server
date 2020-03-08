@@ -12,8 +12,8 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/negbie/multiconfig"
 	"github.com/negbie/logp"
+	"github.com/negbie/multiconfig"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sipcapture/heplify-server/config"
 	input "github.com/sipcapture/heplify-server/server"
@@ -99,6 +99,7 @@ func main() {
 		}
 	}
 	endServer := func() {
+		logp.Info("stopping heplify-server...")
 		for _, srv := range servers {
 			wg.Add(1)
 			go func(s server) {
@@ -107,6 +108,7 @@ func main() {
 			}(srv)
 		}
 		wg.Wait()
+		logp.Info("heplify-server has been stopped")
 	}
 
 	if len(config.Setting.ConfigHTTPAddr) > 2 {
