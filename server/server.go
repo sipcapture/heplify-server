@@ -145,7 +145,6 @@ func (h *HEPInput) Run() {
 
 func (h *HEPInput) End() {
 	atomic.StoreUint32(&h.stopped, 1)
-	logp.Info("stopping heplify-server...")
 
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		<-h.exitTCP
@@ -156,81 +155,72 @@ func (h *HEPInput) End() {
 
 	h.quit <- true
 	<-h.quit
-
-	logp.Info("heplify-server has been stopped")
+	close(h.inputCh)
 }
 
 func (h *HEPInput) hepWorker() {
+	defer h.wg.Done()
 	lastWarn := time.Now()
-	msg := h.buffer.Get().([]byte)
+	for msg := range h.inputCh {
+		hepPkt, err := decoder.DecodeHEP(msg)
+		if err != nil {
+			atomic.AddUint64(&h.stats.ErrCount, 1)
+			continue
+		} else if hepPkt.ProtoType == 0 {
+			atomic.AddUint64(&h.stats.DupCount, 1)
+			continue
+		}
+		atomic.AddUint64(&h.stats.HEPCount, 1)
 
-	for {
-		h.buffer.Put(msg[:maxPktLen])
-		select {
-		case <-h.quit:
-			h.quit <- true
-			h.wg.Done()
-			return
-		case msg = <-h.inputCh:
-			hepPkt, err := decoder.DecodeHEP(msg)
-			if err != nil {
-				atomic.AddUint64(&h.stats.ErrCount, 1)
-				continue
-			} else if hepPkt.ProtoType == 0 {
-				atomic.AddUint64(&h.stats.DupCount, 1)
-				continue
-			}
-			atomic.AddUint64(&h.stats.HEPCount, 1)
-
-			if h.usePM {
-				select {
-				case h.promCh <- hepPkt:
-				default:
-					if time.Since(lastWarn) > 1e9 {
-						logp.Warn("overflowing metric channel")
-					}
-					lastWarn = time.Now()
+		if h.usePM {
+			select {
+			case h.promCh <- hepPkt:
+			default:
+				if time.Since(lastWarn) > 1e9 {
+					logp.Warn("overflowing metric channel")
 				}
+				lastWarn = time.Now()
 			}
+		}
 
-			if h.useDB {
-				select {
-				case h.dbCh <- hepPkt:
-				default:
-					if time.Since(lastWarn) > 1e9 {
-						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
-					}
-					lastWarn = time.Now()
+		if h.useDB {
+			select {
+			case h.dbCh <- hepPkt:
+			default:
+				if time.Since(lastWarn) > 1e9 {
+					logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")
 				}
+				lastWarn = time.Now()
 			}
+		}
 
-			if h.useES {
-				select {
-				case h.esCh <- hepPkt:
-				default:
-					if time.Since(lastWarn) > 1e9 {
-						logp.Warn("overflowing elasticsearch channel")
-					}
-					lastWarn = time.Now()
+		if h.useES {
+			select {
+			case h.esCh <- hepPkt:
+			default:
+				if time.Since(lastWarn) > 1e9 {
+					logp.Warn("overflowing elasticsearch channel")
 				}
+				lastWarn = time.Now()
 			}
+		}
 
-			if h.useLK {
-				for _, v := range h.lokiTF {
-					if hepPkt.ProtoType == uint32(v) {
-						select {
-						case h.lokiCh <- hepPkt:
-						default:
-							if time.Since(lastWarn) > 1e9 {
-								logp.Warn("overflowing loki channel")
-							}
-							lastWarn = time.Now()
+		if h.useLK {
+			for _, v := range h.lokiTF {
+				if hepPkt.ProtoType == uint32(v) {
+					select {
+					case h.lokiCh <- hepPkt:
+					default:
+						if time.Since(lastWarn) > 1e9 {
+							logp.Warn("overflowing loki channel")
 						}
-						break
+						lastWarn = time.Now()
 					}
+					break
 				}
 			}
 		}
+
 	}
 }
 
