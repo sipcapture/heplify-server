@@ -7,7 +7,7 @@ var Setting HeplifyServer
 type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
-	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
+	HEPTLSAddr         string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
 	ESUser             string   `default:""`
