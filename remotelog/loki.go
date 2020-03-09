@@ -213,6 +213,8 @@ func (l *Loki) send(ctx context.Context, buf []byte) (int, error) {
 	}
 	defer resp.Body.Close()
 
+	logp.Debug("loki", "%s request with %d bytes to %s - %v response", req.Method, len(buf), l.URL, resp.StatusCode)
+
 	if resp.StatusCode/100 != 2 {
 		scanner := bufio.NewScanner(io.LimitReader(resp.Body, maxErrMsgLen))
 		line := ""
