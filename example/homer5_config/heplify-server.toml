@@ -7,7 +7,7 @@ LokiURL               = ""
 LokiBulk              = 200
 LokiTimer             = 4
 LokiBuffer            = 100000
-LokiHEPFilter         = []
+LokiHEPFilter         = [1,5,100]
 PromAddr              = ""
 PromTargetIP          = ""
 PromTargetName        = ""
@@ -53,7 +53,7 @@ ConfigHTTPAddr        = ""
 # PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
 # AlegIDs         = ["X-CID","P-Charging-Vector,icid-value=\"?(.*?)(?:\"|;|$)","X-BroadWorks-Correlation-Info"]
 # DiscardMethod   = ["OPTIONS","NOTIFY"]
-# LogDbg          = "hep,sql"
+# LogDbg          = "hep,sql,loki"
 # LogLvl          = "warning"
 # ConfigHTTPAddr  = "0.0.0.0:9876"
 # -------------------------------------
