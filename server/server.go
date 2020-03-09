@@ -162,6 +162,7 @@ func (h *HEPInput) hepWorker() {
 	defer h.wg.Done()
 	lastWarn := time.Now()
 	for msg := range h.inputCh {
+		h.buffer.Put(msg[:maxPktLen])
 		hepPkt, err := decoder.DecodeHEP(msg)
 		if err != nil {
 			atomic.AddUint64(&h.stats.ErrCount, 1)
