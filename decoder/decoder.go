@@ -188,55 +188,55 @@ func (h *HEP) normPayload(t time.Time) {
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	switch tag {
 	case "callid":
-		return writeJSONString(w, h.SIP.CallID)
+		return WriteJSONString(w, h.SIP.CallID)
 	case "cseq":
-		return writeJSONString(w, h.SIP.CseqVal)
+		return WriteJSONString(w, h.SIP.CseqVal)
 	case "method":
-		return writeJSONString(w, h.SIP.FirstMethod)
+		return WriteJSONString(w, h.SIP.FirstMethod)
 	case "ruri_user":
-		return writeJSONString(w, h.SIP.URIUser)
+		return WriteJSONString(w, h.SIP.URIUser)
 	case "ruri_domain":
-		return writeJSONString(w, h.SIP.URIHost)
+		return WriteJSONString(w, h.SIP.URIHost)
 	case "from_user":
-		return writeJSONString(w, h.SIP.FromUser)
+		return WriteJSONString(w, h.SIP.FromUser)
 	case "from_domain":
-		return writeJSONString(w, h.SIP.FromHost)
+		return WriteJSONString(w, h.SIP.FromHost)
 	case "from_tag":
-		return writeJSONString(w, h.SIP.FromTag)
+		return WriteJSONString(w, h.SIP.FromTag)
 	case "to_user":
-		return writeJSONString(w, h.SIP.ToUser)
+		return WriteJSONString(w, h.SIP.ToUser)
 	case "to_domain":
-		return writeJSONString(w, h.SIP.ToHost)
+		return WriteJSONString(w, h.SIP.ToHost)
 	case "to_tag":
-		return writeJSONString(w, h.SIP.ToTag)
+		return WriteJSONString(w, h.SIP.ToTag)
 	case "via":
-		return writeJSONString(w, h.SIP.ViaOne)
+		return WriteJSONString(w, h.SIP.ViaOne)
 	case "contact_user":
-		return writeJSONString(w, h.SIP.ContactUser)
+		return WriteJSONString(w, h.SIP.ContactUser)
 	case "contact_domain":
-		return writeJSONString(w, h.SIP.ContactHost)
+		return WriteJSONString(w, h.SIP.ContactHost)
 	case "user_agent":
-		return writeJSONString(w, h.SIP.UserAgent)
+		return WriteJSONString(w, h.SIP.UserAgent)
 	case "pid_user":
-		return writeJSONString(w, h.SIP.PaiUser)
+		return WriteJSONString(w, h.SIP.PaiUser)
 	case "auth_user":
-		return writeJSONString(w, h.SIP.AuthUser)
+		return WriteJSONString(w, h.SIP.AuthUser)
 	case "server":
-		return writeJSONString(w, h.SIP.Server)
+		return WriteJSONString(w, h.SIP.Server)
 	case "content_type":
-		return writeJSONString(w, h.SIP.ContentType)
+		return WriteJSONString(w, h.SIP.ContentType)
 	case "reason":
-		return writeJSONString(w, h.SIP.ReasonVal)
+		return WriteJSONString(w, h.SIP.ReasonVal)
 	case "diversion":
-		return writeJSONString(w, h.SIP.DiversionVal)
+		return WriteJSONString(w, h.SIP.DiversionVal)
 	case "expires":
-		return writeJSONString(w, h.SIP.Expires)
+		return WriteJSONString(w, h.SIP.Expires)
 	default:
 		return w.Write(strEmpty)
 	}
 }
 
-func writeJSONString(w io.Writer, s string) (int, error) {
+func WriteJSONString(w io.Writer, s string) (int, error) {
 	write := w.Write
 	b := stb(s)
 	j := 0

@@ -38,7 +38,7 @@ func makeProtoHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
 		bb.WriteString(h.NodePW)
 	}
 	bb.WriteString(`","correlation_id":"`)
-	bb.WriteString(h.CID)
+	decoder.WriteJSONString(bb, h.CID)
 	bb.WriteString(`"}`)
 	return bb.String()
 }
