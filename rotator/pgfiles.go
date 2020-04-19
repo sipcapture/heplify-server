@@ -1,23 +1,23 @@
 package rotator
 
 var (
-	listdroplogpg      = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_100_default_%' and tablename < 'hep_proto_100_default_{{date}}_{{time}}';"}
-	listdropreportpg   = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_35_default_%' and tablename < 'hep_proto_35_default_{{date}}_{{time}}';"}
-	listdropisuppg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_54_default_%' and tablename < 'hep_proto_54_default_{{date}}_{{time}}';"}
-	listdroprtcppg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_5_default_%' and tablename < 'hep_proto_5_default_{{date}}_{{time}}';"}
-	listdropcallpg     = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_call_%' and tablename < 'hep_proto_1_call_{{date}}_{{time}}';"}
-	listdropregisterpg = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_registration_%' and tablename < 'hep_proto_1_registration_{{date}}_{{time}}';"}
-	listdropdefaultpg  = []string{"SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_default_%' and tablename < 'hep_proto_1_default_{{date}}_{{time}}';"}
+	selectlogpg      = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_100_default_%' and tablename < 'hep_proto_100_default_{{date}}_{{time}}';"
+	selectreportpg   = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_35_default_%' and tablename < 'hep_proto_35_default_{{date}}_{{time}}';"
+	selectisuppg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_54_default_%' and tablename < 'hep_proto_54_default_{{date}}_{{time}}';"
+	selectrtcppg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_5_default_%' and tablename < 'hep_proto_5_default_{{date}}_{{time}}';"
+	selectcallpg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_call_%' and tablename < 'hep_proto_1_call_{{date}}_{{time}}';"
+	selectregisterpg = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_registration_%' and tablename < 'hep_proto_1_registration_{{date}}_{{time}}';"
+	selectdefaultpg  = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_default_%' and tablename < 'hep_proto_1_default_{{date}}_{{time}}';"
 )
 
 var (
-	droplogpg      = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropreportpg   = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropisuppg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	droprtcppg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropcallpg     = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropregisterpg = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropdefaultpg  = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	droplogpg      = "DROP TABLE IF EXISTS {{partName}};"
+	dropreportpg   = "DROP TABLE IF EXISTS {{partName}};"
+	dropisuppg     = "DROP TABLE IF EXISTS {{partName}};"
+	droprtcppg     = "DROP TABLE IF EXISTS {{partName}};"
+	dropcallpg     = "DROP TABLE IF EXISTS {{partName}};"
+	dropregisterpg = "DROP TABLE IF EXISTS {{partName}};"
+	dropdefaultpg  = "DROP TABLE IF EXISTS {{partName}};"
 )
 
 var idxlogpg = []string{
