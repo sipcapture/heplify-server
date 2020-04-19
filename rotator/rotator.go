@@ -184,55 +184,61 @@ func (r *Rotator) DropTables() (err error) {
 
 	logp.Debug("rotator", "start drop tables (%v)\n", time.Now())
 	if r.driver == "mysql" {
-		r.dbExecDropTables(db, listdroplogmaria, droplogmaria, r.dropDays)
-		r.dbExecDropTables(db, listdropreportmaria, dropreportmaria, r.dropDays)
-		r.dbExecDropTables(db, listdroprtcpmaria, droprtcpmaria, r.dropDays)
-		r.dbExecDropTables(db, listdropcallmaria, dropcallmaria, r.dropDaysCall)
-		r.dbExecDropTables(db, listdropregistermaria, dropregistermaria, r.dropDaysRegister)
-		r.dbExecDropTables(db, listdropdefaultmaria, dropdefaultmaria, r.dropDaysDefault)
+		r.dbExecDropTables(db, selectlogmaria, droplogmaria, r.dropDays)
+		r.dbExecDropTables(db, selectreportmaria, dropreportmaria, r.dropDays)
+		r.dbExecDropTables(db, selectrtcpmaria, droprtcpmaria, r.dropDays)
+		r.dbExecDropTables(db, selectcallmaria, dropcallmaria, r.dropDaysCall)
+		r.dbExecDropTables(db, selectregistermaria, dropregistermaria, r.dropDaysRegister)
+		r.dbExecDropTables(db, selectdefaultmaria, dropdefaultmaria, r.dropDaysDefault)
 	} else if r.driver == "postgres" {
-		r.dbExecDropTables(db, listdroplogpg, droplogpg, r.dropDays)
-		r.dbExecDropTables(db, listdropisuppg, dropisuppg, r.dropDays)
-		r.dbExecDropTables(db, listdropreportpg, dropreportpg, r.dropDays)
-		r.dbExecDropTables(db, listdroprtcppg, droprtcppg, r.dropDays)
-		r.dbExecDropTables(db, listdropcallpg, dropcallpg, r.dropDaysCall)
-		r.dbExecDropTables(db, listdropregisterpg, dropregisterpg, r.dropDaysRegister)
-		r.dbExecDropTables(db, listdropdefaultpg, dropdefaultpg, r.dropDaysDefault)
+		r.dbExecDropTables(db, selectlogpg, droplogpg, r.dropDays)
+		r.dbExecDropTables(db, selectisuppg, dropisuppg, r.dropDays)
+		r.dbExecDropTables(db, selectreportpg, dropreportpg, r.dropDays)
+		r.dbExecDropTables(db, selectrtcppg, droprtcppg, r.dropDays)
+		r.dbExecDropTables(db, selectcallpg, dropcallpg, r.dropDaysCall)
+		r.dbExecDropTables(db, selectregisterpg, dropregisterpg, r.dropDaysRegister)
+		r.dbExecDropTables(db, selectdefaultpg, dropdefaultpg, r.dropDaysDefault)
 	}
 	logp.Debug("rotator", "finished drop tables (%v)\n", time.Now())
 	return nil
 }
 
-func (r *Rotator) dbExecDropTables(db *sql.DB, listfile []string, dropfile []string, d int) error {
+func (r *Rotator) dbExecDropTables(db *sql.DB, listfile, dropfile string, d int) error {
 	t := time.Now().Add(time.Hour * time.Duration(-24*(d-1)))
 	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	partDate := t.Format("20060102")
 	partTime := t.Format("1504")
-	var rows *sql.Rows
-	var lastErr error
-	for _, listquery := range listfile {
-		listquery = strings.Replace(listquery, partitionDate, partDate, -1)
-		listquery = strings.Replace(listquery, partitionTime, partTime, -1)
-		rows, lastErr = db.Query(listquery)
-		if !checkDBErr(lastErr) {
-			for rows.Next() {
-				var partName string
-				lastErr = rows.Scan(&partName)
-				if !checkDBErr(lastErr) {
-					for _, dropquery := range dropfile {
-						dropquery = strings.Replace(dropquery, partitionName, partName, -1)
-						logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
-						_, lastErr = db.Exec(dropquery)
-						if checkDBErr(lastErr) {
-							break
-						}
-					}
-				}
-			}
-			rows.Close()
-		}
+	listquery := strings.Replace(listfile, partitionDate, partDate, -1)
+	listquery = strings.Replace(listquery, partitionTime, partTime, -1)
+	var partName string
+
+	rows, err := db.Query(listquery)
+	defer rows.Close()
+	if err != nil {
+		logp.Err("%v", err)
+		return err
 	}
-	return lastErr
+
+	for rows.Next() {
+		err := rows.Scan(&partName)
+		if err != nil {
+			logp.Err("%v", err)
+			return err
+		}
+
+		dropquery := strings.Replace(dropfile, partitionName, partName, -1)
+		logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
+		_, err = db.Exec(dropquery)
+		checkDBErr(err)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		logp.Err("%v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (r *Rotator) dbExec(db *sql.DB, query string) {
@@ -295,7 +301,7 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 
 func (r *Rotator) Rotate() {
 	r.createTables()
-	r.createJob.AddFunc("0 30 03 * * *", func() {
+	err := r.createJob.AddFunc("0 30 03 * * *", func() {
 		if err := r.CreateDataTables(1); err != nil {
 			logp.Err("%v", err)
 		}
@@ -304,15 +310,21 @@ func (r *Rotator) Rotate() {
 		}
 		logp.Info("finished rotate job next will run at %v\n", time.Now().Add(time.Hour*24+1))
 	})
+	if err != nil {
+		logp.Err("%v", err)
+	}
 	r.createJob.Start()
 
 	if r.dropDays > 0 {
-		r.dropJob.AddFunc("0 45 03 * * *", func() {
+		err := r.dropJob.AddFunc("0 45 03 * * *", func() {
 			if err := r.DropTables(); err != nil {
 				logp.Err("%v", err)
 			}
 			logp.Info("finished drop job next will run at %v\n", time.Now().Add(time.Hour*24+1))
 		})
+		if err != nil {
+			logp.Err("%v", err)
+		}
 		r.dropJob.Start()
 	}
 }
