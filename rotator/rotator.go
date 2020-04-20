@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/negbie/logp"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/database"
 )
@@ -182,7 +182,6 @@ func (r *Rotator) DropTables() (err error) {
 		return err
 	}
 
-	logp.Debug("rotator", "start drop tables (%v)\n", time.Now())
 	if r.driver == "mysql" {
 		r.dbExecDropTables(db, selectlogmaria, droplogmaria, r.dropDays)
 		r.dbExecDropTables(db, selectreportmaria, dropreportmaria, r.dropDays)
@@ -199,7 +198,6 @@ func (r *Rotator) DropTables() (err error) {
 		r.dbExecDropTables(db, selectregisterpg, dropregisterpg, r.dropDaysRegister)
 		r.dbExecDropTables(db, selectdefaultpg, dropdefaultpg, r.dropDaysDefault)
 	}
-	logp.Debug("rotator", "finished drop tables (%v)\n", time.Now())
 	return nil
 }
 
@@ -301,14 +299,15 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 
 func (r *Rotator) Rotate() {
 	r.createTables()
-	err := r.createJob.AddFunc("0 30 03 * * *", func() {
+	_, err := r.createJob.AddFunc("30 03 * * *", func() {
+		logp.Info("run create job\n")
 		if err := r.CreateDataTables(1); err != nil {
 			logp.Err("%v", err)
 		}
 		if err := r.CreateDataTables(2); err != nil {
 			logp.Err("%v", err)
 		}
-		logp.Info("finished rotate job next will run at %v\n", time.Now().Add(time.Hour*24+1))
+		logp.Info("finished create job, next will run at %v\n", time.Now().Add(time.Hour*24+1))
 	})
 	if err != nil {
 		logp.Err("%v", err)
@@ -316,11 +315,12 @@ func (r *Rotator) Rotate() {
 	r.createJob.Start()
 
 	if r.dropDays > 0 {
-		err := r.dropJob.AddFunc("0 45 03 * * *", func() {
+		_, err := r.dropJob.AddFunc("45 03 * * *", func() {
+			logp.Info("run drop job\n")
 			if err := r.DropTables(); err != nil {
 				logp.Err("%v", err)
 			}
-			logp.Info("finished drop job next will run at %v\n", time.Now().Add(time.Hour*24+1))
+			logp.Info("finished drop job, next will run at %v\n", time.Now().Add(time.Hour*24+1))
 		})
 		if err != nil {
 			logp.Err("%v", err)
