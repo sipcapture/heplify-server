@@ -112,16 +112,16 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	t := time.Now()
-	h.normPayload(t)
-	if h.ProtoType == 0 {
-		return nil
-	}
-
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 	d := t.Sub(h.Timestamp)
 	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
 		logp.Debug("hep", "got timestamp in the future with delta: %d from nodeID %d", d, h.NodeID)
 		h.Timestamp = t
+	}
+
+	h.normPayload()
+	if h.ProtoType == 0 {
+		return nil
 	}
 
 	if h.ProtoType == 1 && len(h.Payload) > 32 {
@@ -157,9 +157,9 @@ var fixUTF8 = func(r rune) rune {
 	return r
 }
 
-func (h *HEP) normPayload(t time.Time) {
+func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
-		ts := uint64(t.UnixNano())
+		ts := uint64(h.Timestamp.UnixNano())
 		kh := make([]byte, 8)
 		ks := xxhash.Sum64String(h.Payload)
 		binary.BigEndian.PutUint64(kh, ks)
@@ -167,7 +167,10 @@ func (h *HEP) normPayload(t time.Time) {
 		if buf := dedup.Get(nil, kh); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
 			d := ts - i
-			if d < 400e6 || d > 1e18 {
+			if i > ts {
+				d = i - ts
+			}
+			if d < 500e6 {
 				h.ProtoType = 0
 				return
 			}
