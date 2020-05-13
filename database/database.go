@@ -8,6 +8,7 @@ import (
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
+	"github.com/valyala/fasttemplate"
 )
 
 type Database struct {
@@ -36,17 +37,20 @@ func (d *Database) Run() error {
 	driver := config.Setting.DBDriver
 	shema := config.Setting.DBShema
 	worker := config.Setting.DBWorker
-	if driver != "mysql" && driver != "postgres" && driver != "mock" {
-		return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
-	}
-	if shema != "homer5" && shema != "homer7" && shema != "mock" {
-		return fmt.Errorf("invalid DBShema: %s, please use homer5 or homer7", shema)
-	}
-	if shema == "homer5" && driver != "mysql" {
-		return fmt.Errorf("homer5 has only mysql support")
-	}
-	if shema == "homer7" && driver != "postgres" {
-		return fmt.Errorf("homer7 has only postgres support")
+
+	if driver != "mock" {
+		if driver != "mysql" && driver != "postgres" {
+			return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
+		}
+		if shema != "homer5" && shema != "homer7" {
+			return fmt.Errorf("invalid DBShema: %s, please use homer5 or homer7", shema)
+		}
+		if shema == "homer5" && driver != "mysql" {
+			return fmt.Errorf("homer5 has only mysql support")
+		}
+		if shema == "homer7" && driver != "postgres" {
+			return fmt.Errorf("homer7 has only postgres support")
+		}
 	}
 
 	err := d.H.setup()
@@ -103,7 +107,7 @@ func ConnectString(dbName string) (string, error) {
 			addr[0] = addr[1]
 			addr[1] = "''"
 		}
-		dsn = "sslmode=disable connect_timeout=2" +
+		dsn = "sslmode=disable connect_timeout=4" +
 			" host=" + addr[0] +
 			" port=" + addr[1] +
 			" dbname=" + dbName +
@@ -111,4 +115,22 @@ func ConnectString(dbName string) (string, error) {
 			" password=" + config.Setting.DBPass
 	}
 	return dsn, nil
+}
+
+func buildTemplate() *fasttemplate.Template {
+	var dataTemplate string
+	sh := config.Setting.SIPHeader
+	if len(sh) < 1 {
+		sh = []string{"ruri_user", "ruri_domain", "from_user", "from_tag", "to_user", "callid", "cseq", "method", "user_agent"}
+	}
+
+	for _, v := range sh {
+		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
+	}
+
+	if len(dataTemplate) > 0 {
+		dataTemplate = dataTemplate[:len(dataTemplate)-1]
+	}
+
+	return fasttemplate.New(dataTemplate, "{{", "}}")
 }

@@ -123,7 +123,8 @@ func (h *HEPInput) Run() {
 		defer l.End()
 	}
 
-	if h.useDB && config.Setting.DBRotate {
+	if h.useDB && config.Setting.DBRotate &&
+		(config.Setting.DBDriver == "mysql" || config.Setting.DBDriver == "postgres") {
 		r := rotator.Setup(h.quit)
 		r.Rotate()
 		defer r.End()
@@ -144,7 +145,6 @@ func (h *HEPInput) Run() {
 
 func (h *HEPInput) End() {
 	atomic.StoreUint32(&h.stopped, 1)
-	logp.Info("stopping heplify-server...")
 
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		<-h.exitTCP
@@ -155,22 +155,22 @@ func (h *HEPInput) End() {
 
 	h.quit <- true
 	<-h.quit
-
-	logp.Info("heplify-server has been stopped")
+	close(h.inputCh)
 }
 
 func (h *HEPInput) hepWorker() {
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
+	var ok bool
+	defer h.wg.Done()
 
 	for {
 		h.buffer.Put(msg[:maxPktLen])
 		select {
-		case <-h.quit:
-			h.quit <- true
-			h.wg.Done()
-			return
-		case msg = <-h.inputCh:
+		case msg, ok = <-h.inputCh:
+			if !ok {
+				return
+			}
 			hepPkt, err := decoder.DecodeHEP(msg)
 			if err != nil {
 				atomic.AddUint64(&h.stats.ErrCount, 1)

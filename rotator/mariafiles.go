@@ -1,21 +1,21 @@
 package rotator
 
 var (
-	listdroplogmaria      = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'logs_capture_all_%' and TABLE_NAME < 'logs_capture_all_{{date}}';"}
-	listdropreportmaria   = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'report_capture_all_%' and TABLE_NAME < 'report_capture_all_{{date}}';"}
-	listdroprtcpmaria     = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'rtcp_capture_all_%' and TABLE_NAME < 'rtcp_capture_all_{{date}}';"}
-	listdropcallmaria     = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_call_%' and TABLE_NAME < 'sip_capture_call_{{date}}';"}
-	listdropregistermaria = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_registration_%' and TABLE_NAME < 'sip_capture_registration_{{date}}';"}
-	listdropdefaultmaria  = []string{"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_rest_%' and TABLE_NAME < 'sip_capture_rest_{{date}}';"}
+	selectlogmaria      = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'logs_capture_all_%' and TABLE_NAME < 'logs_capture_all_{{date}}';"
+	selectreportmaria   = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'report_capture_all_%' and TABLE_NAME < 'report_capture_all_{{date}}';"
+	selectrtcpmaria     = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'rtcp_capture_all_%' and TABLE_NAME < 'rtcp_capture_all_{{date}}';"
+	selectcallmaria     = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_call_%' and TABLE_NAME < 'sip_capture_call_{{date}}';"
+	selectregistermaria = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_registration_%' and TABLE_NAME < 'sip_capture_registration_{{date}}';"
+	selectdefaultmaria  = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME LIKE 'sip_capture_rest_%' and TABLE_NAME < 'sip_capture_rest_{{date}}';"
 )
 
 var (
-	droplogmaria      = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropreportmaria   = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	droprtcpmaria     = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropcallmaria     = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropregistermaria = []string{"DROP TABLE IF EXISTS {{partName}};"}
-	dropdefaultmaria  = []string{"DROP TABLE IF EXISTS {{partName}};"}
+	droplogmaria      = "DROP TABLE IF EXISTS {{partName}};"
+	dropreportmaria   = "DROP TABLE IF EXISTS {{partName}};"
+	droprtcpmaria     = "DROP TABLE IF EXISTS {{partName}};"
+	dropcallmaria     = "DROP TABLE IF EXISTS {{partName}};"
+	dropregistermaria = "DROP TABLE IF EXISTS {{partName}};"
+	dropdefaultmaria  = "DROP TABLE IF EXISTS {{partName}};"
 )
 
 var insconfmaria = []string{

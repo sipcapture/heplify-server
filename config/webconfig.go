@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	toml "github.com/BurntSushi/toml"
+	toml "github.com/pelletier/go-toml"
 )
 
 func WebConfig(r *http.Request) (*HeplifyServer, error) {
@@ -180,7 +180,7 @@ var WebForm = `
 		<div>
 			<label>Dedup</label>
 			<select name="Dedup">
-				<option value="">-- Please choose ({{.Dedup}}) --</option>
+				<option value="">{{.Dedup}}</option>
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>
@@ -200,7 +200,7 @@ var WebForm = `
 		<div>
 			<label>ESDiscovery</label>
 			<select name="ESDiscovery">
-				<option value="">-- Please choose ({{.ESDiscovery}}) --</option>
+				<option value="">{{.ESDiscovery}}</option>
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>
@@ -224,7 +224,7 @@ var WebForm = `
 		<div>
 			<label>DBShema</label>
 			<select name="DBShema">
-				<option value="">-- Please choose ({{.DBShema}}) --</option>
+				<option value="">{{.DBShema}}</option>
 				<option value="homer5">homer5</option>
 				<option value="homer7">homer7</option>
 			</select>
@@ -260,7 +260,7 @@ var WebForm = `
 		<div>
 			<label>DBRotate</label>
 			<select name="DBRotate">
-				<option value="">-- Please choose ({{.DBRotate}}) --</option>
+				<option value="">{{.DBRotate}}</option>
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>
@@ -288,7 +288,7 @@ var WebForm = `
 		<div>
 			<label>LogSys</label>
 			<select name="LogSys">
-				<option value="">-- Please choose ({{.LogSys}}) --</option>
+				<option value="">{{.LogSys}}</option>
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>

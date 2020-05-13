@@ -12,6 +12,8 @@ import (
 )
 
 func (h *HEPInput) serveTLS(addr string) {
+	defer close(h.exitTLS)
+
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
@@ -37,17 +39,20 @@ func (h *HEPInput) serveTLS(addr string) {
 			logp.Info("stopping TLS listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
-			close(h.exitTLS)
 			return
 		}
 
-		ln.SetDeadline(time.Now().Add(1e9))
+		if err := ln.SetDeadline(time.Now().Add(1e9)); err != nil {
+			logp.Err("%v", err)
+			break
+		}
+
 		conn, err := ln.Accept()
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
+			if opErr, ok := err.(*net.OpError); !ok || !opErr.Timeout() {
+				logp.Err("failed to accept TLS connection: %v", err.Error())
 			}
-			logp.Err("failed to accept TLS connection: %v", err.Error())
+			continue
 		}
 		logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
@@ -72,15 +77,11 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 			return
 		}
 
-		c.SetReadDeadline(time.Now().Add(1e9))
 		buf := h.buffer.Get().([]byte)
 		n, err := c.Read(buf)
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
+			logp.Warn("%v from %s", err, c.RemoteAddr())
+			return
 		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
 			atomic.AddUint64(&h.stats.ErrCount, 1)

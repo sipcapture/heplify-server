@@ -3,11 +3,14 @@ package decoder
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
+	reflect "reflect"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/VictoriaMetrics/fastcache"
 	xxhash "github.com/cespare/xxhash/v2"
@@ -25,10 +28,17 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	dedup       = fastcache.New(32 * 1024 * 1024)
-	strQuote    = []byte("\"")
-	strEscQuote = []byte("\\\"")
-	noVal       = []byte("")
+	dedup                 = fastcache.New(32 * 1024 * 1024)
+	strBackslashQuote     = []byte(`\"`)
+	strBackslashBackslash = []byte(`\\`)
+	strBackslashN         = []byte(`\n`)
+	strBackslashR         = []byte(`\r`)
+	strBackslashT         = []byte(`\t`)
+	strBackslashF         = []byte(`\u000c`)
+	strBackslashB         = []byte(`\u0008`)
+	strBackslashLT        = []byte(`\u003c`)
+	strBackslashQ         = []byte(`\u0027`)
+	strEmpty              = []byte(``)
 )
 
 // HEP chuncks
@@ -102,16 +112,16 @@ func (h *HEP) parse(packet []byte) error {
 	}
 
 	t := time.Now()
-	h.normPayload(t)
-	if h.ProtoType == 0 {
-		return nil
-	}
-
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
 	d := t.Sub(h.Timestamp)
 	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
 		logp.Debug("hep", "got timestamp in the future with delta: %d from nodeID %d", d, h.NodeID)
 		h.Timestamp = t
+	}
+
+	h.normPayload()
+	if h.ProtoType == 0 {
+		return nil
 	}
 
 	if h.ProtoType == 1 && len(h.Payload) > 32 {
@@ -147,9 +157,9 @@ var fixUTF8 = func(r rune) rune {
 	return r
 }
 
-func (h *HEP) normPayload(t time.Time) {
+func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
-		ts := uint64(t.UnixNano())
+		ts := uint64(h.Timestamp.UnixNano())
 		kh := make([]byte, 8)
 		ks := xxhash.Sum64String(h.Payload)
 		binary.BigEndian.PutUint64(kh, ks)
@@ -157,7 +167,10 @@ func (h *HEP) normPayload(t time.Time) {
 		if buf := dedup.Get(nil, kh); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
 			d := ts - i
-			if d < 400e6 || d > 1e18 {
+			if i > ts {
+				d = i - ts
+			}
+			if d < 500e6 {
 				h.ProtoType = 0
 				return
 			}
@@ -169,61 +182,120 @@ func (h *HEP) normPayload(t time.Time) {
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
-	} else if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
+	}
+	if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
 	}
 }
 
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
-	escape := func(s string) (b []byte) {
-		if len(s) > 0 && strings.ContainsRune(s, '"') {
-			return bytes.Replace([]byte(s), strQuote, strEscQuote, -1)
-		}
-		return []byte(s)
-	}
-
 	switch tag {
 	case "callid":
-		return w.Write(escape(h.SIP.CallID))
+		return WriteJSONString(w, h.SIP.CallID)
+	case "cseq":
+		return WriteJSONString(w, h.SIP.CseqVal)
 	case "method":
-		return w.Write(escape(h.SIP.FirstMethod))
+		return WriteJSONString(w, h.SIP.FirstMethod)
 	case "ruri_user":
-		return w.Write(escape(h.SIP.URIUser))
+		return WriteJSONString(w, h.SIP.URIUser)
 	case "ruri_domain":
-		return w.Write(escape(h.SIP.URIHost))
+		return WriteJSONString(w, h.SIP.URIHost)
 	case "from_user":
-		return w.Write(escape(h.SIP.FromUser))
+		return WriteJSONString(w, h.SIP.FromUser)
 	case "from_domain":
-		return w.Write(escape(h.SIP.FromHost))
+		return WriteJSONString(w, h.SIP.FromHost)
 	case "from_tag":
-		return w.Write(escape(h.SIP.FromTag))
+		return WriteJSONString(w, h.SIP.FromTag)
 	case "to_user":
-		return w.Write(escape(h.SIP.ToUser))
+		return WriteJSONString(w, h.SIP.ToUser)
 	case "to_domain":
-		return w.Write(escape(h.SIP.ToHost))
+		return WriteJSONString(w, h.SIP.ToHost)
 	case "to_tag":
-		return w.Write(escape(h.SIP.ToTag))
+		return WriteJSONString(w, h.SIP.ToTag)
 	case "via":
-		return w.Write(escape(h.SIP.ViaOne))
+		return WriteJSONString(w, h.SIP.ViaOne)
 	case "contact_user":
-		return w.Write(escape(h.SIP.ContactUser))
+		return WriteJSONString(w, h.SIP.ContactUser)
 	case "contact_domain":
-		return w.Write(escape(h.SIP.ContactHost))
+		return WriteJSONString(w, h.SIP.ContactHost)
 	case "user_agent":
-		return w.Write(escape(h.SIP.UserAgent))
+		return WriteJSONString(w, h.SIP.UserAgent)
 	case "pid_user":
-		return w.Write(escape(h.SIP.PaiUser))
+		return WriteJSONString(w, h.SIP.PaiUser)
 	case "auth_user":
-		return w.Write(escape(h.SIP.AuthUser))
+		return WriteJSONString(w, h.SIP.AuthUser)
 	case "server":
-		return w.Write(escape(h.SIP.Server))
+		return WriteJSONString(w, h.SIP.Server)
 	case "content_type":
-		return w.Write(escape(h.SIP.ContentType))
+		return WriteJSONString(w, h.SIP.ContentType)
 	case "reason":
-		return w.Write(escape(h.SIP.ReasonVal))
+		return WriteJSONString(w, h.SIP.ReasonVal)
 	case "diversion":
-		return w.Write(escape(h.SIP.DiversionVal))
+		return WriteJSONString(w, h.SIP.DiversionVal)
+	case "expires":
+		return WriteJSONString(w, h.SIP.Expires)
 	default:
-		return w.Write(noVal)
+		return w.Write(strEmpty)
 	}
+}
+
+func WriteJSONString(w io.Writer, s string) (int, error) {
+	write := w.Write
+	b := stb(s)
+	j := 0
+	n := len(b)
+	if n > 0 {
+		// Hint the compiler to remove bounds checks in the loop below.
+		_ = b[n-1]
+	}
+	for i := 0; i < n; i++ {
+		switch b[i] {
+		case '"':
+			write(b[j:i])
+			write(strBackslashQuote)
+			j = i + 1
+		case '\\':
+			write(b[j:i])
+			write(strBackslashBackslash)
+			j = i + 1
+		case '\n':
+			write(b[j:i])
+			write(strBackslashN)
+			j = i + 1
+		case '\r':
+			write(b[j:i])
+			write(strBackslashR)
+			j = i + 1
+		case '\t':
+			write(b[j:i])
+			write(strBackslashT)
+			j = i + 1
+		case '\f':
+			write(b[j:i])
+			write(strBackslashF)
+			j = i + 1
+		case '\b':
+			write(b[j:i])
+			write(strBackslashB)
+			j = i + 1
+		default:
+			if b[i] < 32 {
+				write(b[j:i])
+				fmt.Fprintf(w, "\\u%0.4x", b[i])
+				j = i + 1
+				continue
+			}
+		}
+	}
+	return write(b[j:])
+}
+
+func stb(s string) []byte {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }

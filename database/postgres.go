@@ -9,7 +9,6 @@ import (
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
 	"github.com/valyala/bytebufferpool"
-	"github.com/valyala/fasttemplate"
 )
 
 type Postgres struct {
@@ -89,17 +88,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	}
 	defer stop()
 
-	var dataTemplate string
-	for _, v := range config.Setting.SIPHeader {
-		dataTemplate += "\"" + v + "\":\"{{" + v + "}}\","
-	}
-
-	if len(dataTemplate) > 0 {
-		dataTemplate = dataTemplate[:len(dataTemplate)-1]
-	}
-
-	t := fasttemplate.New(dataTemplate, "{{", "}}")
-
+	t := buildTemplate()
 	bb := bytebufferpool.Get()
 	defer bytebufferpool.Put(bb)
 
@@ -302,5 +291,5 @@ func (p *Postgres) bulkInsert(query string, rows []string) {
 		logp.Err("%v", err)
 	}
 
-	//logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
+	logp.Debug("sql", "%s\n\n%v\n\n", query, rows)
 }

@@ -12,8 +12,8 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/koding/multiconfig"
 	"github.com/negbie/logp"
+	"github.com/negbie/multiconfig"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sipcapture/heplify-server/config"
 	input "github.com/sipcapture/heplify-server/server"
@@ -44,7 +44,7 @@ func init() {
 	} else {
 		fmt.Println("Could not find toml config file, use flag defaults.", err)
 	}
-	
+
 	config.Setting.AlegIDs = config.GenerateRegexMap(config.Setting.AlegIDs)
 
 	logp.DebugSelectorsStr = &config.Setting.LogDbg
@@ -82,6 +82,11 @@ func main() {
 	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
+	if config.Setting.Version {
+		fmt.Printf("VERSION: %s\r\n", config.Version)
+		os.Exit(0)
+	}
+
 	startServer := func() {
 		hep := input.NewHEPInput()
 		servers = []server{hep}
@@ -94,6 +99,7 @@ func main() {
 		}
 	}
 	endServer := func() {
+		logp.Info("stopping heplify-server...")
 		for _, srv := range servers {
 			wg.Add(1)
 			go func(s server) {
@@ -102,6 +108,7 @@ func main() {
 			}(srv)
 		}
 		wg.Wait()
+		logp.Info("heplify-server has been stopped")
 	}
 
 	if len(config.Setting.ConfigHTTPAddr) > 2 {

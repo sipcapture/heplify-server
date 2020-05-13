@@ -1,13 +1,13 @@
 package config
 
-const Version = "heplify-server 1.13"
+const Version = "heplify-server 1.30"
 
 var Setting HeplifyServer
 
 type HeplifyServer struct {
 	HEPAddr            string   `default:"0.0.0.0:9060"`
 	HEPTCPAddr         string   `default:""`
-	HEPTLSAddr         string   `default:"0.0.0.0:9060"`
+	HEPTLSAddr         string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
 	ESUser             string   `default:""`
@@ -46,7 +46,7 @@ type HeplifyServer struct {
 	DiscardMethod      []string `default:""`
 	AlegIDs            []string `default:""`
 	CustomHeader       []string `default:""`
-	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_domain,to_user,callid,method,user_agent"`
+	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent"`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
@@ -54,4 +54,5 @@ type HeplifyServer struct {
 	Config             string   `default:"./heplify-server.toml"`
 	ConfigHTTPAddr     string   `default:""`
 	ConfigHTTPPW       string   `default:""`
+	Version            bool     `default:"false"`
 }

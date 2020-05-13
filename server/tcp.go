@@ -12,6 +12,8 @@ import (
 )
 
 func (h *HEPInput) serveTCP(addr string) {
+	defer close(h.exitTCP)
+
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logp.Err("%v", err)
@@ -31,17 +33,20 @@ func (h *HEPInput) serveTCP(addr string) {
 			logp.Info("stopping TCP listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
-			close(h.exitTCP)
 			return
 		}
 
-		ln.SetDeadline(time.Now().Add(1e9))
+		if err := ln.SetDeadline(time.Now().Add(1e9)); err != nil {
+			logp.Err("%v", err)
+			break
+		}
+
 		conn, err := ln.Accept()
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
+			if opErr, ok := err.(*net.OpError); !ok || !opErr.Timeout() {
+				logp.Err("failed to accept TCP connection: %v", err.Error())
 			}
-			logp.Err("failed to accept TCP connection: %v", err.Error())
+			continue
 		}
 		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
@@ -78,21 +83,19 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 			return
 		}
 
-		c.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
 		hb, err := r.Peek(6)
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			} else {
-				return
-			}
+			logp.Warn("%v from %s", err, c.RemoteAddr())
+			return
 		} else {
 			size := binary.BigEndian.Uint16(hb[4:6])
 			if size > maxPktLen {
-				logp.Warn("unexpected packet, did you send TLS into plain TCP input?")
+				logp.Warn("wrong or too big HEP packet size with %d bytes", size)
+				//r.Reset(c)
+				//continue
 				return
 			}
+			buf := h.buffer.Get().([]byte)
 			n, err := readBytes(buf[:size])
 			if err != nil || n > maxPktLen {
 				logp.Warn("%v, unusal packet size with %d bytes", err, n)

@@ -26,9 +26,9 @@ func makeProtoHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
 	bb.WriteString(`,"dstPort":`)
 	bb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
 	bb.WriteString(`,"timeSeconds":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Tsec), 10))
+	bb.WriteString(strconv.FormatUint(uint64(h.Timestamp.Unix()), 10))
 	bb.WriteString(`,"timeUseconds":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Tmsec), 10))
+	bb.WriteString(strconv.FormatUint(uint64(h.Timestamp.Nanosecond()/1000), 10))
 	bb.WriteString(`,"payloadType":`)
 	bb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
 	bb.WriteString(`,"captureId":"`)
@@ -38,7 +38,7 @@ func makeProtoHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
 		bb.WriteString(h.NodePW)
 	}
 	bb.WriteString(`","correlation_id":"`)
-	bb.WriteString(h.CID)
+	decoder.WriteJSONString(bb, h.CID)
 	bb.WriteString(`"}`)
 	return bb.String()
 }

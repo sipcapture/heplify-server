@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/snappy"
 	"github.com/negbie/logp"
 	"github.com/prometheus/common/model"
@@ -24,14 +23,15 @@ import (
 const (
 	contentType  = "application/x-protobuf"
 	postPath     = "/api/prom/push"
-	getPath      = "/api/prom/label"
+	postPathOne  = "/loki/api/v1/push"
+	getPath      = "/loki/api/v1/label"
 	jobName      = model.LabelValue("heplify-server")
 	maxErrMsgLen = 1024
 )
 
 type entry struct {
 	labels model.LabelSet
-	*logproto.Entry
+	logproto.Entry
 }
 
 type Loki struct {
@@ -56,6 +56,7 @@ func (l *Loki) setup() error {
 		u.RawQuery = q.Encode()
 		l.URL = u.String()
 	}
+	l.URL = strings.Replace(l.URL, postPath, postPathOne, -1)
 	u.Path = getPath
 	q := u.Query()
 	u.RawQuery = q.Encode()
@@ -107,13 +108,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				pktMeta.WriteString(pkt.CID)
 			}
 
-			tsNano := curPktTime.UnixNano()
-			ts := &timestamp.Timestamp{
-				Seconds: tsNano / int64(time.Second),
-				Nanos:   int32(tsNano % int64(time.Second)),
-			}
-
-			l.entry = entry{model.LabelSet{}, &logproto.Entry{Timestamp: ts}}
+			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
@@ -210,6 +205,8 @@ func (l *Loki) send(ctx context.Context, buf []byte) (int, error) {
 		return -1, err
 	}
 	defer resp.Body.Close()
+
+	logp.Debug("loki", "%s request with %d bytes to %s - %v response", req.Method, len(buf), l.URL, resp.StatusCode)
 
 	if resp.StatusCode/100 != 2 {
 		scanner := bufio.NewScanner(io.LimitReader(resp.Body, maxErrMsgLen))
