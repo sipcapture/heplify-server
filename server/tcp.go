@@ -11,8 +11,8 @@ import (
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveTCP(addr string) {
-	defer close(h.exitTCP)
+func (hepInp *HEPInput) serveTCP(addr string) {
+	defer close(hepInp.exitTCP)
 
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
@@ -29,7 +29,7 @@ func (h *HEPInput) serveTCP(addr string) {
 	var wg sync.WaitGroup
 
 	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
+		if atomic.LoadUint32(&hepInp.stopped) == 1 {
 			logp.Info("stopping TCP listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
@@ -51,13 +51,13 @@ func (h *HEPInput) serveTCP(addr string) {
 		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
 		go func() {
-			h.handleTCP(conn)
+			hepInp.handleTCP(conn)
 			wg.Done()
 		}()
 	}
 }
 
-func (h *HEPInput) handleTCP(c net.Conn) {
+func (hepInp *HEPInput) handleTCP(c net.Conn) {
 	defer func() {
 		logp.Info("closing TCP connection from %s", c.RemoteAddr())
 		err := c.Close()
@@ -79,7 +79,7 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 		return int(n), nil
 	}
 	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
+		if atomic.LoadUint32(&hepInp.stopped) == 1 {
 			return
 		}
 
@@ -95,15 +95,15 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 				//continue
 				return
 			}
-			buf := h.buffer.Get().([]byte)
+			buf := hepInp.buffer.Get().([]byte)
 			n, err := readBytes(buf[:size])
 			if err != nil || n > maxPktLen {
 				logp.Warn("%v, unusal packet size with %d bytes", err, n)
-				atomic.AddUint64(&h.stats.ErrCount, 1)
+				atomic.AddUint64(&hepInp.stats.ErrCount, 1)
 				continue
 			}
-			h.inputCh <- buf[:n]
-			atomic.AddUint64(&h.stats.PktCount, 1)
+			hepInp.inputCh <- buf[:n]
+			atomic.AddUint64(&hepInp.stats.PktCount, 1)
 		}
 	}
 }

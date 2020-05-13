@@ -15,18 +15,23 @@ var (
 )
 
 func (p *Prometheus) dissectRTCPXRStats(nodeID, stats string) {
+	// NetworkPacketLossRate
 	if nlr, err := strconv.ParseFloat(extractXR("NLR=", stats), 64); err == nil {
 		vqrtcpxrNLR.WithLabelValues(nodeID).Set(nlr)
 	}
+	// JitterBufferDiscardRate
 	if jdr, err := strconv.ParseFloat(extractXR("JDR=", stats), 64); err == nil {
 		vqrtcpxrJDR.WithLabelValues(nodeID).Set(jdr)
 	}
+	// Inter Arrival Jitter
 	if iaj, err := strconv.ParseFloat(extractXR("IAJ=", stats), 64); err == nil {
 		vqrtcpxrIAJ.WithLabelValues(nodeID).Set(iaj)
 	}
+	//estimated mean opinion score for listening voice quality
 	if moslq, err := strconv.ParseFloat(extractXR("MOSLQ=", stats), 64); err == nil {
 		vqrtcpxrMOSLQ.WithLabelValues(nodeID).Set(moslq)
 	}
+	//estimated mean opinion score for conversation voice quality
 	if moscq, err := strconv.ParseFloat(extractXR("MOSCQ=", stats), 64); err == nil {
 		vqrtcpxrMOSCQ.WithLabelValues(nodeID).Set(moscq)
 	}
@@ -36,10 +41,12 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	var err error
 	plr, pls, jir, jis, dle, r, mos := 0, 0, 0, 0, 0, 0.0, 0.0
 
+	// Call setup time
 	if cs, err := strconv.ParseFloat(extractXR("CS=", stats), 64); err == nil {
 		xrtpCS.WithLabelValues(tn).Set(cs / 1000)
 	}
 
+	// Packet Loss (Sent, Received)
 	if plt := extractXR("PL=", stats); len(plt) > 1 {
 		if plr, pls, err = splitCommaInt(plt); err == nil {
 			xrtpPLR.WithLabelValues(tn).Set(float64(plr))
@@ -47,6 +54,7 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 		}
 	}
 
+	// Jitter (Sent, Received)
 	if jit := extractXR("JI=", stats); len(jit) > 1 {
 		if jir, jis, err = splitCommaInt(jit); err == nil {
 			xrtpJIR.WithLabelValues(tn).Set(float64(jir))
@@ -54,20 +62,24 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 		}
 	}
 
+	// RoundTrip Time
 	if dlt := extractXR("DL=", stats); len(dlt) > 1 {
 		if dle, _, err = splitCommaInt(dlt); err == nil || dle > 0 {
 			xrtpDLE.WithLabelValues(tn).Set(float64(dle))
 		}
 	}
 
+	// Packets (Sent, Received)
 	pr, _ := strconv.Atoi(extractXR("PR=", stats))
 	ps, _ := strconv.Atoi(extractXR("PS=", stats))
 	if pr == 0 && ps == 0 {
 		pr, ps = 1, 1
 	}
 
+	//Calculate loss as a percentage
 	loss := ((plr + pls) * 100) / (pr + ps)
 	el := (jir * 2) + (dle + 10)
+
 
 	if el < 160 {
 		r = 93.2 - (float64(el) / 40)
@@ -76,6 +88,7 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	}
 	r = r - (float64(loss) * 2.5)
 
+	// Calculate Mean Opinion Score (MOS)
 	mos = 1 + (0.035)*r + (0.000007)*r*(r-60)*(100-r)
 	if mos < 1 || mos > 5 {
 		mos = 1

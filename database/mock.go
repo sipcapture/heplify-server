@@ -29,8 +29,8 @@ func (m *Mock) insert(hCh chan *decoder.HEP) {
 	defer bytebufferpool.Put(bb)
 
 	for pkt := range hCh {
-		date := pkt.Timestamp.Format(time.RFC3339Nano)
-		if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+		date := pkt.AssembledTimestamp.Format(time.RFC3339Nano)
+		if pkt.AppProto == 1 && pkt.Payload != "" && pkt.SIP != nil {
 			pHeader := makeProtoHeader(pkt, bb)
 			dHeader := makeSIPDataHeader(pkt, bb, t)
 			callRowsString = append(callRowsString, pkt.SID, date, pHeader, dHeader, pkt.Payload)

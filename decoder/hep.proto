@@ -19,19 +19,19 @@ option (gogoproto.populate_all) = true;
 
 // HEP represents HEP packet
 message HEP {
-	required uint32 Version = 1 [(gogoproto.nullable) = false];
-	required uint32 Protocol = 2 [(gogoproto.nullable) = false];
-	required string SrcIP = 3 [(gogoproto.nullable) = false];
-	required string DstIP = 4 [(gogoproto.nullable) = false];
-	required uint32 SrcPort = 5 [(gogoproto.nullable) = false];
-	required uint32 DstPort = 6 [(gogoproto.nullable) = false];
-	required uint32 Tsec = 7 [(gogoproto.nullable) = false];
-	required uint32 Tmsec = 8 [(gogoproto.nullable) = false];
-	required uint32 ProtoType = 9 [(gogoproto.nullable) = false];
+	required uint32 IPVersion = 1 [(gogoproto.nullable) = false];
+	required uint32 TransportProto = 2 [(gogoproto.nullable) = false];
+	required string SourceIP = 3 [(gogoproto.nullable) = false];
+	required string DestIP = 4 [(gogoproto.nullable) = false];
+	required uint32 SourcePort = 5 [(gogoproto.nullable) = false];
+	required uint32 DestPort = 6 [(gogoproto.nullable) = false];
+	required uint32 TimeSec = 7 [(gogoproto.nullable) = false];
+	required uint32 TimeMicrosec = 8 [(gogoproto.nullable) = false];
+	required uint32 AppProto = 9 [(gogoproto.nullable) = false];
 	required uint32 NodeID = 10 [(gogoproto.nullable) = false];
 	required string NodePW = 11 [(gogoproto.nullable) = false];
 	required string Payload = 12 [(gogoproto.nullable) = false];
-	required string CID = 13 [(gogoproto.nullable) = false];
+	required string CorrelationID = 13 [(gogoproto.nullable) = false];
 	required uint32 Vlan = 14 [(gogoproto.nullable) = false];
 }
 

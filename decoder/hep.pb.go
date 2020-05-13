@@ -58,65 +58,65 @@ func (m *HEP) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HEP proto.InternalMessageInfo
 
-func (m *HEP) GetVersion() uint32 {
+func (m *HEP) GetIPVersion() uint32 {
 	if m != nil {
-		return m.Version
+		return m.IPVersion
 	}
 	return 0
 }
 
-func (m *HEP) GetProtocol() uint32 {
+func (m *HEP) GetTransportProto() uint32 {
 	if m != nil {
-		return m.Protocol
+		return m.TransportProto
 	}
 	return 0
 }
 
-func (m *HEP) GetSrcIP() string {
+func (m *HEP) GetSourceIP() string {
 	if m != nil {
-		return m.SrcIP
+		return m.SourceIP
 	}
 	return ""
 }
 
-func (m *HEP) GetDstIP() string {
+func (m *HEP) GetDestIP() string {
 	if m != nil {
-		return m.DstIP
+		return m.DestIP
 	}
 	return ""
 }
 
-func (m *HEP) GetSrcPort() uint32 {
+func (m *HEP) GetSourcePort() uint32 {
 	if m != nil {
-		return m.SrcPort
+		return m.SourcePort
 	}
 	return 0
 }
 
-func (m *HEP) GetDstPort() uint32 {
+func (m *HEP) GetDestPort() uint32 {
 	if m != nil {
-		return m.DstPort
+		return m.DestPort
 	}
 	return 0
 }
 
-func (m *HEP) GetTsec() uint32 {
+func (m *HEP) GetTimeSec() uint32 {
 	if m != nil {
-		return m.Tsec
+		return m.TimeSec
 	}
 	return 0
 }
 
-func (m *HEP) GetTmsec() uint32 {
+func (m *HEP) GetTimeMicrosec() uint32 {
 	if m != nil {
-		return m.Tmsec
+		return m.TimeMicrosec
 	}
 	return 0
 }
 
-func (m *HEP) GetProtoType() uint32 {
+func (m *HEP) GetProto() uint32 {
 	if m != nil {
-		return m.ProtoType
+		return m.AppProto
 	}
 	return 0
 }
@@ -142,9 +142,9 @@ func (m *HEP) GetPayload() string {
 	return ""
 }
 
-func (m *HEP) GetCID() string {
+func (m *HEP) GetCorrelationID() string {
 	if m != nil {
-		return m.CID
+		return m.CorrelationID
 	}
 	return ""
 }
@@ -207,31 +207,31 @@ func (this *HEP) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Version != that1.Version {
+	if this.IPVersion != that1.IPVersion {
 		return false
 	}
-	if this.Protocol != that1.Protocol {
+	if this.TransportProto != that1.TransportProto {
 		return false
 	}
-	if this.SrcIP != that1.SrcIP {
+	if this.SourceIP != that1.SourceIP {
 		return false
 	}
-	if this.DstIP != that1.DstIP {
+	if this.DestIP != that1.DestIP {
 		return false
 	}
-	if this.SrcPort != that1.SrcPort {
+	if this.SourcePort != that1.SourcePort {
 		return false
 	}
-	if this.DstPort != that1.DstPort {
+	if this.DestPort != that1.DestPort {
 		return false
 	}
-	if this.Tsec != that1.Tsec {
+	if this.TimeSec != that1.TimeSec {
 		return false
 	}
-	if this.Tmsec != that1.Tmsec {
+	if this.TimeMicrosec != that1.TimeMicrosec {
 		return false
 	}
-	if this.ProtoType != that1.ProtoType {
+	if this.AppProto != that1.AppProto {
 		return false
 	}
 	if this.NodeID != that1.NodeID {
@@ -243,7 +243,7 @@ func (this *HEP) Equal(that interface{}) bool {
 	if this.Payload != that1.Payload {
 		return false
 	}
-	if this.CID != that1.CID {
+	if this.CorrelationID != that1.CorrelationID {
 		return false
 	}
 	if this.Vlan != that1.Vlan {
@@ -257,19 +257,19 @@ func (this *HEP) GoString() string {
 	}
 	s := make([]string, 0, 18)
 	s = append(s, "&decoder.HEP{")
-	s = append(s, "Version: "+fmt.Sprintf("%#v", this.Version)+",\n")
-	s = append(s, "Protocol: "+fmt.Sprintf("%#v", this.Protocol)+",\n")
-	s = append(s, "SrcIP: "+fmt.Sprintf("%#v", this.SrcIP)+",\n")
-	s = append(s, "DstIP: "+fmt.Sprintf("%#v", this.DstIP)+",\n")
-	s = append(s, "SrcPort: "+fmt.Sprintf("%#v", this.SrcPort)+",\n")
-	s = append(s, "DstPort: "+fmt.Sprintf("%#v", this.DstPort)+",\n")
-	s = append(s, "Tsec: "+fmt.Sprintf("%#v", this.Tsec)+",\n")
-	s = append(s, "Tmsec: "+fmt.Sprintf("%#v", this.Tmsec)+",\n")
-	s = append(s, "ProtoType: "+fmt.Sprintf("%#v", this.ProtoType)+",\n")
+	s = append(s, "IPVersion: "+fmt.Sprintf("%#v", this.IPVersion)+",\n")
+	s = append(s, "TransportProto: "+fmt.Sprintf("%#v", this.TransportProto)+",\n")
+	s = append(s, "SourceIP: "+fmt.Sprintf("%#v", this.SourceIP)+",\n")
+	s = append(s, "DestIP: "+fmt.Sprintf("%#v", this.DestIP)+",\n")
+	s = append(s, "SourcePort: "+fmt.Sprintf("%#v", this.SourcePort)+",\n")
+	s = append(s, "DestPort: "+fmt.Sprintf("%#v", this.DestPort)+",\n")
+	s = append(s, "TimeSec: "+fmt.Sprintf("%#v", this.TimeSec)+",\n")
+	s = append(s, "TimeMicrosec: "+fmt.Sprintf("%#v", this.TimeMicrosec)+",\n")
+	s = append(s, "AppProto: "+fmt.Sprintf("%#v", this.AppProto)+",\n")
 	s = append(s, "NodeID: "+fmt.Sprintf("%#v", this.NodeID)+",\n")
 	s = append(s, "NodePW: "+fmt.Sprintf("%#v", this.NodePW)+",\n")
 	s = append(s, "Payload: "+fmt.Sprintf("%#v", this.Payload)+",\n")
-	s = append(s, "CID: "+fmt.Sprintf("%#v", this.CID)+",\n")
+	s = append(s, "CorrelationID: "+fmt.Sprintf("%#v", this.CorrelationID)+",\n")
 	s = append(s, "Vlan: "+fmt.Sprintf("%#v", this.Vlan)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -299,33 +299,33 @@ func (m *HEP) MarshalTo(dAtA []byte) (int, error) {
 	_ = l
 	dAtA[i] = 0x8
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.Version))
+	i = encodeVarintHep(dAtA, i, uint64(m.IPVersion))
 	dAtA[i] = 0x10
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.Protocol))
+	i = encodeVarintHep(dAtA, i, uint64(m.TransportProto))
 	dAtA[i] = 0x1a
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(len(m.SrcIP)))
-	i += copy(dAtA[i:], m.SrcIP)
+	i = encodeVarintHep(dAtA, i, uint64(len(m.SourceIP)))
+	i += copy(dAtA[i:], m.SourceIP)
 	dAtA[i] = 0x22
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(len(m.DstIP)))
-	i += copy(dAtA[i:], m.DstIP)
+	i = encodeVarintHep(dAtA, i, uint64(len(m.DestIP)))
+	i += copy(dAtA[i:], m.DestIP)
 	dAtA[i] = 0x28
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.SrcPort))
+	i = encodeVarintHep(dAtA, i, uint64(m.SourcePort))
 	dAtA[i] = 0x30
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.DstPort))
+	i = encodeVarintHep(dAtA, i, uint64(m.DestPort))
 	dAtA[i] = 0x38
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.Tsec))
+	i = encodeVarintHep(dAtA, i, uint64(m.TimeSec))
 	dAtA[i] = 0x40
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.Tmsec))
+	i = encodeVarintHep(dAtA, i, uint64(m.TimeMicrosec))
 	dAtA[i] = 0x48
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(m.ProtoType))
+	i = encodeVarintHep(dAtA, i, uint64(m.AppProto))
 	dAtA[i] = 0x50
 	i++
 	i = encodeVarintHep(dAtA, i, uint64(m.NodeID))
@@ -339,8 +339,8 @@ func (m *HEP) MarshalTo(dAtA []byte) (int, error) {
 	i += copy(dAtA[i:], m.Payload)
 	dAtA[i] = 0x6a
 	i++
-	i = encodeVarintHep(dAtA, i, uint64(len(m.CID)))
-	i += copy(dAtA[i:], m.CID)
+	i = encodeVarintHep(dAtA, i, uint64(len(m.CorrelationID)))
+	i += copy(dAtA[i:], m.CorrelationID)
 	dAtA[i] = 0x70
 	i++
 	i = encodeVarintHep(dAtA, i, uint64(m.Vlan))
@@ -358,19 +358,19 @@ func encodeVarintHep(dAtA []byte, offset int, v uint64) int {
 }
 func NewPopulatedHEP(r randyHep, easy bool) *HEP {
 	this := &HEP{}
-	this.Version = uint32(r.Uint32())
-	this.Protocol = uint32(r.Uint32())
-	this.SrcIP = string(randStringHep(r))
-	this.DstIP = string(randStringHep(r))
-	this.SrcPort = uint32(r.Uint32())
-	this.DstPort = uint32(r.Uint32())
-	this.Tsec = uint32(r.Uint32())
-	this.Tmsec = uint32(r.Uint32())
-	this.ProtoType = uint32(r.Uint32())
+	this.IPVersion = uint32(r.Uint32())
+	this.TransportProto = uint32(r.Uint32())
+	this.SourceIP = string(randStringHep(r))
+	this.DestIP = string(randStringHep(r))
+	this.SourcePort = uint32(r.Uint32())
+	this.DestPort = uint32(r.Uint32())
+	this.TimeSec = uint32(r.Uint32())
+	this.TimeMicrosec = uint32(r.Uint32())
+	this.AppProto = uint32(r.Uint32())
 	this.NodeID = uint32(r.Uint32())
 	this.NodePW = string(randStringHep(r))
 	this.Payload = string(randStringHep(r))
-	this.CID = string(randStringHep(r))
+	this.CorrelationID = string(randStringHep(r))
 	this.Vlan = uint32(r.Uint32())
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -455,23 +455,23 @@ func (m *HEP) Size() (n int) {
 	}
 	var l int
 	_ = l
-	n += 1 + sovHep(uint64(m.Version))
-	n += 1 + sovHep(uint64(m.Protocol))
-	l = len(m.SrcIP)
+	n += 1 + sovHep(uint64(m.IPVersion))
+	n += 1 + sovHep(uint64(m.TransportProto))
+	l = len(m.SourceIP)
 	n += 1 + l + sovHep(uint64(l))
-	l = len(m.DstIP)
+	l = len(m.DestIP)
 	n += 1 + l + sovHep(uint64(l))
-	n += 1 + sovHep(uint64(m.SrcPort))
-	n += 1 + sovHep(uint64(m.DstPort))
-	n += 1 + sovHep(uint64(m.Tsec))
-	n += 1 + sovHep(uint64(m.Tmsec))
-	n += 1 + sovHep(uint64(m.ProtoType))
+	n += 1 + sovHep(uint64(m.SourcePort))
+	n += 1 + sovHep(uint64(m.DestPort))
+	n += 1 + sovHep(uint64(m.TimeSec))
+	n += 1 + sovHep(uint64(m.TimeMicrosec))
+	n += 1 + sovHep(uint64(m.AppProto))
 	n += 1 + sovHep(uint64(m.NodeID))
 	l = len(m.NodePW)
 	n += 1 + l + sovHep(uint64(l))
 	l = len(m.Payload)
 	n += 1 + l + sovHep(uint64(l))
-	l = len(m.CID)
+	l = len(m.CorrelationID)
 	n += 1 + l + sovHep(uint64(l))
 	n += 1 + sovHep(uint64(m.Vlan))
 	return n
@@ -495,19 +495,19 @@ func (this *HEP) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&HEP{`,
-		`Version:` + fmt.Sprintf("%v", this.Version) + `,`,
-		`Protocol:` + fmt.Sprintf("%v", this.Protocol) + `,`,
-		`SrcIP:` + fmt.Sprintf("%v", this.SrcIP) + `,`,
-		`DstIP:` + fmt.Sprintf("%v", this.DstIP) + `,`,
-		`SrcPort:` + fmt.Sprintf("%v", this.SrcPort) + `,`,
-		`DstPort:` + fmt.Sprintf("%v", this.DstPort) + `,`,
-		`Tsec:` + fmt.Sprintf("%v", this.Tsec) + `,`,
-		`Tmsec:` + fmt.Sprintf("%v", this.Tmsec) + `,`,
-		`ProtoType:` + fmt.Sprintf("%v", this.ProtoType) + `,`,
+		`IPVersion:` + fmt.Sprintf("%v", this.IPVersion) + `,`,
+		`TransportProto:` + fmt.Sprintf("%v", this.TransportProto) + `,`,
+		`SourceIP:` + fmt.Sprintf("%v", this.SourceIP) + `,`,
+		`DestIP:` + fmt.Sprintf("%v", this.DestIP) + `,`,
+		`SourcePort:` + fmt.Sprintf("%v", this.SourcePort) + `,`,
+		`DestPort:` + fmt.Sprintf("%v", this.DestPort) + `,`,
+		`TimeSec:` + fmt.Sprintf("%v", this.TimeSec) + `,`,
+		`TimeMicrosec:` + fmt.Sprintf("%v", this.TimeMicrosec) + `,`,
+		`AppProto:` + fmt.Sprintf("%v", this.AppProto) + `,`,
 		`NodeID:` + fmt.Sprintf("%v", this.NodeID) + `,`,
 		`NodePW:` + fmt.Sprintf("%v", this.NodePW) + `,`,
 		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
-		`CID:` + fmt.Sprintf("%v", this.CID) + `,`,
+		`CorrelationID:` + fmt.Sprintf("%v", this.CorrelationID) + `,`,
 		`Vlan:` + fmt.Sprintf("%v", this.Vlan) + `,`,
 		`}`,
 	}, "")
@@ -553,9 +553,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field IPVersion", wireType)
 			}
-			m.Version = 0
+			m.IPVersion = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -565,7 +565,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= (uint32(b) & 0x7F) << shift
+				m.IPVersion |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -573,9 +573,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Protocol", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TransportProto", wireType)
 			}
-			m.Protocol = 0
+			m.TransportProto = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -585,7 +585,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Protocol |= (uint32(b) & 0x7F) << shift
+				m.TransportProto |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -593,7 +593,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SrcIP", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceIP", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -618,12 +618,12 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SrcIP = string(dAtA[iNdEx:postIndex])
+			m.SourceIP = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DstIP", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DestIP", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -648,14 +648,14 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DstIP = string(dAtA[iNdEx:postIndex])
+			m.DestIP = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SrcPort", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SourcePort", wireType)
 			}
-			m.SrcPort = 0
+			m.SourcePort = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -665,7 +665,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= (uint32(b) & 0x7F) << shift
+				m.SourcePort |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -673,9 +673,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000010)
 		case 6:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DstPort", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DestPort", wireType)
 			}
-			m.DstPort = 0
+			m.DestPort = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -685,7 +685,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= (uint32(b) & 0x7F) << shift
+				m.DestPort |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -693,9 +693,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000020)
 		case 7:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Tsec", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeSec", wireType)
 			}
-			m.Tsec = 0
+			m.TimeSec = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -705,7 +705,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Tsec |= (uint32(b) & 0x7F) << shift
+				m.TimeSec |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -713,9 +713,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000040)
 		case 8:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Tmsec", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeMicrosec", wireType)
 			}
-			m.Tmsec = 0
+			m.TimeMicrosec = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -725,7 +725,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Tmsec |= (uint32(b) & 0x7F) << shift
+				m.TimeMicrosec |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -733,9 +733,9 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000080)
 		case 9:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProtoType", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AppProto", wireType)
 			}
-			m.ProtoType = 0
+			m.AppProto = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowHep
@@ -745,7 +745,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ProtoType |= (uint32(b) & 0x7F) << shift
+				m.AppProto |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -833,7 +833,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000800)
 		case 13:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CorrelationID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -858,7 +858,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CID = string(dAtA[iNdEx:postIndex])
+			m.CorrelationID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00001000)
 		case 14:
@@ -897,31 +897,31 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Version")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("IPVersion")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Protocol")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("TransportProto")
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("SrcIP")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("SourceIP")
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("DstIP")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("DestIP")
 	}
 	if hasFields[0]&uint64(0x00000010) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("SrcPort")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("SourcePort")
 	}
 	if hasFields[0]&uint64(0x00000020) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("DstPort")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("DestPort")
 	}
 	if hasFields[0]&uint64(0x00000040) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Tsec")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("TimeSec")
 	}
 	if hasFields[0]&uint64(0x00000080) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Tmsec")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("TimeMicrosec")
 	}
 	if hasFields[0]&uint64(0x00000100) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("ProtoType")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("AppProto")
 	}
 	if hasFields[0]&uint64(0x00000200) == 0 {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("NodeID")
@@ -933,7 +933,7 @@ func (m *HEP) Unmarshal(dAtA []byte) error {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Payload")
 	}
 	if hasFields[0]&uint64(0x00001000) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("CID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("CorrelationID")
 	}
 	if hasFields[0]&uint64(0x00002000) == 0 {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Vlan")

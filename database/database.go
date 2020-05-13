@@ -35,20 +35,20 @@ func New(name string) *Database {
 
 func (d *Database) Run() error {
 	driver := config.Setting.DBDriver
-	shema := config.Setting.DBShema
+	schema := config.Setting.DBShema
 	worker := config.Setting.DBWorker
 
 	if driver != "mock" {
 		if driver != "mysql" && driver != "postgres" {
 			return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
 		}
-		if shema != "homer5" && shema != "homer7" {
-			return fmt.Errorf("invalid DBShema: %s, please use homer5 or homer7", shema)
+		if schema != "homer5" && schema != "homer7" {
+			return fmt.Errorf("invalid DBSchema: %s, please use homer5 or homer7", schema)
 		}
-		if shema == "homer5" && driver != "mysql" {
+		if schema == "homer5" && driver != "mysql" {
 			return fmt.Errorf("homer5 has only mysql support")
 		}
-		if shema == "homer7" && driver != "postgres" {
+		if schema == "homer7" && driver != "postgres" {
 			return fmt.Errorf("homer7 has only postgres support")
 		}
 	}

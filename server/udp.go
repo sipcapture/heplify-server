@@ -8,7 +8,7 @@ import (
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveUDP(addr string) {
+func (hepInp *HEPInput) serveUDP(addr string) {
 	ua, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		logp.Err("%v", err)
@@ -27,11 +27,11 @@ func (h *HEPInput) serveUDP(addr string) {
 	}()
 
 	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
+		if atomic.LoadUint32(&hepInp.stopped) == 1 {
 			return
 		}
 		uc.SetReadDeadline(time.Now().Add(1e9))
-		buf := h.buffer.Get().([]byte)
+		buf := hepInp.buffer.Get().([]byte)
 		n, err := uc.Read(buf)
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
@@ -42,10 +42,10 @@ func (h *HEPInput) serveUDP(addr string) {
 			}
 		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
+			atomic.AddUint64(&hepInp.stats.ErrCount, 1)
 			continue
 		}
-		h.inputCh <- buf[:n]
-		atomic.AddUint64(&h.stats.PktCount, 1)
+		hepInp.inputCh <- buf[:n]
+		atomic.AddUint64(&hepInp.stats.PktCount, 1)
 	}
 }

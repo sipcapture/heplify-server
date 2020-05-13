@@ -16,8 +16,8 @@ import (
 var testInviteMsg = "INVITE sip:15554440000@X.X.X.X:5060;user=phone SIP/2.0\r\nVia: SIP/2.0/UDP X.X.X.X:5060;branch=z9hG4bK34133a599ll241207INV21d7d0684e84a2d2\r\nMax-Forwards: 35\r\nContact: <sip:X.X.X.X:5060>\r\nTo: <sip:15554440000@X.X.X.X;user=phone;noa=national>\r\nFrom: \"Unavailable\"<sip:X.X.X.X;user=phone;noa=national>;tag=21d7d068-co2149-FOOI003\r\nCall-ID: 1393184968_47390262@domain.com\r\nCSeq: 214901 INVITE\r\nAuthorization: Digest username=\"foobaruser124\", realm=\"FOOBAR\", algorithm=MD5, uri=\"sip:foo.bar.com\", nonce=\"4f6d7a1d\", response=\"6a79a5c75572b0f6a18963ae04e971cf\", opaque=\"\"\r\nAllow: INVITE,ACK,CANCEL,BYE,REFER,OPTIONS,NOTIFY,SUBSCRIBE,PRACK,INFO\r\nContent-Type: application/sdp\r\nDate: Thu, 29 Sep 2011 16:54:42 GMT\r\nUser-Agent: FAKE-UA-DATA\r\nP-Asserted-Identity: \"Unavailable\"<sip:Restricted@X.X.X.X:5060>\r\nContent-Length: 322\r\n\r\nv=0\r\no=- 567791720 567791720 IN IP4 X.X.X.X\r\ns=FAKE-DATA\r\nc=IN IP4 X.X.X.X\r\nt=0 0\r\nm=audio 17354 RTP/AVP 0 8 86 18 96\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:86 G726-32/8000\r\na=rtpmap:18 G729/8000\r\na=rtpmap:96 telephone-event/8000\r\na=maxptime:20\r\na=fmtp:18 annexb=yes\r\na=fmtp:96 0-15\r\na=sendrecv\r\n"
 
 func TestHeader(t *testing.T) {
-	h := Header{"t", "v"}
-	if h.String() != "t: v" {
+	hdr := Header{"t", "v"}
+	if hdr.String() != "t: v" {
 		t.Errorf("Error with header.String() method. Unexpected res.")
 	}
 }

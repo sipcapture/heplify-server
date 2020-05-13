@@ -20,11 +20,11 @@ import (
 )
 
 // The first 4 bytes are the string "HEP3". The next 2 bytes are the length of the
-// whole message (len("HEP3") + length of all the chucks we have. The next bytes
-// are all the chuncks created by makeChuncks()
+// whole message ( len("HEP3") ) + length of all the chunks we have. The next bytes
+// are all the chunks created by makeChunks()
 // Bytes: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31......
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
+//        | "HEP3"|len|chunks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
@@ -41,47 +41,48 @@ var (
 	strEmpty              = []byte(``)
 )
 
-// HEP chuncks
+// HEP chunks
 const (
-	Version   = 1  // Chunk 0x0001 IP protocol family (0x02=IPv4, 0x0a=IPv6)
-	Protocol  = 2  // Chunk 0x0002 IP protocol ID (0x06=TCP, 0x11=UDP)
-	IP4SrcIP  = 3  // Chunk 0x0003 IPv4 source address
-	IP4DstIP  = 4  // Chunk 0x0004 IPv4 destination address
-	IP6SrcIP  = 5  // Chunk 0x0005 IPv6 source address
-	IP6DstIP  = 6  // Chunk 0x0006 IPv6 destination address
-	SrcPort   = 7  // Chunk 0x0007 Protocol source port
-	DstPort   = 8  // Chunk 0x0008 Protocol destination port
-	Tsec      = 9  // Chunk 0x0009 Unix timestamp, seconds
-	Tmsec     = 10 // Chunk 0x000a Unix timestamp, microseconds
-	ProtoType = 11 // Chunk 0x000b Protocol type (DNS, LOG, RTCP, SIP)
-	NodeID    = 12 // Chunk 0x000c Capture client ID
-	NodePW    = 14 // Chunk 0x000e Authentication key (plain text / TLS connection)
-	Payload   = 15 // Chunk 0x000f Captured packet payload
-	CID       = 17 // Chunk 0x0011 Correlation ID
-	Vlan      = 18 // Chunk 0x0012 VLAN
-	NodeName  = 19 // Chunk 0x0013 NodeName
+	IPVersion 	= 1  // Chunk 0x0001 IP protocol family (0x02=IPv4, 0x0a=IPv6)
+	TransportProto	= 2  // Chunk 0x0002 IP protocol ID (0x06=TCP, 0x11=UDP)
+	IP4SourceIP	= 3  // Chunk 0x0003 IPv4 source address
+	IP4DestIP	= 4  // Chunk 0x0004 IPv4 destination address
+	IP6SourceIP	= 5  // Chunk 0x0005 IPv6 source address
+	IP6DestIP	= 6  // Chunk 0x0006 IPv6 destination address
+	SourcePort	= 7  // Chunk 0x0007 Protocol source port
+	DestPort	= 8  // Chunk 0x0008 Protocol destination port
+	TimeSec 	= 9  // Chunk 0x0009 Unix timestamp, seconds
+	TimeMicrosec	= 10 // Chunk 0x000a Unix timestamp, microseconds
+	AppProto	= 11 // Chunk 0x000b Ingested Protocol type (DNS, LOG, RTCP, SIP)
+	NodeID    	= 12 // Chunk 0x000c Capture client ID
+	NodePW    	= 14 // Chunk 0x000e Authentication key (plain text / TLS connection)
+	Payload   	= 15 // Chunk 0x000f Captured packet payload
+	CorrelationID	= 17 // Chunk 0x0011 Correlation ID
+	Vlan     	= 18 // Chunk 0x0012 VLAN
+	NodeName  	= 19 // Chunk 0x0013 NodeName
 )
 
 // HEP represents HEP packet
 type HEP struct {
-	Version     uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
-	Protocol    uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
-	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
-	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
-	SrcPort     uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
-	DstPort     uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
-	Tsec        uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
-	Tmsec       uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
-	ProtoType   uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
-	NodeID      uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
-	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
-	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
-	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID"`
-	Vlan        uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
-	ProtoString string
-	Timestamp   time.Time
+	IPVersion 	uint32 `protobuf:"varint,1,req,name=IPVersion" json:"Version"`
+	TransportProto 	uint32 `protobuf:"varint,2,req,name=TransportProto" json:"Protocol"`
+	SourceIP 	string `protobuf:"bytes,3,req,name=SourceIP" json:"SrcIP"`
+	DestIP 		string `protobuf:"bytes,4,req,name=DestIP" json:"DstIP"`
+	SourcePort 	uint32 `protobuf:"varint,5,req,name=SourcePort" json:"SrcPort"`
+	DestPort 	uint32 `protobuf:"varint,6,req,name=DestPort" json:"DstPort"`
+	TimeSec 	uint32 `protobuf:"varint,7,req,name=TimeSec" json:"Tsec"`
+	TimeMicrosec 	uint32 `protobuf:"varint,8,req,name=TimeMicrosec" json:"Tmsec"`
+	AppProto 	uint32 `protobuf:"varint,9,req,name=AppProto" json:"ProtoType"`
+	NodeID 		uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
+	NodePW 		string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
+	Payload 	string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
+	CorrelationID 	string `protobuf:"bytes,13,req,name=CorrelationID" json:"CID"`
+	Vlan 		uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
+	// The following variables hold values derived from the ingress data, i.e. not found at ingress.
+	ProtoAsString 	string
+	AssembledTimestamp	time.Time
 	SIP         *sipparser.SipMsg
-	NodeName    string
+	NodeName    	string
 	SID         string
 }
 
@@ -95,58 +96,59 @@ func DecodeHEP(packet []byte) (*HEP, error) {
 	return hep, nil
 }
 
-func (h *HEP) parse(packet []byte) error {
+func (hep *HEP) parse(packet []byte) error {
 	var err error
 	if bytes.HasPrefix(packet, []byte{0x48, 0x45, 0x50, 0x33}) {
-		err = h.parseHEP(packet)
+		err = hep.parseHEP(packet)
 		if err != nil {
 			logp.Warn("%v", err)
 			return err
 		}
 	} else {
-		err = h.Unmarshal(packet)
+		err = hep.Unmarshal(packet)
 		if err != nil {
-			logp.Warn("malformed packet with length %d which is neither hep nor protobuf encapsulated", len(packet))
+			logp.Warn("malformed packet with length %d which is neither HEP nor protobuf encapsulated", len(packet))
 			return err
 		}
 	}
 
 	t := time.Now()
-	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
-	d := t.Sub(h.Timestamp)
-	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
-		logp.Debug("hep", "got timestamp in the future with delta: %d from nodeID %d", d, h.NodeID)
-		h.Timestamp = t
+	hep.AssembledTimestamp = time.Unix(int64(hep.TimeSec), int64(hep.TimeMicrosec*1000))
+	d := t.Sub(hep.AssembledTimestamp)
+	if d < 0 || (hep.TimeSec == 0 && hep.TimeMicrosec == 0) {
+		logp.Debug("hep", "got timestamp in the future with delta: %d from NodeID %d", d, hep.NodeID)
+		hep.AssembledTimestamp = t
 	}
 
-	h.normPayload()
-	if h.ProtoType == 0 {
+	hep.normPayload()
+	if hep.AppProto == 0 {
 		return nil
 	}
 
-	if h.ProtoType == 1 && len(h.Payload) > 32 {
-		err = h.parseSIP()
+	if hep.AppProto == 1 && len(hep.Payload) > 32 {
+		err = hep.parseSIP()
 		if err != nil {
-			logp.Warn("%v\n%q\nnodeID: %d, protoType: %d, version: %d, protocol: %d, length: %d, flow: %s:%d->%s:%d\n\n",
-				err, h.Payload, h.NodeID, h.ProtoType, h.Version, h.Protocol, len(h.Payload), h.SrcIP, h.SrcPort, h.DstIP, h.DstPort)
+			logp.Warn("%v\n%q\nNodeID: %d, AppProto: %d, IPVersion: %d, CapturedTransport: %d, length: %d, flow: %s:%d->%s:%d\n\n",
+				err, hep.Payload, 
+				hep.NodeID, hep.AppProto, hep.IPVersion, hep.TransportProto, len(hep.Payload), hep.SourceIP, hep.SourcePort, hep.DestIP, hep.DestPort)
 			return err
 		}
 
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
-				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.ProtoType = 0
+				if config.Setting.DiscardMethod[k] == hep.SIP.CseqMethod {
+					hep.AppProto = 0
 					return nil
 				}
 			}
 		}
 	}
 
-	if h.NodeName == "" {
-		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
+	if hep.NodeName == "" {
+		hep.NodeName = strconv.FormatUint(uint64(hep.NodeID), 10)
 	}
 
-	logp.Debug("hep", "%+v\n\n", h)
+	logp.Debug("HEP", "%+v\n\n", hep)
 	return nil
 }
 
@@ -157,11 +159,11 @@ var fixUTF8 = func(r rune) rune {
 	return r
 }
 
-func (h *HEP) normPayload() {
+func (hep *HEP) normPayload() {
 	if config.Setting.Dedup {
-		ts := uint64(h.Timestamp.UnixNano())
+		ts := uint64(hep.AssembledTimestamp.UnixNano())
 		kh := make([]byte, 8)
-		ks := xxhash.Sum64String(h.Payload)
+		ks := xxhash.Sum64String(hep.Payload)
 		binary.BigEndian.PutUint64(kh, ks)
 
 		if buf := dedup.Get(nil, kh); buf != nil {
@@ -171,7 +173,7 @@ func (h *HEP) normPayload() {
 				d = i - ts
 			}
 			if d < 500e6 {
-				h.ProtoType = 0
+				hep.AppProto = 0
 				return
 			}
 		}
@@ -180,60 +182,60 @@ func (h *HEP) normPayload() {
 		binary.BigEndian.PutUint64(tb, ts)
 		dedup.Set(kh, tb)
 	}
-	if !utf8.ValidString(h.Payload) {
-		h.Payload = strings.Map(fixUTF8, h.Payload)
+	if !utf8.ValidString(hep.Payload) {
+		hep.Payload = strings.Map(fixUTF8, hep.Payload)
 	}
-	if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
-		h.Payload = strings.Map(fixUTF8, h.Payload)
+	if config.Setting.DBDriver == "postgres" && strings.Index(hep.Payload, "\x00") > -1 {
+		hep.Payload = strings.Map(fixUTF8, hep.Payload)
 	}
 }
 
-func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
+func (hep *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 	switch tag {
 	case "callid":
-		return WriteJSONString(w, h.SIP.CallID)
+		return WriteJSONString(w, hep.SIP.CallID)
 	case "cseq":
-		return WriteJSONString(w, h.SIP.CseqVal)
+		return WriteJSONString(w, hep.SIP.CseqVal)
 	case "method":
-		return WriteJSONString(w, h.SIP.FirstMethod)
+		return WriteJSONString(w, hep.SIP.FirstMethod)
 	case "ruri_user":
-		return WriteJSONString(w, h.SIP.URIUser)
+		return WriteJSONString(w, hep.SIP.URIUser)
 	case "ruri_domain":
-		return WriteJSONString(w, h.SIP.URIHost)
+		return WriteJSONString(w, hep.SIP.URIHost)
 	case "from_user":
-		return WriteJSONString(w, h.SIP.FromUser)
+		return WriteJSONString(w, hep.SIP.FromUser)
 	case "from_domain":
-		return WriteJSONString(w, h.SIP.FromHost)
+		return WriteJSONString(w, hep.SIP.FromHost)
 	case "from_tag":
-		return WriteJSONString(w, h.SIP.FromTag)
+		return WriteJSONString(w, hep.SIP.FromTag)
 	case "to_user":
-		return WriteJSONString(w, h.SIP.ToUser)
+		return WriteJSONString(w, hep.SIP.ToUser)
 	case "to_domain":
-		return WriteJSONString(w, h.SIP.ToHost)
+		return WriteJSONString(w, hep.SIP.ToHost)
 	case "to_tag":
-		return WriteJSONString(w, h.SIP.ToTag)
+		return WriteJSONString(w, hep.SIP.ToTag)
 	case "via":
-		return WriteJSONString(w, h.SIP.ViaOne)
+		return WriteJSONString(w, hep.SIP.ViaOne)
 	case "contact_user":
-		return WriteJSONString(w, h.SIP.ContactUser)
+		return WriteJSONString(w, hep.SIP.ContactUser)
 	case "contact_domain":
-		return WriteJSONString(w, h.SIP.ContactHost)
+		return WriteJSONString(w, hep.SIP.ContactHost)
 	case "user_agent":
-		return WriteJSONString(w, h.SIP.UserAgent)
+		return WriteJSONString(w, hep.SIP.UserAgent)
 	case "pid_user":
-		return WriteJSONString(w, h.SIP.PaiUser)
+		return WriteJSONString(w, hep.SIP.PaiUser)
 	case "auth_user":
-		return WriteJSONString(w, h.SIP.AuthUser)
+		return WriteJSONString(w, hep.SIP.AuthUser)
 	case "server":
-		return WriteJSONString(w, h.SIP.Server)
+		return WriteJSONString(w, hep.SIP.Server)
 	case "content_type":
-		return WriteJSONString(w, h.SIP.ContentType)
+		return WriteJSONString(w, hep.SIP.ContentType)
 	case "reason":
-		return WriteJSONString(w, h.SIP.ReasonVal)
+		return WriteJSONString(w, hep.SIP.ReasonVal)
 	case "diversion":
-		return WriteJSONString(w, h.SIP.DiversionVal)
+		return WriteJSONString(w, hep.SIP.DiversionVal)
 	case "expires":
-		return WriteJSONString(w, h.SIP.Expires)
+		return WriteJSONString(w, hep.SIP.Expires)
 	default:
 		return w.Write(strEmpty)
 	}

@@ -10,47 +10,47 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
-func makeProtoHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
+func makeProtoHeader(hep *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
 	bb.Reset()
 	bb.WriteString(`{`)
 	bb.WriteString(`"protocolFamily":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Version), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.IPVersion), 10))
 	bb.WriteString(`,"protocol":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Protocol), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.TransportProto), 10))
 	bb.WriteString(`,"srcIp":"`)
-	bb.WriteString(h.SrcIP)
+	bb.WriteString(hep.SourceIP)
 	bb.WriteString(`","dstIp":"`)
-	bb.WriteString(h.DstIP)
+	bb.WriteString(hep.DestIP)
 	bb.WriteString(`","srcPort":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.SrcPort), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.SourcePort), 10))
 	bb.WriteString(`,"dstPort":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.DstPort), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.DestPort), 10))
 	bb.WriteString(`,"timeSeconds":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Timestamp.Unix()), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.AssembledTimestamp.Unix()), 10))
 	bb.WriteString(`,"timeUseconds":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.Timestamp.Nanosecond()/1000), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.AssembledTimestamp.Nanosecond()/1000), 10))
 	bb.WriteString(`,"payloadType":`)
-	bb.WriteString(strconv.FormatUint(uint64(h.ProtoType), 10))
+	bb.WriteString(strconv.FormatUint(uint64(hep.AppProto), 10))
 	bb.WriteString(`,"captureId":"`)
-	bb.WriteString(h.NodeName)
-	if h.NodePW != "" {
+	bb.WriteString(hep.NodeName)
+	if hep.NodePW != "" {
 		bb.WriteString(`","capturePass":"`)
-		bb.WriteString(h.NodePW)
+		bb.WriteString(hep.NodePW)
 	}
 	bb.WriteString(`","correlation_id":"`)
-	decoder.WriteJSONString(bb, h.CID)
+	decoder.WriteJSONString(bb, hep.CorrelationID)
 	bb.WriteString(`"}`)
 	return bb.String()
 }
 
-func makeSIPDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
+func makeSIPDataHeader(hep *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttemplate.Template) string {
 	bb.Reset()
 	bb.WriteString(`{`)
 
-	t.ExecuteFunc(bb, h.EscapeFields)
+	t.ExecuteFunc(bb, hep.EscapeFields)
 
-	if len(h.SIP.CHeader) > 0 {
-		for k, v := range h.SIP.CustomHeader {
+	if len(hep.SIP.CHeader) > 0 {
+		for k, v := range hep.SIP.CustomHeader {
 			bb.WriteString(`,"` + k + `":"`)
 			bb.WriteString(v + `"`)
 		}
@@ -60,21 +60,21 @@ func makeSIPDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttem
 	return bb.String()
 }
 
-func makeRTCDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
+func makeRTCDataHeader(hep *decoder.HEP, bb *bytebufferpool.ByteBuffer) string {
 	bb.Reset()
 	bb.WriteString(`{`)
 	bb.WriteString(`"node":"`)
-	bb.WriteString(h.NodeName)
+	bb.WriteString(hep.NodeName)
 	bb.WriteString(`","proto":"`)
-	bb.WriteString(h.ProtoString)
+	bb.WriteString(hep.ProtoAsString)
 	bb.WriteString(`"}`)
 	return bb.String()
 }
 
 var IsupPaths = [][]string{
-	[]string{"cic"},
-	[]string{"dpc"},
-	[]string{"opc"},
+	[]string{"cic"}, // Circuit Identification Code
+	[]string{"dpc"}, // Destination Point Code
+	[]string{"opc"}, // Originating Point Code
 	[]string{"msg_name"},
 	[]string{"called_number", "num"},
 	[]string{"calling_number", "num"},
@@ -87,15 +87,18 @@ func makeISUPDataHeader(data []byte, bb *bytebufferpool.ByteBuffer) (string, str
 
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
-		case 0:
+		case 0: 
+			// Circuit Identification Code
 			if cic, err = jsonparser.ParseInt(value); err != nil {
 				logp.Warn("%v", err)
 			}
-		case 1:
+		case 1: 
+			// Destination Point Code
 			if dpc, err = jsonparser.ParseInt(value); err != nil {
 				logp.Warn("%v", err)
 			}
 		case 2:
+			// Originating Point Code
 			if opc, err = jsonparser.ParseInt(value); err != nil {
 				logp.Warn("%v", err)
 			}

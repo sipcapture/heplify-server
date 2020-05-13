@@ -11,8 +11,8 @@ import (
 	"github.com/negbie/logp"
 )
 
-func (h *HEPInput) serveTLS(addr string) {
-	defer close(h.exitTLS)
+func (hepInp *HEPInput) serveTLS(addr string) {
+	defer close(hepInp.exitTLS)
 
 	ta, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
@@ -35,7 +35,7 @@ func (h *HEPInput) serveTLS(addr string) {
 	var wg sync.WaitGroup
 
 	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
+		if atomic.LoadUint32(&hepInp.stopped) == 1 {
 			logp.Info("stopping TLS listener on %s", ln.Addr())
 			ln.Close()
 			wg.Wait()
@@ -57,13 +57,13 @@ func (h *HEPInput) serveTLS(addr string) {
 		logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
 		go func() {
-			h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
+			hepInp.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
 			wg.Done()
 		}()
 	}
 }
 
-func (h *HEPInput) handleTLS(c net.Conn) {
+func (hepInp *HEPInput) handleTLS(c net.Conn) {
 	defer func() {
 		logp.Info("closing TLS connection from %s", c.RemoteAddr())
 		err := c.Close()
@@ -73,21 +73,21 @@ func (h *HEPInput) handleTLS(c net.Conn) {
 	}()
 
 	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
+		if atomic.LoadUint32(&hepInp.stopped) == 1 {
 			return
 		}
 
-		buf := h.buffer.Get().([]byte)
+		buf := hepInp.buffer.Get().([]byte)
 		n, err := c.Read(buf)
 		if err != nil {
 			logp.Warn("%v from %s", err, c.RemoteAddr())
 			return
 		} else if n > maxPktLen {
 			logp.Warn("received too big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
+			atomic.AddUint64(&hepInp.stats.ErrCount, 1)
 			continue
 		}
-		h.inputCh <- buf[:n]
-		atomic.AddUint64(&h.stats.PktCount, 1)
+		hepInp.inputCh <- buf[:n]
+		atomic.AddUint64(&hepInp.stats.PktCount, 1)
 	}
 }

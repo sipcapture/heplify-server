@@ -151,8 +151,8 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 
 	addSIPRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
-			pkt.Timestamp.UnixNano() / 1000,
+			pkt.AssembledTimestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.AssembledTimestamp.UnixNano() / 1000,
 			short(pkt.SIP.FirstMethod, 50),
 			short(pkt.SIP.FirstRespText, 100),
 			short(pkt.SIP.URIRaw, 200),
@@ -177,29 +177,29 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 			short(pkt.SIP.ContentType, 256),
 			short(pkt.SIP.AuthVal, 256),
 			short(pkt.SIP.UserAgent, 256),
-			pkt.SrcIP,
-			pkt.SrcPort,
-			pkt.DstIP,
-			pkt.DstPort,
+			pkt.SourceIP,
+			pkt.SourcePort,
+			pkt.DestIP,
+			pkt.DestPort,
 			pkt.SIP.ContactHost,
 			pkt.SIP.ContactPort,
-			pkt.Protocol,
-			pkt.Version,
+			pkt.TransportProto,
+			pkt.IPVersion,
 			short(pkt.SIP.RTPStatVal, 256),
-			pkt.ProtoType,
+			pkt.AppProto,
 			pkt.NodeID,
-			short(pkt.CID, 120),
+			short(pkt.CorrelationID, 120),
 			short(pkt.Payload, 3000)}...)
 		return r
 	}
 
 	addRTCRow := func(r []interface{}) []interface{} {
 		r = append(r, []interface{}{
-			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
-			pkt.Timestamp.UnixNano() / 1000,
-			pkt.CID,
-			pkt.SrcIP, pkt.SrcPort, pkt.DstIP, pkt.DstPort,
-			pkt.Protocol, pkt.Version, pkt.ProtoType, pkt.NodeID, pkt.Payload}...)
+			pkt.AssembledTimestamp.Format("2006-01-02 15:04:05.999999"),
+			pkt.AssembledTimestamp.UnixNano() / 1000,
+			pkt.CorrelationID,
+			pkt.SourceIP, pkt.SourcePort, pkt.DestIP, pkt.DestPort,
+			pkt.TransportProto, pkt.IPVersion, pkt.AppProto, pkt.NodeID, pkt.Payload}...)
 		return r
 	}
 
@@ -213,7 +213,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 				return
 			}
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+			if pkt.AppProto == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				switch pkt.SIP.CseqMethod {
 				case "INVITE", "UPDATE", "BYE", "ACK", "PRACK", "REFER", "CANCEL", "INFO":
 					callRows = addSIPRow(callRows)
@@ -241,8 +241,8 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					}
 
 				}
-			} else if pkt.ProtoType > 1 && pkt.Payload != "" && pkt.CID != "" {
-				switch pkt.ProtoType {
+			} else if pkt.AppProto > 1 && pkt.Payload != "" && pkt.CorrelationID != "" {
+				switch pkt.AppProto {
 				case 5:
 					rtcpRows = addRTCRow(rtcpRows)
 					rtcpCnt++

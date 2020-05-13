@@ -102,9 +102,9 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				return
 			}
 
-			date := pkt.Timestamp.Format(time.RFC3339Nano)
+			date := pkt.AssembledTimestamp.Format(time.RFC3339Nano)
 
-			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
+			if pkt.AppProto == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				pHeader := makeProtoHeader(pkt, bb)
 				dHeader := makeSIPDataHeader(pkt, bb, t)
 				switch pkt.SIP.CseqMethod {
@@ -133,7 +133,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						defCnt = 0
 					}
 				}
-			} else if pkt.ProtoType == 54 && pkt.Payload != "" {
+			} else if pkt.AppProto == 54 && pkt.Payload != "" {
 				pHeader := makeProtoHeader(pkt, bb)
 				sid, dHeader := makeISUPDataHeader([]byte(pkt.Payload), bb)
 
@@ -145,12 +145,12 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					isupCnt = 0
 				}
 
-			} else if pkt.ProtoType >= 2 && pkt.Payload != "" && pkt.CID != "" {
+			} else if pkt.AppProto >= 2 && pkt.Payload != "" && pkt.CorrelationID != "" {
 				pHeader := makeProtoHeader(pkt, bb)
 				dHeader := makeRTCDataHeader(pkt, bb)
-				switch pkt.ProtoType {
+				switch pkt.AppProto {
 				case 5:
-					rtcpRows = append(rtcpRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					rtcpRows = append(rtcpRows, pkt.CorrelationID, date, pHeader, dHeader, pkt.Payload)
 					rtcpCnt++
 					if rtcpCnt == p.bulkCnt {
 						p.bulkInsert(rtcpCopy, rtcpRows)
@@ -158,7 +158,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						rtcpCnt = 0
 					}
 				case 53:
-					dnsRows = append(dnsRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					dnsRows = append(dnsRows, pkt.CorrelationID, date, pHeader, dHeader, pkt.Payload)
 					dnsCnt++
 					if dnsCnt == p.bulkCnt {
 						p.bulkInsert(dnsCopy, dnsRows)
@@ -166,7 +166,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						dnsCnt = 0
 					}
 				case 100:
-					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					logRows = append(logRows, pkt.CorrelationID, date, pHeader, dHeader, pkt.Payload)
 					logCnt++
 					if logCnt == p.bulkCnt {
 						p.bulkInsert(logCopy, logRows)
@@ -179,16 +179,16 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 					var ForcePayload = false
 
 					for _, v := range p.forceHEPPayload {
-						if pkt.ProtoType == uint32(v) {
+						if pkt.AppProto == uint32(v) {
 							ForcePayload = true
 							break
 						}
 					}
 
 					if ForcePayload {
-						reportRows = append(reportRows, pkt.CID, date, pHeader, pkt.Payload, dHeader)
+						reportRows = append(reportRows, pkt.CorrelationID, date, pHeader, pkt.Payload, dHeader)
 					} else {
-						reportRows = append(reportRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+						reportRows = append(reportRows, pkt.CorrelationID, date, pHeader, dHeader, pkt.Payload)
 					}
 
 					reportCnt++

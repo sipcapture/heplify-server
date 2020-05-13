@@ -90,7 +90,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			if !ok {
 				return
 			}
-			curPktTime = pkt.Timestamp
+			curPktTime = pkt.AssembledTimestamp
 			// guard against entry out of order errors
 			if lastPktTime.After(curPktTime) {
 				curPktTime = time.Now()
@@ -100,21 +100,21 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)
 			pktMeta.WriteString(" src_ip=")
-			pktMeta.WriteString(pkt.SrcIP)
+			pktMeta.WriteString(pkt.SourceIP)
 			pktMeta.WriteString(" dst_ip=")
-			pktMeta.WriteString(pkt.DstIP)
-			if pkt.ProtoType < 110 {
+			pktMeta.WriteString(pkt.DestIP)
+			if pkt.AppProto < 110 {
 				pktMeta.WriteString(" id=")
-				pktMeta.WriteString(pkt.CID)
+				pktMeta.WriteString(pkt.CorrelationID)
 			}
 
 			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			switch {
-			case pkt.SIP != nil && pkt.ProtoType == 1:
+			case pkt.SIP != nil && pkt.AppProto == 1:
 				l.entry.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
 				l.entry.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
-			case pkt.ProtoType == 100:
+			case pkt.AppProto == 100:
 				protocol := "udp"
 				if strings.Contains(pkt.Payload, "Fax") || strings.Contains(pkt.Payload, "T38") {
 					protocol = "fax"
@@ -126,7 +126,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 			l.entry.labels["job"] = jobName
 			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
-			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
+			l.entry.labels["type"] = model.LabelValue(pkt.ProtoAsString)
 			l.entry.Entry.Line = pktMeta.String()
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {

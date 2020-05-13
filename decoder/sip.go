@@ -7,28 +7,28 @@ import (
 	"github.com/sipcapture/heplify-server/sipparser"
 )
 
-func (h *HEP) parseSIP() error {
-	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs, config.Setting.CustomHeader)
-	if h.SIP.Error != nil {
-		return h.SIP.Error
-	} else if len(h.SIP.CseqMethod) < 3 {
+func (hep *HEP) parseSIP() error {
+	hep.SIP = sipparser.ParseMsg(hep.Payload, config.Setting.AlegIDs, config.Setting.CustomHeader)
+	if hep.SIP.Error != nil {
+		return hep.SIP.Error
+	} else if len(hep.SIP.CseqMethod) < 3 {
 		return errors.New("could not find a valid CSeq in packet")
-	} else if len(h.SIP.CallID) < 1 {
+	} else if len(hep.SIP.CallID) < 1 {
 		return errors.New("could not find a valid Call-ID in packet")
 	}
-	if h.SIP.FirstMethod == "" {
-		h.SIP.FirstMethod = h.SIP.FirstResp
+	if hep.SIP.FirstMethod == "" {
+		hep.SIP.FirstMethod = hep.SIP.FirstResp
 	}
 
-	if h.CID == "" {
-		if h.SIP.XCallID != "" {
-			h.CID = h.SIP.XCallID
+	if hep.CorrelationID == "" {
+		if hep.SIP.XCallID != "" {
+			hep.CorrelationID = hep.SIP.XCallID
 		} else {
-			h.CID = h.SIP.CallID
+			hep.CorrelationID = hep.SIP.CallID
 		}
 	}
 
-	h.SID = h.SIP.CallID
+	hep.SID = hep.SIP.CallID
 
 	return nil
 }

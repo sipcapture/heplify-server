@@ -35,6 +35,7 @@ type Header struct {
 	Val    string
 }
 
+//here h means Header and not HEP as usual...
 func (h *Header) String() string {
 	return fmt.Sprintf("%s: %s", h.Header, h.Val)
 }

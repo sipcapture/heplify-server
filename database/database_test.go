@@ -33,7 +33,7 @@ func init() {
 	hep.SIP.CallID = "te\"st\""
 	hep.SIP.UserAgent = "F\"box\"!"
 	hep.SIP.FromHost = "192.168.111.111\x00"
-	hep.CID = "te\"st\""
+	hep.CorrelationID = "te\"st\""
 	hep.SID = "te\"st\""
 
 	go func() {
