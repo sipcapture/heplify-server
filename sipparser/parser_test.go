@@ -14,11 +14,20 @@ import (
 )
 
 var testInviteMsg = "INVITE sip:15554440000@X.X.X.X:5060;user=phone SIP/2.0\r\nVia: SIP/2.0/UDP X.X.X.X:5060;branch=z9hG4bK34133a599ll241207INV21d7d0684e84a2d2\r\nMax-Forwards: 35\r\nContact: <sip:X.X.X.X:5060>\r\nTo: <sip:15554440000@X.X.X.X;user=phone;noa=national>\r\nFrom: \"Unavailable\"<sip:X.X.X.X;user=phone;noa=national>;tag=21d7d068-co2149-FOOI003\r\nCall-ID: 1393184968_47390262@domain.com\r\nCSeq: 214901 INVITE\r\nAuthorization: Digest username=\"foobaruser124\", realm=\"FOOBAR\", algorithm=MD5, uri=\"sip:foo.bar.com\", nonce=\"4f6d7a1d\", response=\"6a79a5c75572b0f6a18963ae04e971cf\", opaque=\"\"\r\nAllow: INVITE,ACK,CANCEL,BYE,REFER,OPTIONS,NOTIFY,SUBSCRIBE,PRACK,INFO\r\nContent-Type: application/sdp\r\nDate: Thu, 29 Sep 2011 16:54:42 GMT\r\nUser-Agent: FAKE-UA-DATA\r\nP-Asserted-Identity: \"Unavailable\"<sip:Restricted@X.X.X.X:5060>\r\nContent-Length: 322\r\n\r\nv=0\r\no=- 567791720 567791720 IN IP4 X.X.X.X\r\ns=FAKE-DATA\r\nc=IN IP4 X.X.X.X\r\nt=0 0\r\nm=audio 17354 RTP/AVP 0 8 86 18 96\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:86 G726-32/8000\r\na=rtpmap:18 G729/8000\r\na=rtpmap:96 telephone-event/8000\r\na=maxptime:20\r\na=fmtp:18 annexb=yes\r\na=fmtp:96 0-15\r\na=sendrecv\r\n"
+var test400ErrorResp = "SIP/2.0 400 Bad Request\r\n"
+
+// should succeed, i.e. not produce an error. 
+func TestParse400Err(t *testing.T) {
+	s := ParseMsg(test400ErrorResp, nil, nil)
+	if s.Error != nil {
+		t.Errorf("[TestParse400Err] Error parsing msg. Received: %v", s.Error)
+	}
+}
 
 func TestHeader(t *testing.T) {
 	h := Header{"t", "v"}
 	if h.String() != "t: v" {
-		t.Errorf("Error with header.String() method. Unexpected res.")
+		t.Errorf("[TestHeader] Error with header.String() method. Unexpected res.")
 	}
 }
 
@@ -148,10 +157,10 @@ func TestParseMsg(t *testing.T) {
 func TestParseInviteMsg(t *testing.T) {
 	s := ParseMsg(testInviteMsg, nil, nil)
 	if s.Error != nil {
-		t.Errorf("[TestParseMsg] Error parsing msg. Recevied: %v", s.Error)
+		t.Errorf("[TestParseInviteMsg] Error parsing msg. Recevied: %v", s.Error)
 	}
 	if len(s.Body) == 0 {
-		t.Error("[TestParseMsg] Error parsing msg. Body should have a length.")
+		t.Error("[TestParseInviteMsg] Error parsing msg. Body should have a length.")
 	}
 }
 
@@ -159,13 +168,13 @@ func TestParseMsgMalformed(t *testing.T) {
 	m := "SIP/2.0 200 OK\r\nVia:\r\nTo:\rnContact\r\n   Frommmm     :asf\r\nCall-ID:111118149-3524331107-398662@barinfo.fooinfous.com\r\n\r\nv=0\r\no=Dialogic_SDP 1452654 0 IN IP4 0.0.0.0\r\ns=Dialogic-SIP\r\nc=IN IP4 4.71.122.135\r\nt=0 0\r\nm=audio 11676 RTP/AVP 0 101\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:101 telephone-event/8000\r\na=fmtp:101 0-15\r\na=silenceSupp:off - - - -\r\na=ptime:20\r\n"
 	s := ParseMsg(m, nil, nil)
 	if s.Error != nil {
-		t.Errorf("[TestParseMsg] Error parsing msg. Recevied: %v", s.Error)
+		t.Errorf("[TestParseMsgMalformed] Error parsing msg. Recevied: %v", s.Error)
 	}
 	if len(s.Body) == 0 {
-		t.Error("[TestParseMsg] Error parsing msg. Body should have a length.")
+		t.Error("[TestParseMsgMalformed] Error parsing msg. Body should have a length.")
 	}
 	if s.CallID != "111118149-3524331107-398662@barinfo.fooinfous.com" {
-		t.Errorf("[TestParseMsg] Error parsing msg. Call-ID should be 111118149-3524331107-398662@barinfo.fooinfous.com. Received: %s", s.CallID)
+		t.Errorf("[TestParseMsgMalformed] Error parsing msg. Call-ID should be 111118149-3524331107-398662@barinfo.fooinfous.com. Received: %s", s.CallID)
 	}
 }
 
@@ -174,20 +183,20 @@ func TestParseMsgCompact(t *testing.T) {
 	s := ParseMsg(m, nil, nil)
 
 	if s.Error != nil {
-		t.Errorf("[TestParseMsg] Error parsing msg. Recevied: %v", s.Error)
+		t.Errorf("[TestParseMsgCompact] Error parsing msg. Recevied: %v", s.Error)
 	}
 	if got, want := s.CallID, "OvwBVivTMK19kN3Ws51_Dv"; got != want {
-		t.Errorf("[TestParseMsg] Error parsing msg. Call-ID should be %s. Received: %s", want, got)
+		t.Errorf("[TestParseMsgCompact] Error parsing msg. Call-ID should be %s. Received: %s", want, got)
 	}
 
 	/* 	if got, want := s.Accept.Val, "application/vnd.nokia-register-usage"; got != want {
-		t.Errorf("[TestParseMsg] Error parsing msg.  Content type should be %s.  Received: %s", got, want)
+		t.Errorf("[TestParseMsgCompact] Error parsing msg.  Content type should be %s.  Received: %s", got, want)
 	} */
 	if s.ContentLength != "1" {
-		t.Errorf("[TestParseMsg] Error parsing msg. Content length should be '1'. Received: %s", s.ContentLength)
+		t.Errorf("[TestParseMsgCompact] Error parsing msg. Content length should be '1'. Received: %s", s.ContentLength)
 	}
 	/* 	if s.ContentLengthInt != 1 {
-		t.Errorf("[TestParseMsg] Error parsing msg. ContentLengthInt should be 1. Received: %d", s.ContentLengthInt)
+		t.Errorf("[TestParseMsgCompact] Error parsing msg. ContentLengthInt should be 1. Received: %d", s.ContentLengthInt)
 	} */
 }
 
