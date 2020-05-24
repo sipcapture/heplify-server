@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
+	"gotest.tools/assert"
 )
 
 var hi *HEPInput
@@ -21,6 +23,18 @@ func init() {
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()
 	go hi.Run()
+}
+
+func TestInput(t *testing.T) {
+	p, err := decoder.DecodeHEP(hepPacket)
+	if err != nil {
+		t.Fail()
+	}
+	buf := hi.buffer.Get().([]byte)
+	copy(buf, hepPacket)
+	hi.inputCh <- buf[:len(hepPacket)]
+	d := <-hi.dbCh
+	assert.DeepEqual(t, p, d)
 }
 
 func BenchmarkInput(b *testing.B) {

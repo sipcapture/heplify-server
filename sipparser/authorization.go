@@ -9,6 +9,8 @@ package sipparser
 import (
 	"errors"
 	"strings"
+
+	"github.com/sipcapture/heplify-server/sipparser/internal"
 )
 
 type Authorization struct {
@@ -40,7 +42,7 @@ func (a *Authorization) parse() error {
 	if len(a.Val)-1 <= pos {
 		return errors.New("Authorization.parse err: no digest-resp found")
 	}
-	a.Username = extractParam("username=\"", a.Val)
+	a.Username = internal.ExtractSIPParam("username=\"", a.Val)
 	/*
 		a.Params = make([]*Param, 0)
 		parts := strings.Split(a.Val[pos+1:], ",")
