@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.31"
+const Version = "heplify-server 1.32"
 
 var Setting HeplifyServer
 

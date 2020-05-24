@@ -6,7 +6,7 @@ import (
 
 	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var hi *HEPInput
@@ -34,7 +34,7 @@ func TestInput(t *testing.T) {
 	copy(buf, hepPacket)
 	hi.inputCh <- buf[:len(hepPacket)]
 	d := <-hi.dbCh
-	assert.DeepEqual(t, p, d)
+	assert.Equal(t, p, d)
 }
 
 func BenchmarkInput(b *testing.B) {
