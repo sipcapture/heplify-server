@@ -1,6 +1,6 @@
 
 //line machine.rl:1
-package sipparser
+package internal
 
 import (
   "strings"
@@ -20,7 +20,7 @@ const metric_en_main int = 2
 //line machine.rl:12
 
 
-func extractParam(param, data string) (s string) {
+func ExtractSIPParam(param, data string) (s string) {
   if numPos := strings.Index(data, param); numPos >= 0 {
       numPos += len(param)
       data = data[numPos:]

@@ -1,6 +1,6 @@
 NAME?=heplify-server
 
-PKGLIST=$(shell go list ./... | grep -Ev '/vendor|/metric|/config|/sipparser')
+PKGLIST=$(shell go list ./... | grep -Ev '/vendor|/metric|/config|/sipparser/internal')
 
 all:
 	go build -ldflags "-s -w" -o $(NAME) cmd/heplify-server/*.go
@@ -10,7 +10,7 @@ debug:
 
 test:
 	go vet $(PKGLIST)
-	go test $(PKGLIST)
+	go test $(PKGLIST) -race
 
 .PHONY: clean
 clean:

@@ -6,6 +6,7 @@ require (
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/buger/jsonparser v1.0.0
 	github.com/cespare/xxhash/v2 v2.1.1
+	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2 // indirect
@@ -16,7 +17,7 @@ require (
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
 	github.com/negbie/multiconfig v1.0.0
 	github.com/olivere/elastic v6.2.31+incompatible
-	github.com/pelletier/go-toml v1.7.0
+	github.com/pelletier/go-toml v1.8.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.10.0
@@ -24,10 +25,11 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
-	golang.org/x/net v0.0.0-20200513185701-a91f0712d120 // indirect
+	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20200515095857-1151b9dac4a9 // indirect
+	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	google.golang.org/genproto v0.0.0-20200514193133-8feb7f20f2a2 // indirect
+	google.golang.org/genproto v0.0.0-20200521103424-e9a78aa275b7 // indirect
 	google.golang.org/grpc v1.29.1
+	gotest.tools v2.2.0+incompatible
 )
