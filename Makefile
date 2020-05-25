@@ -2,6 +2,7 @@ NAME?=heplify-server
 
 PKGLIST=$(shell go list ./... | grep -Ev '/vendor|/metric|/config|/sipparser/internal')
 
+#Need install JIT lua
 all:
 	go build -ldflags "-s -w" -o $(NAME) cmd/heplify-server/*.go
 
