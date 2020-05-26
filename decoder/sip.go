@@ -9,6 +9,7 @@ import (
 
 func (h *HEP) parseSIP() error {
 	h.SIP = sipparser.ParseMsg(h.Payload, config.Setting.AlegIDs, config.Setting.CustomHeader)
+
 	if h.SIP.Error != nil {
 		return h.SIP.Error
 	} else if len(h.SIP.CseqMethod) < 3 {
