@@ -140,9 +140,9 @@ func (d *ScriptEngine) applyHeader(header string, value string) {
 func (d *ScriptEngine) logData(level string, message string, data interface{}) {
 
 	if level == "ERROR" {
-		logp.Err("script - log", "%s: %v", message, data)
+		logp.Err("[script] %s: %v", message, data)
 	} else {
-		logp.Debug("script - log", "%s: %v", message, data)
+		logp.Debug("[script] %s: %v", message, data)
 	}
 }
 
@@ -179,7 +179,7 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 
 	/* LOAD */
 	if r := dec.LuaEngine.LoadFile(config.Setting.ScriptFile); r != 0 {
-		logp.Err("script", "ERROR: %v", dec.LuaEngine.ToString(-1))
+		logp.Err("[script] ERROR: %v", dec.LuaEngine.ToString(-1))
 		return nil, &reflect.ValueError{}
 	}
 
@@ -197,13 +197,9 @@ func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) {
 
 	d.LuaEngine.GetGlobal("init")
 
-	logp.Debug("script", "%+v\n\n")
-
 	err := d.LuaEngine.Call(1, 0)
 	if err != nil {
-		logp.Err("Execute script failed", "%v\n", err)
+		logp.Err("Execute script failed %v\n", err)
 		return
 	}
-
-	logp.Debug("script", "%+v\n\n")
 }
