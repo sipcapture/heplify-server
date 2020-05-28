@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/aarzilli/golua/lua"
 	"github.com/negbie/logp"
+	"github.com/sipcapture/golua/lua"
 	"github.com/sipcapture/heplify-server/config"
-	"github.com/stevedonovan/luar"
+	"github.com/sipcapture/heplify-server/decoder/luar"
 )
 
 /// structure for Script Engine

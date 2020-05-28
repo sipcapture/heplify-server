@@ -3,9 +3,7 @@ module github.com/sipcapture/heplify-server
 go 1.14
 
 require (
-	github.com/Jeffail/gabs v1.4.0
 	github.com/VictoriaMetrics/fastcache v1.5.7
-	github.com/aarzilli/golua v0.0.0-20200214131735-421e0de0aa20
 	github.com/buger/jsonparser v1.0.0
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/fortytw2/leaktest v1.3.0 // indirect
@@ -24,7 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.10.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/stevedonovan/luar v0.0.0-20170518170841-22d247e53660
+	github.com/sipcapture/golua v0.0.0-20200528132851-c9d5750efdc4
 	github.com/stretchr/testify v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
