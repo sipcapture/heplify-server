@@ -25,6 +25,7 @@ type HEPInput struct {
 	buffer  *sync.Pool
 	exitTCP chan bool
 	exitTLS chan bool
+	exitWS  chan bool
 	quit    chan bool
 	stopped uint32
 	stats   HEPStats
@@ -52,6 +53,7 @@ func NewHEPInput() *HEPInput {
 		quit:    make(chan bool),
 		exitTCP: make(chan bool),
 		exitTLS: make(chan bool),
+		exitWS:  make(chan bool),
 		lokiTF:  config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
@@ -85,6 +87,9 @@ func (h *HEPInput) Run() {
 
 	if len(config.Setting.HEPAddr) > 2 {
 		go h.serveUDP(config.Setting.HEPAddr)
+	}
+	if len(config.Setting.HEPWSAddr) > 2 {
+		go h.serveWS(config.Setting.HEPWSAddr)
 	}
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		go h.serveTCP(config.Setting.HEPTCPAddr)
@@ -148,6 +153,9 @@ func (h *HEPInput) End() {
 
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		<-h.exitTCP
+	}
+	if len(config.Setting.HEPWSAddr) > 2 {
+		<-h.exitWS
 	}
 	if len(config.Setting.HEPTLSAddr) > 2 {
 		<-h.exitTLS
