@@ -13,7 +13,7 @@ You have 3 options to get **heplify-server** up and running:
 * Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/hom5-hep-prom-graf)
 * Compile from sources:  
   
-  [install]luajit dev libary
+  Install luajit dev libary
   
   `apt-get install libluajit-5.1-dev`
   
