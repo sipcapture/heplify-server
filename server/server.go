@@ -21,6 +21,7 @@ type HEPInput struct {
 	promCh  chan *decoder.HEP
 	esCh    chan *decoder.HEP
 	lokiCh  chan *decoder.HEP
+	lua     decoder.ScriptEngine
 	wg      *sync.WaitGroup
 	buffer  *sync.Pool
 	exitTCP chan bool
@@ -77,6 +78,7 @@ func NewHEPInput() *HEPInput {
 }
 
 func (h *HEPInput) Run() {
+
 	for n := 0; n < runtime.NumCPU(); n++ {
 		h.wg.Add(1)
 		go h.hepWorker()
@@ -171,6 +173,19 @@ func (h *HEPInput) hepWorker() {
 	msg := h.buffer.Get().([]byte)
 	var ok bool
 	defer h.wg.Done()
+	var script *decoder.ScriptEngine
+	var err error
+
+	if config.Setting.ScriptEnable {
+		/* register Lua Engine */
+		script, err = decoder.RegisteredScriptEngine()
+		if err != nil {
+			logp.Err("couldn't activate script engine")
+			return
+		}
+
+		defer script.LuaEngine.Close()
+	}
 
 	for {
 		h.buffer.Put(msg[:maxPktLen])
@@ -188,6 +203,11 @@ func (h *HEPInput) hepWorker() {
 				continue
 			}
 			atomic.AddUint64(&h.stats.HEPCount, 1)
+
+			/* execute script for each channel */
+			if config.Setting.ScriptEnable {
+				script.ExecuteScriptEngine(hepPkt)
+			}
 
 			if h.usePM {
 				select {

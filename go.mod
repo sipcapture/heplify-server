@@ -25,6 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.10.0
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/sipcapture/golua v0.0.0-20200528132851-c9d5750efdc4
 	github.com/stretchr/testify v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
