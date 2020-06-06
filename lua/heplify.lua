@@ -1,8 +1,24 @@
 
 -- this function will be executed first
 function init()
-
-	local protoType = HEP.api.getHEPProtoType()
+	--[[ Following functions can be used:
+		HEP.applyHeader(header string, value string)
+		HEP.setCustomHeaders(m *map[string]string)
+		HEP.getSIPObject()
+		HEP.getHEPProtoType()
+		HEP.getHEPSrcIP()
+		HEP.getHEPSrcPort()
+		HEP.getHEPDstIP()
+		HEP.getHEPDstPort()
+		HEP.getHEPTimeSeconds()
+		HEP.getHEPTimeUseconds()
+		HEP.getHEPObject()
+		HEP.getRawMessage()
+		HEP.logData(level string, message string, data interface{})
+		HEP.print(text string)
+	--]]
+	
+	local protoType = HEP.getHEPProtoType()
 
 	-- Check if we have SIP payload 
 	if protoType ~= 1 then
@@ -10,28 +26,14 @@ function init()
 	end
 
 	-- get All SIP parsed variables FromUser, ToUser, CallID
-	local variables = HEP.api.getParsedVariables()
+	local variables = HEP.getSIPObject()
 	-- original SIP message Payload
-	local raw = HEP.api.getRawMessage()
+	local raw = HEP.getRawMessage()
 
-	--[[ "applyHeader":        dec.applyHeader,
-		"logData":            dec.logData,
-		"setCustomHeaders":   dec.setCustomHeaders,
-		"getParsedVariables": dec.getParsedVariables,
-		"getHEPProtoType":    dec.getHEPProtoType,
-		"getHEPSrcIP":        dec.getHEPSrcIP,
-		"getHEPSrcPort":      dec.getHEPSrcPort,
-		"getHEPDstIP":        dec.getHEPDstIP,
-		"getHEPDstPort":      dec.getHEPDstPort,
-		"getHEPTimeSeconds":  dec.getHEPTimeSeconds,
-		"getHEPTimeUseconds": dec.getHEPTimeUseconds,
-		"getHEPObject":       dec.getHEPObject,
-		"getRawMessage":      dec.getRawMessage,
-		"print":              fmt.Println,
-	--]]
 
-	-- HEP.api.logData("ERROR", "check:", raw)
-	-- HEP.api.logData("DEBUG", "data", variables)
+
+	-- HEP.logData("ERROR", "check:", raw)
+	-- HEP.logData("DEBUG", "data", variables)
 
 	-- Create lua table 
 	local headers = {}
@@ -45,11 +47,11 @@ function init()
 	end
 
 
-	HEP.api.setCustomHeaders(headers)
+	HEP.setCustomHeaders(headers)
 	
 	-- You can change any header and value . I.e. FromUser, "tester", X-CID
 	-- Or replace full SIP messsage (RAW)
-	-- HEP.api.applyHeader("RAW", "SIP 2/0")
+	-- HEP.applyHeader("RAW", "SIP 2/0")
 
 	return 
 

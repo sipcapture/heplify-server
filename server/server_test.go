@@ -19,6 +19,8 @@ func init() {
 	config.Setting.DBDriver = "mock"
 	config.Setting.DBShema = "mock"
 	config.Setting.PromAddr = ":9999"
+	config.Setting.ScriptEnable = true
+	config.Setting.ScriptFile = "../lua/heplify.lua"
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()
@@ -34,7 +36,7 @@ func TestInput(t *testing.T) {
 	copy(buf, hepPacket)
 	hi.inputCh <- buf[:len(hepPacket)]
 	d := <-hi.dbCh
-	assert.Equal(t, p, d)
+	assert.Equal(t, p.Payload, d.Payload)
 }
 
 func BenchmarkInput(b *testing.B) {
