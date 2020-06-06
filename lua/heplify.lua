@@ -1,5 +1,5 @@
 
--- this function will be executed first
+-- this function will be executed first and must be named init()
 function init()
 	--[[ Following functions can be used:
 		HEP.applyHeader(header string, value string)
@@ -20,20 +20,22 @@ function init()
 	
 	local protoType = HEP.getHEPProtoType()
 
-	-- Check if we have SIP payload 
+	-- Check if we have SIP type 
 	if protoType ~= 1 then
 		return
 	end
 
-	-- get All SIP parsed variables FromUser, ToUser, CallID
-	local variables = HEP.getSIPObject()
+	-- get the parsed SIP object
+	local sip = HEP.getSIPObject()
 	-- original SIP message Payload
 	local raw = HEP.getRawMessage()
 
+	if sip.FromHost == "127.0.0.1" then
+		print(sip.Msg)
+	end
 
-
-	-- HEP.logData("ERROR", "check:", raw)
-	-- HEP.logData("DEBUG", "data", variables)
+	-- HEP.logData("ERROR", "raw", raw)
+	-- HEP.logData("DEBUG", "sip", sip)
 
 	-- Create lua table 
 	local headers = {}
@@ -49,8 +51,30 @@ function init()
 
 	HEP.setCustomHeaders(headers)
 	
-	-- You can change any header and value . I.e. FromUser, "tester", X-CID
-	-- Or replace full SIP messsage (RAW)
+	--[[ Following header can be changed with applyHeader func:
+		"Via"
+		"FromUser"
+		"FromHost"
+		"FromTag"
+		"ToUser"
+		"ToHost"
+		"ToTag"
+		"Call-ID"
+		"X-CID"
+		"ContactUser"
+		"ContactHost"
+		"User-Agent"
+		"Server"
+		"AuthorizationUsername"
+		"Proxy-AuthorizationUsername"
+		"PAIUser"
+		"PAIHost"
+		"RAW"
+	--]]
+
+	-- HEP.applyHeader("User-Agent", "FritzBox")
+
+	-- Full SIP messsage can be changed with the "RAW" header
 	-- HEP.applyHeader("RAW", "SIP 2/0")
 
 	return 
