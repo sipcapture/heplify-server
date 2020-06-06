@@ -206,7 +206,9 @@ func (h *HEPInput) hepWorker() {
 
 			/* execute script for each channel */
 			if config.Setting.ScriptEnable {
-				script.ExecuteScriptEngine(hepPkt)
+				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
+					logp.Err("%v", err)
+				}
 			}
 
 			if h.usePM {
