@@ -13,9 +13,19 @@ You have 3 options to get **heplify-server** up and running:
 * Docker [compose](https://github.com/sipcapture/heplify-server/tree/master/docker/hom5-hep-prom-graf)
 * Compile from sources:  
   
+  Install luajit dev libary
+  
+  `apt-get install libluajit-5.1-dev`
+  
+  or 
+  
+  `yum install luajit-devel` 
+  
   [install](https://golang.org/doc/install) Go 1.11+
 
   `go build cmd/heplify-server/heplify-server.go`
+  
+  
 
 ### Requirements
 They depend on which features you want to use and if you use homer5 or homer7 shema. For homer5 you will need MySQL >= 5.7 or MariaDB >= 10. For homer7 you will need PostgreSQL >= 10.

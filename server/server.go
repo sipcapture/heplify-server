@@ -21,10 +21,12 @@ type HEPInput struct {
 	promCh  chan *decoder.HEP
 	esCh    chan *decoder.HEP
 	lokiCh  chan *decoder.HEP
+	lua     decoder.ScriptEngine
 	wg      *sync.WaitGroup
 	buffer  *sync.Pool
 	exitTCP chan bool
 	exitTLS chan bool
+	exitWS  chan bool
 	quit    chan bool
 	stopped uint32
 	stats   HEPStats
@@ -52,6 +54,7 @@ func NewHEPInput() *HEPInput {
 		quit:    make(chan bool),
 		exitTCP: make(chan bool),
 		exitTLS: make(chan bool),
+		exitWS:  make(chan bool),
 		lokiTF:  config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
@@ -75,6 +78,7 @@ func NewHEPInput() *HEPInput {
 }
 
 func (h *HEPInput) Run() {
+
 	for n := 0; n < runtime.NumCPU(); n++ {
 		h.wg.Add(1)
 		go h.hepWorker()
@@ -85,6 +89,9 @@ func (h *HEPInput) Run() {
 
 	if len(config.Setting.HEPAddr) > 2 {
 		go h.serveUDP(config.Setting.HEPAddr)
+	}
+	if len(config.Setting.HEPWSAddr) > 2 {
+		go h.serveWS(config.Setting.HEPWSAddr)
 	}
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		go h.serveTCP(config.Setting.HEPTCPAddr)
@@ -149,6 +156,9 @@ func (h *HEPInput) End() {
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		<-h.exitTCP
 	}
+	if len(config.Setting.HEPWSAddr) > 2 {
+		<-h.exitWS
+	}
 	if len(config.Setting.HEPTLSAddr) > 2 {
 		<-h.exitTLS
 	}
@@ -163,6 +173,19 @@ func (h *HEPInput) hepWorker() {
 	msg := h.buffer.Get().([]byte)
 	var ok bool
 	defer h.wg.Done()
+	var script *decoder.ScriptEngine
+	var err error
+
+	if config.Setting.ScriptEnable {
+		/* register Lua Engine */
+		script, err = decoder.RegisteredScriptEngine()
+		if err != nil {
+			logp.Err("couldn't activate script engine")
+			return
+		}
+
+		defer script.LuaEngine.Close()
+	}
 
 	for {
 		h.buffer.Put(msg[:maxPktLen])
@@ -180,6 +203,11 @@ func (h *HEPInput) hepWorker() {
 				continue
 			}
 			atomic.AddUint64(&h.stats.HEPCount, 1)
+
+			/* execute script for each channel */
+			if config.Setting.ScriptEnable {
+				script.ExecuteScriptEngine(hepPkt)
+			}
 
 			if h.usePM {
 				select {

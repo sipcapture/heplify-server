@@ -59,6 +59,7 @@
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
+      "description": "SIP\n\nSER = Session Establishment Ratio\n\n``` \n           # of INVITE Requests \n            w/ associated 200 OK\nSER = ----------------------------------- x 100\n         (Total # of INVITE Requests) -\n   \t(# of INVITE Requests w/ 3XX Response)\n```\nsimilar to\n\nE.411\n\nASR = Answer Seizure Ratio\n\nGenerally measured at originating UA only.\n\nhttps://tools.ietf.org/html/rfc6076#section-4.6",
       "editable": true,
       "error": false,
       "fill": 0,
@@ -102,7 +103,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)), 100)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 4,
@@ -111,7 +112,7 @@
           "step": 10
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)), 100)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "SER (ASR) last week",
@@ -170,6 +171,7 @@
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
+      "description": "SIP\n\nSEER = Session Establishment Effectiveness Ratio\n\n```\n# of INVITE Requests w/ associated \n 200, 480, 486, 600, or 603\n--------------------------------- x 100\n(Total # of INVITE Requests) -\n  (# of INVITE Requests w/ 3XX Response)\n```\nsimilar to E.411\n\nNER = Network Effectiveness Ratio\n\nhttps://tools.ietf.org/html/rfc6076#section-4.7",
       "editable": true,
       "error": false,
       "fill": 0,
@@ -213,14 +215,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m])) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m])) or sum(up) * 0)), 100)",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "SEER (NER) current",
           "refId": "B"
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"200|480|486|600|603\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w)) - \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"3.*|401|407\"}[30m] offset 1w)) or sum(up) * 0)), 100)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "SEER (NER) last week",
@@ -279,6 +281,7 @@
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
+      "description": "SIP\n\nSCR = Session Completion Ratio\n\n```\n       # of Successfully Completed Sessions\nSCR % = ----------------------------------- x 100\n            Total # of Session Requests\n```\nsimilar to E.411\n\nCCR = Call Completion Ratio\n\nhttps://tools.ietf.org/html/rfc6076#section-4.9",
       "editable": true,
       "error": false,
       "fill": 0,
@@ -322,14 +325,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))), 100)",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "SCR current",
           "refId": "B"
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w))) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"BYE\", response=\"200\"}[30m] offset 1w)) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m] offset 1w))), 100)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "SCR last week",
@@ -385,6 +388,7 @@
       "dashes": false,
       "datasource": "Prometheus",
       "decimals": 1,
+      "description": "SIP\n\nIRA = Ineffective Registration Attempts\n```\n\n                  # of IRAs\nIRA % = ----------------------------- x 100\n         Total # of REGISTER Requests\n```\nhttps://tools.ietf.org/html/rfc6076#section-4.2\n\nISA = Ineffective Session Attempts\n```\n                # of ISAs\nISA % = ----------------------------- x 100\n       Total # of Session Requests\n```\nhttps://tools.ietf.org/html/rfc6076#section-4.8\n",
       "editable": true,
       "error": false,
       "fill": 1,
@@ -423,7 +427,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[30m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[30m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[30m]))) <=100",
+          "expr": "clamp_max(((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"4.*|5.*|6.*\"}[30m])) - \nsum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=~\"401|402|407\"}[30m]))) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"REGISTER\", response=\"REGISTER\"}[30m]))), 100)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 4,
@@ -433,7 +437,7 @@
           "step": 10
         },
         {
-          "expr": "(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"408|500|503|504\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))) <=100",
+          "expr": "clamp_max((sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=~\"408|500|503|504\"}[30m])) * 100) / \n(sum(increase(heplify_method_response{target_name=~\"$tn\", method=\"INVITE\", response=\"INVITE\"}[30m]))), 100)",
           "format": "time_series",
           "intervalFactor": 4,
           "legendFormat": "ISA",
@@ -542,7 +546,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "SIP KPI",
+  "title": "SIP KPIs",
   "uid": "Vj1sdPGmz",
-  "version": 140
+  "version": 141
 }

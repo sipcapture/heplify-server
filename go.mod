@@ -8,6 +8,9 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
+	github.com/gobwas/pool v0.2.0 // indirect
+	github.com/gobwas/ws v1.0.3
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1
@@ -22,6 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.10.0
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/sipcapture/golua v0.0.0-20200528132851-c9d5750efdc4
 	github.com/stretchr/testify v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
