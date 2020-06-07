@@ -1,6 +1,6 @@
 
--- this function will be executed first and must be named init()
-function init()
+-- this function will be executed first
+function example()
 	--[[ Following functions can be used:
 		HEP.applyHeader(header string, value string)
 		HEP.setCustomHeaders(m *map[string]string)
