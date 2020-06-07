@@ -2,23 +2,24 @@
 -- this function will be executed first
 function checkRAW()
 	--[[ Following functions can be used:
-		HEP.applyHeader(header string, value string)
-		HEP.setCustomHeaders(m *map[string]string)
-		HEP.getSIPObject()
-		HEP.getHEPProtoType()
-		HEP.getHEPSrcIP()
-		HEP.getHEPSrcPort()
-		HEP.getHEPDstIP()
-		HEP.getHEPDstPort()
-		HEP.getHEPTimeSeconds()
-		HEP.getHEPTimeUseconds()
-		HEP.getHEPObject()
-		HEP.getRawMessage()
-		HEP.logData(level string, message string, data interface{})
-		HEP.print(text string)
+		scriptEngine.GetHEPStruct()
+		scriptEngine.GetSIPStruct()
+		scriptEngine.GetHEPProtoType()
+		scriptEngine.GetHEPSrcIP()
+		scriptEngine.GetHEPSrcPort()
+		scriptEngine.GetHEPDstIP()
+		scriptEngine.GetHEPDstPort()
+		scriptEngine.GetHEPTimeSeconds()
+		scriptEngine.GetHEPTimeUseconds()
+		scriptEngine.GetRawMessage()
+		scriptEngine.SetRawMessage(value string)
+		scriptEngine.SetCustomHeader(map luatable)
+		scriptEngine.SetSIPHeader(header string, value string)
+		scriptEngine.Logp(level string, message string, data interface{})
+		scriptEngine.Print(text string)
 	--]]
 	
-	local protoType = HEP.getHEPProtoType()
+	local protoType = scriptEngine.GetHEPProtoType()
 
 	-- Check if we have SIP type 
 	if protoType ~= 1 then
@@ -26,8 +27,8 @@ function checkRAW()
 	end
 
 	-- original SIP message Payload
-	local raw = HEP.getRawMessage()
-	-- HEP.logData("DEBUG", "raw", raw)
+	local raw = scriptEngine.GetRawMessage()
+	-- scriptEngine.Logp("DEBUG", "raw", raw)
 
 	-- Create lua table 
 	local headers = {}
@@ -40,34 +41,7 @@ function checkRAW()
 		headers[name] = value
 	end
 
-
-	HEP.setCustomHeaders(headers)
-	
-	--[[ Following header can be changed with applyHeader func:
-		"Via"
-		"FromUser"
-		"FromHost"
-		"FromTag"
-		"ToUser"
-		"ToHost"
-		"ToTag"
-		"Call-ID"
-		"X-CID"
-		"ContactUser"
-		"ContactHost"
-		"User-Agent"
-		"Server"
-		"AuthorizationUsername"
-		"Proxy-AuthorizationUsername"
-		"PAIUser"
-		"PAIHost"
-		"RAW"
-	--]]
-
-	-- HEP.applyHeader("User-Agent", "FritzBox")
-
-	-- Full SIP messsage can be changed with the "RAW" header
-	-- HEP.applyHeader("RAW", "SIP 2/0")
+	scriptEngine.SetCustomHeader(headers)
 
 	return 
 
@@ -75,13 +49,37 @@ end
 
 -- this function will be executed second
 function checkSIP()
+	--[[ Following SIP header can be used:
+		"ViaOne"
+		"FromUser"
+		"FromHost"
+		"FromTag"
+		"ToUser"
+		"ToHost"
+		"ToTag"
+		"CallID"
+		"XCallID"
+		"ContactUser"
+		"ContactHost"
+		"Authorization.Username"
+		"UserAgent"
+		"Server"
+		"PaiUser"
+		"PaiHost"
+	--]]
+
 	-- get the parsed SIP object
-	local sip = HEP.getSIPObject()
+	local sip = scriptEngine.GetSIPStruct()
 
 	if sip.FromHost == "127.0.0.1" then
-		-- HEP.logData("ERROR", "sip", sip)
-		print(sip.Msg)
+		-- scriptEngine.Logp("ERROR", "found User-Agent:", sip.UserAgent)
+		print(sip.ToHost)
 	end
+	
+	scriptEngine.SetSIPHeader("FromHost", "1.1.1.1")
+
+	-- Full SIP messsage can be changed
+	-- scriptEngine.SetRawMessage("SIP 2/0")
 
 	return 
 

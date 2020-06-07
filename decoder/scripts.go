@@ -26,43 +26,52 @@ type ScriptEngine struct {
 	hepPkt **HEP
 }
 
-func (d *ScriptEngine) getSIPObject() interface{} {
-	return (*d.hepPkt).SIP
-}
-
-func (d *ScriptEngine) getHEPProtoType() uint32 {
-	return (*d.hepPkt).GetProtoType()
-}
-
-func (d *ScriptEngine) getHEPObject() interface{} {
+func (d *ScriptEngine) GetHEPStruct() interface{} {
 	return (*d.hepPkt)
 }
 
-func (d *ScriptEngine) getHEPSrcIP() string {
+func (d *ScriptEngine) GetSIPStruct() interface{} {
+	return (*d.hepPkt).SIP
+}
+
+func (d *ScriptEngine) GetHEPProtoType() uint32 {
+	return (*d.hepPkt).GetProtoType()
+}
+
+func (d *ScriptEngine) GetHEPSrcIP() string {
 	return (*d.hepPkt).GetSrcIP()
 }
 
-func (d *ScriptEngine) getHEPSrcPort() uint32 {
+func (d *ScriptEngine) GetHEPSrcPort() uint32 {
 	return (*d.hepPkt).GetSrcPort()
 }
 
-func (d *ScriptEngine) getHEPDstIP() string {
+func (d *ScriptEngine) GetHEPDstIP() string {
 	return (*d.hepPkt).GetDstIP()
 }
 
-func (d *ScriptEngine) getHEPDstPort() uint32 {
+func (d *ScriptEngine) GetHEPDstPort() uint32 {
 	return (*d.hepPkt).GetDstPort()
 }
 
-func (d *ScriptEngine) getHEPTimeSeconds() uint32 {
+func (d *ScriptEngine) GetHEPTimeSeconds() uint32 {
 	return (*d.hepPkt).GetTsec()
 }
 
-func (d *ScriptEngine) getHEPTimeUseconds() uint32 {
+func (d *ScriptEngine) GetHEPTimeUseconds() uint32 {
 	return (*d.hepPkt).GetTmsec()
 }
 
-func (d *ScriptEngine) setCustomHeaders(m *map[string]string) {
+func (d *ScriptEngine) GetRawMessage() string {
+	return (*d.hepPkt).GetPayload()
+}
+
+func (d *ScriptEngine) SetRawMessage(value string) {
+	hepPkt := *d.hepPkt
+	hepPkt.Payload = value
+}
+
+func (d *ScriptEngine) SetCustomHeader(m *map[string]string) {
 	hepPkt := *d.hepPkt
 
 	/* not SIP */
@@ -79,16 +88,11 @@ func (d *ScriptEngine) setCustomHeaders(m *map[string]string) {
 	}
 }
 
-func (d *ScriptEngine) getRawMessage() string {
-	hepPkt := *d.hepPkt
-	return hepPkt.Payload
-}
-
-func (d *ScriptEngine) applyHeader(header string, value string) {
+func (d *ScriptEngine) SetSIPHeader(header string, value string) {
 	hepPkt := *d.hepPkt
 
 	switch {
-	case header == "Via":
+	case header == "ViaOne":
 		hepPkt.SIP.ViaOne = value
 	case header == "FromUser":
 		hepPkt.SIP.FromUser = value
@@ -102,32 +106,28 @@ func (d *ScriptEngine) applyHeader(header string, value string) {
 		hepPkt.SIP.ToHost = value
 	case header == "ToTag":
 		hepPkt.SIP.ToTag = value
-	case header == "Call-ID":
+	case header == "CallID":
 		hepPkt.SIP.CallID = value
-	case header == "X-CID":
+	case header == "XCallID":
 		hepPkt.SIP.XCallID = value
 	case header == "ContactUser":
 		hepPkt.SIP.ContactUser = value
 	case header == "ContactHost":
 		hepPkt.SIP.ContactHost = value
-	case header == "User-Agent":
+	case header == "UserAgent":
 		hepPkt.SIP.UserAgent = value
 	case header == "Server":
 		hepPkt.SIP.Server = value
-	case header == "AuthorizationUsername":
+	case header == "Authorization.Username":
 		hepPkt.SIP.Authorization.Username = value
-	case header == "Proxy-AuthorizationUsername":
-		hepPkt.SIP.Authorization.Username = value
-	case header == "PAIUser":
+	case header == "PaiUser":
 		hepPkt.SIP.PaiUser = value
-	case header == "PAIHost":
+	case header == "PaiHost":
 		hepPkt.SIP.PaiHost = value
-	case header == "RAW":
-		hepPkt.Payload = value
 	}
 }
 
-func (d *ScriptEngine) logData(level string, message string, data interface{}) {
+func (d *ScriptEngine) Logp(level string, message string, data interface{}) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
 	} else {
@@ -143,21 +143,22 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 	dec.LuaEngine = lua.NewState()
 	dec.LuaEngine.OpenLibs()
 
-	luar.Register(dec.LuaEngine, "HEP", luar.Map{
-		"applyHeader":        dec.applyHeader,
-		"setCustomHeaders":   dec.setCustomHeaders,
-		"getSIPObject":       dec.getSIPObject,
-		"getHEPProtoType":    dec.getHEPProtoType,
-		"getHEPSrcIP":        dec.getHEPSrcIP,
-		"getHEPSrcPort":      dec.getHEPSrcPort,
-		"getHEPDstIP":        dec.getHEPDstIP,
-		"getHEPDstPort":      dec.getHEPDstPort,
-		"getHEPTimeSeconds":  dec.getHEPTimeSeconds,
-		"getHEPTimeUseconds": dec.getHEPTimeUseconds,
-		"getHEPObject":       dec.getHEPObject,
-		"getRawMessage":      dec.getRawMessage,
-		"logData":            dec.logData,
-		"print":              fmt.Println,
+	luar.Register(dec.LuaEngine, "scriptEngine", luar.Map{
+		"GetHEPStruct":       dec.GetHEPStruct,
+		"GetSIPStruct":       dec.GetSIPStruct,
+		"GetHEPProtoType":    dec.GetHEPProtoType,
+		"GetHEPSrcIP":        dec.GetHEPSrcIP,
+		"GetHEPSrcPort":      dec.GetHEPSrcPort,
+		"GetHEPDstIP":        dec.GetHEPDstIP,
+		"GetHEPDstPort":      dec.GetHEPDstPort,
+		"GetHEPTimeSeconds":  dec.GetHEPTimeSeconds,
+		"GetHEPTimeUseconds": dec.GetHEPTimeUseconds,
+		"GetRawMessage":      dec.GetRawMessage,
+		"SetRawMessage":      dec.SetRawMessage,
+		"SetCustomHeader":    dec.SetCustomHeader,
+		"SetSIPHeader":       dec.SetSIPHeader,
+		"Logp":               dec.Logp,
+		"Print":              fmt.Println,
 	})
 
 	code, funcs, err := scanScripts(config.Setting.ScriptFolder)
