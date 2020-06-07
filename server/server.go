@@ -208,6 +208,7 @@ func (h *HEPInput) hepWorker() {
 			if config.Setting.ScriptEnable {
 				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
 					logp.Err("%v", err)
+					continue
 				}
 			}
 

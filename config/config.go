@@ -57,5 +57,5 @@ type HeplifyServer struct {
 	ConfigHTTPPW       string   `default:""`
 	Version            bool     `default:"false"`
 	ScriptEnable       bool     `default:"false"`
-	ScriptFile         string   `default:"lua/heplify.lua"`
+	ScriptFolder       string   `default:"lua/"`
 }

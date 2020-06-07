@@ -14,25 +14,28 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1
-	github.com/lib/pq v1.5.2
+	github.com/jcmturner/gokrb5/v8 v8.3.0 // indirect
+	github.com/lib/pq v1.6.0
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
 	github.com/negbie/multiconfig v1.0.0
-	github.com/olivere/elastic v6.2.31+incompatible
+	github.com/olivere/elastic v6.2.33+incompatible
 	github.com/pelletier/go-toml v1.8.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.10.0
+	github.com/prometheus/procfs v0.1.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sipcapture/golua v0.0.0-20200528132851-c9d5750efdc4
 	github.com/stretchr/testify v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.0
-	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2 // indirect
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
+	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	google.golang.org/genproto v0.0.0-20200521103424-e9a78aa275b7 // indirect
+	google.golang.org/genproto v0.0.0-20200605102947-12044bf5ea91 // indirect
 	google.golang.org/grpc v1.29.1
 )

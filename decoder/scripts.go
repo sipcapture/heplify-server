@@ -1,8 +1,15 @@
 package decoder
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/negbie/logp"
 	"github.com/sipcapture/golua/lua"
@@ -12,7 +19,7 @@ import (
 
 /// structure for Script Engine
 type ScriptEngine struct {
-	script    string
+	functions []string
 	LuaEngine *lua.State
 	mapObj    luar.Map
 	/* pointer to modify */
@@ -153,13 +160,21 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 		"print":              fmt.Println,
 	})
 
-	data, err := ioutil.ReadFile(config.Setting.ScriptFile)
+	code, funcs, err := scanScripts(config.Setting.ScriptFolder)
 	if err != nil {
 		return nil, err
 	}
 
-	dec.script = string(data)
-	dec.LuaEngine.DoString(dec.script)
+	dec.functions = funcs
+	if len(dec.functions) < 1 {
+		return nil, fmt.Errorf("no function name found in lua scripts")
+	}
+
+	err = dec.LuaEngine.DoString(code)
+	if err != nil {
+		return nil, err
+	}
+
 	return dec, nil
 }
 
@@ -167,5 +182,60 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) error {
 	/* preload */
 	d.hepPkt = &hep
-	return d.LuaEngine.DoString("init()")
+	for _, v := range d.functions {
+		err := d.LuaEngine.DoString(v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func scanScripts(path string) (string, []string, error) {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return "", nil, err
+	}
+
+	buf := bytes.NewBuffer(nil)
+	for _, file := range files {
+		f, err := os.Open(filepath.Join(path, file.Name()))
+		if err != nil {
+			return "", nil, err
+		}
+		_, err = io.Copy(buf, f)
+		if err != nil {
+			return "", nil, err
+		}
+		err = f.Close()
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	code := buf.String()
+
+	var funcs []string
+	scanner := bufio.NewScanner(buf)
+	for scanner.Scan() {
+		line := strings.ToLower(cutSpace(scanner.Text()))
+		if strings.HasPrefix(line, "--") {
+			continue
+		}
+		if strings.HasPrefix(line, "function") {
+			if p := strings.Index(line, ")"); strings.Index(line, "(") > -1 && p > -1 {
+				funcs = append(funcs, line[len("function"):p+1])
+			}
+		}
+	}
+	return code, funcs, nil
+}
+
+func cutSpace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }
