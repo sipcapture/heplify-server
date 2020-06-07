@@ -1,6 +1,6 @@
 
 -- this function will be executed first
-function example()
+function checkRAW()
 	--[[ Following functions can be used:
 		HEP.applyHeader(header string, value string)
 		HEP.setCustomHeaders(m *map[string]string)
@@ -25,17 +25,9 @@ function example()
 		return
 	end
 
-	-- get the parsed SIP object
-	local sip = HEP.getSIPObject()
 	-- original SIP message Payload
 	local raw = HEP.getRawMessage()
-
-	if sip.FromHost == "127.0.0.1" then
-		print(sip.Msg)
-	end
-
-	-- HEP.logData("ERROR", "raw", raw)
-	-- HEP.logData("DEBUG", "sip", sip)
+	-- HEP.logData("DEBUG", "raw", raw)
 
 	-- Create lua table 
 	local headers = {}
@@ -76,6 +68,20 @@ function example()
 
 	-- Full SIP messsage can be changed with the "RAW" header
 	-- HEP.applyHeader("RAW", "SIP 2/0")
+
+	return 
+
+end
+
+-- this function will be executed second
+function checkSIP()
+	-- get the parsed SIP object
+	local sip = HEP.getSIPObject()
+
+	if sip.FromHost == "127.0.0.1" then
+		-- HEP.logData("ERROR", "sip", sip)
+		print(sip.Msg)
+	end
 
 	return 
 

@@ -218,13 +218,13 @@ func scanScripts(path string) (string, []string, error) {
 	var funcs []string
 	scanner := bufio.NewScanner(buf)
 	for scanner.Scan() {
-		line := strings.ToLower(cutSpace(scanner.Text()))
+		line := cutSpace(scanner.Text())
 		if strings.HasPrefix(line, "--") {
 			continue
 		}
 		if strings.HasPrefix(line, "function") {
-			if p := strings.Index(line, ")"); strings.Index(line, "(") > -1 && p > -1 {
-				funcs = append(funcs, line[len("function"):p+1])
+			if b, e := strings.Index(line, "("), strings.Index(line, ")"); b > -1 && e > -1 && b < e {
+				funcs = append(funcs, line[len("function"):e+1])
 			}
 		}
 	}
