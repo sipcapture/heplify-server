@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -62,6 +63,10 @@ func (d *ScriptEngine) GetHEPTimeUseconds() uint32 {
 	return (*d.hepPkt).GetTmsec()
 }
 
+func (d *ScriptEngine) GetHEPNodeID() uint32 {
+	return (*d.hepPkt).GetNodeID()
+}
+
 func (d *ScriptEngine) GetRawMessage() string {
 	return (*d.hepPkt).GetPayload()
 }
@@ -88,41 +93,74 @@ func (d *ScriptEngine) SetCustomHeader(m *map[string]string) {
 	}
 }
 
+func (d *ScriptEngine) SetHEPField(field string, value string) {
+	hepPkt := *d.hepPkt
+
+	switch field {
+	case "ProtoType":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.ProtoType = uint32(i)
+		}
+	case "SrcIP":
+		hepPkt.SrcIP = value
+	case "SrcPort":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.SrcPort = uint32(i)
+		}
+	case "DstIP":
+		hepPkt.DstIP = value
+	case "DstPort":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.DstPort = uint32(i)
+		}
+	case "NodeID":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.NodeID = uint32(i)
+		}
+	case "CID":
+		hepPkt.CID = value
+	case "SID":
+		hepPkt.SID = value
+	case "NodeName":
+		hepPkt.NodeName = value
+	}
+}
+
 func (d *ScriptEngine) SetSIPHeader(header string, value string) {
 	hepPkt := *d.hepPkt
 
-	switch {
-	case header == "ViaOne":
+	switch header {
+	case "ViaOne":
 		hepPkt.SIP.ViaOne = value
-	case header == "FromUser":
+	case "FromUser":
 		hepPkt.SIP.FromUser = value
-	case header == "FromHost":
+	case "FromHost":
 		hepPkt.SIP.FromHost = value
-	case header == "FromTag":
+	case "FromTag":
 		hepPkt.SIP.FromTag = value
-	case header == "ToUser":
+	case "ToUser":
 		hepPkt.SIP.ToUser = value
-	case header == "ToHost":
+	case "ToHost":
 		hepPkt.SIP.ToHost = value
-	case header == "ToTag":
+	case "ToTag":
 		hepPkt.SIP.ToTag = value
-	case header == "CallID":
+	case "CallID":
 		hepPkt.SIP.CallID = value
-	case header == "XCallID":
+	case "XCallID":
 		hepPkt.SIP.XCallID = value
-	case header == "ContactUser":
+	case "ContactUser":
 		hepPkt.SIP.ContactUser = value
-	case header == "ContactHost":
+	case "ContactHost":
 		hepPkt.SIP.ContactHost = value
-	case header == "UserAgent":
+	case "UserAgent":
 		hepPkt.SIP.UserAgent = value
-	case header == "Server":
+	case "Server":
 		hepPkt.SIP.Server = value
-	case header == "Authorization.Username":
+	case "Authorization.Username":
 		hepPkt.SIP.Authorization.Username = value
-	case header == "PaiUser":
+	case "PaiUser":
 		hepPkt.SIP.PaiUser = value
-	case header == "PaiHost":
+	case "PaiHost":
 		hepPkt.SIP.PaiHost = value
 	}
 }
@@ -153,9 +191,11 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 		"GetHEPDstPort":      dec.GetHEPDstPort,
 		"GetHEPTimeSeconds":  dec.GetHEPTimeSeconds,
 		"GetHEPTimeUseconds": dec.GetHEPTimeUseconds,
+		"GetHEPNodeID":       dec.GetHEPNodeID,
 		"GetRawMessage":      dec.GetRawMessage,
 		"SetRawMessage":      dec.SetRawMessage,
 		"SetCustomHeader":    dec.SetCustomHeader,
+		"SetHEPField":        dec.SetHEPField,
 		"SetSIPHeader":       dec.SetSIPHeader,
 		"Logp":               dec.Logp,
 		"Print":              fmt.Println,
@@ -200,17 +240,19 @@ func scanScripts(path string) (string, []string, error) {
 
 	buf := bytes.NewBuffer(nil)
 	for _, file := range files {
-		f, err := os.Open(filepath.Join(path, file.Name()))
-		if err != nil {
-			return "", nil, err
-		}
-		_, err = io.Copy(buf, f)
-		if err != nil {
-			return "", nil, err
-		}
-		err = f.Close()
-		if err != nil {
-			return "", nil, err
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".lua") {
+			f, err := os.Open(filepath.Join(path, file.Name()))
+			if err != nil {
+				return "", nil, err
+			}
+			_, err = io.Copy(buf, f)
+			if err != nil {
+				return "", nil, err
+			}
+			err = f.Close()
+			if err != nil {
+				return "", nil, err
+			}
 		}
 	}
 
