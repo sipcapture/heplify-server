@@ -92,7 +92,7 @@ func (h *HEPInput) Run() {
 
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
-	go h.hotReload()
+	go h.reloadWorker()
 
 	if len(config.Setting.HEPAddr) > 2 {
 		go h.serveUDP(config.Setting.HEPAddr)
@@ -303,7 +303,7 @@ func (h *HEPInput) logStats() {
 	}
 }
 
-func (h *HEPInput) hotReload() {
+func (h *HEPInput) reloadWorker() {
 	s := make(chan os.Signal, 1)
 	defer close(s)
 	signal.Notify(s, syscall.SIGHUP)
@@ -311,7 +311,7 @@ func (h *HEPInput) hotReload() {
 	for {
 		select {
 		case <-s:
-			logp.Info("hot reload all worker")
+			logp.Info("reload all worker")
 			h.wg.Add(1)
 
 			h.exitWorker <- true
