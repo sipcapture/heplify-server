@@ -123,6 +123,8 @@ func (d *ScriptEngine) SetHEPField(field string, value string) {
 		hepPkt.SID = value
 	case "NodeName":
 		hepPkt.NodeName = value
+	case "TargetName":
+		hepPkt.TargetName = value
 	}
 }
 
