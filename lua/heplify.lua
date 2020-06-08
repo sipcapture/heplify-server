@@ -11,9 +11,11 @@ function checkRAW()
 		scriptEngine.GetHEPDstPort()
 		scriptEngine.GetHEPTimeSeconds()
 		scriptEngine.GetHEPTimeUseconds()
+		scriptEngine.GetHEPNodeID()
 		scriptEngine.GetRawMessage()
 		scriptEngine.SetRawMessage(value string)
 		scriptEngine.SetCustomHeader(map luatable)
+		scriptEngine.SetHEPField(field string, value string)
 		scriptEngine.SetSIPHeader(header string, value string)
 		scriptEngine.Logp(level string, message string, data interface{})
 		scriptEngine.Print(text string)
@@ -68,7 +70,7 @@ function checkSIP()
 		"PaiHost"
 	--]]
 
-	-- get the parsed SIP object
+	-- get the parsed SIP struct
 	local sip = scriptEngine.GetSIPStruct()
 
 	if sip.FromHost == "127.0.0.1" then
@@ -84,3 +86,31 @@ function checkSIP()
 	return 
 
 end
+
+-- this function will be executed third
+function changeNodeIDtoNameFast()
+
+	-- get only nodeID
+	local nodeID = scriptEngine.GetHEPNodeID()
+	if nodeID == 0 then
+		scriptEngine.SetHEPField("NodeName","TestNode")
+	end
+
+	return 
+
+end
+
+-- this function will be executed fourth
+function changeNodeIDtoNameSlow()
+
+	-- get the parsed HEP struct
+	local hep = scriptEngine.GetHEPStruct()
+	if hep.NodeID == 0 then
+		hep.NodeName="TestNode"
+	end
+
+	return 
+
+end
+
+
