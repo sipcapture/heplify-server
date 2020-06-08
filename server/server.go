@@ -87,7 +87,7 @@ func (h *HEPInput) Run() {
 
 	for n := 0; n < runtime.NumCPU(); n++ {
 		h.wg.Add(1)
-		go h.hepWorker()
+		go h.worker()
 	}
 
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
@@ -181,7 +181,7 @@ func (h *HEPInput) End() {
 	close(h.inputCh)
 }
 
-func (h *HEPInput) hepWorker() {
+func (h *HEPInput) worker() {
 	defer h.wg.Done()
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
@@ -224,7 +224,6 @@ func (h *HEPInput) hepWorker() {
 			if config.Setting.ScriptEnable {
 				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
 					logp.Err("%v", err)
-
 				}
 			}
 
@@ -306,24 +305,26 @@ func (h *HEPInput) logStats() {
 
 func (h *HEPInput) hotReload() {
 	s := make(chan os.Signal, 1)
+	defer close(s)
 	signal.Notify(s, syscall.SIGHUP)
 
 	for {
 		select {
 		case <-s:
-			logp.Info("hot reload %s\n", config.Version)
+			logp.Info("hot reload all worker")
+			h.wg.Add(1)
 
 			h.exitWorker <- true
 			<-h.exitWorker
 
 			for n := 0; n < runtime.NumCPU(); n++ {
 				h.wg.Add(1)
-				go h.hepWorker()
+				go h.worker()
 			}
+			h.wg.Done()
 		case <-h.quit:
 			h.quit <- true
 			return
 		}
 	}
-
 }
