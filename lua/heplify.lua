@@ -73,11 +73,16 @@ function checkSIP()
 	-- get the parsed SIP struct
 	local sip = scriptEngine.GetSIPStruct()
 
+	-- better always check for nil
+	if (sip == nil or sip == '') then
+		return
+	end
+
 	if sip.FromHost == "127.0.0.1" then
 		-- scriptEngine.Logp("ERROR", "found User-Agent:", sip.UserAgent)
 		print(sip.ToHost)
 	end
-	
+
 	scriptEngine.SetSIPHeader("FromHost", "1.1.1.1")
 
 	-- Full SIP messsage can be changed
@@ -102,9 +107,14 @@ end
 
 -- this function will be executed fourth
 function changeNodeIDtoNameSlow()
-
 	-- get the parsed HEP struct
 	local hep = scriptEngine.GetHEPStruct()
+
+	-- better always check for nil
+	if (hep == nil or hep == '') then
+		return
+	end
+
 	if hep.NodeID == 0 then
 		hep.NodeName="TestNode"
 	end
