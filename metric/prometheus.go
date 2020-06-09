@@ -109,7 +109,11 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			}
 
 			if !skip && ((pkt.SIP.CseqMethod == invite || pkt.SIP.CseqMethod == register) &&
-				(pkt.SIP.FirstMethod == "180" || pkt.SIP.FirstMethod == "183" || pkt.SIP.FirstMethod == "200")) {
+				(pkt.SIP.FirstMethod == "180" ||
+					pkt.SIP.FirstMethod == "181" ||
+					pkt.SIP.FirstMethod == "182" ||
+					pkt.SIP.FirstMethod == "183" ||
+					pkt.SIP.FirstMethod == "200")) {
 				ptn := pkt.Timestamp.UnixNano()
 				did := []byte(pkt.DstIP + callID)
 				if buf := p.cache.Get(nil, did); buf != nil {
@@ -135,7 +139,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 					continue
 				}
 				p.cache.Set(k, nil)
-				methodResponses.WithLabelValues("", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+				methodResponses.WithLabelValues(pkt.TargetName, "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 
 				if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
 					reasonCause.WithLabelValues(srcTarget, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()

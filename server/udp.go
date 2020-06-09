@@ -9,6 +9,8 @@ import (
 )
 
 func (h *HEPInput) serveUDP(addr string) {
+	defer close(h.exitUDP)
+
 	ua, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		logp.Err("%v", err)

@@ -8,6 +8,8 @@ package sipparser
 // Imports from the go standard library
 import (
 	"fmt"
+
+	"github.com/sipcapture/heplify-server/sipparser/internal"
 )
 
 type parseFromStateFn func(f *From) parseFromStateFn
@@ -111,7 +113,7 @@ func parseFromGetParams(f *From) parseFromStateFn {
 
 func getFrom(s string) *From {
 	f := &From{Val: s}
-	f.Tag = extractParam("tag=", s)
+	f.Tag = internal.ExtractSIPParam("tag=", s)
 	f.parse()
 	return f
 }

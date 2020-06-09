@@ -1,4 +1,4 @@
-package sipparser
+package internal
 
 import (
   "strings"
@@ -11,7 +11,7 @@ import (
   write data;
 }%%
 
-func extractParam(param, data string) (s string) {
+func ExtractSIPParam(param, data string) (s string) {
   if numPos := strings.Index(data, param); numPos >= 0 {
       numPos += len(param)
       data = data[numPos:]

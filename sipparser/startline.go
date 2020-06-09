@@ -36,15 +36,15 @@ var (
 type parseStartLineStateFn func(s *StartLine) parseStartLineStateFn
 
 type StartLine struct {
-	Error    error
-	Val      string
-	Type     string
-	Method   string
-	URI      *URI
-	Resp     string
-	RespText string
-	Proto    string
-	Version  string
+	Error    error  //internal error condition
+	Val      string //StartLine as a String
+	Type     string //one of SIP_REQUEST or SIP_RESPONSE
+	Method   string //INV, ACK, BYE etc
+	URI      *URI   //Request URI; sip:alice@chicago.com
+	Resp     string //Response code: e.g. 200, 400
+	RespText string //Response String e.g. "Trying"
+	Proto    string //e.g. "SIP" in the string "SIP/2.0"
+	Version  string //e.g. "2.0" in the string "SIP/2.0"
 }
 
 func (s *StartLine) run() {

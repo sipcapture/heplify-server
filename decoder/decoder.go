@@ -82,6 +82,7 @@ type HEP struct {
 	Timestamp   time.Time
 	SIP         *sipparser.SipMsg
 	NodeName    string
+	TargetName  string
 	SID         string
 }
 

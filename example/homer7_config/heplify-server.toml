@@ -1,6 +1,7 @@
 HEPAddr               = "0.0.0.0:9060"
 HEPTCPAddr            = ""
 HEPTLSAddr            = "0.0.0.0:9060"
+HEPWSAddr             = "0.0.0.0:3000"
 ESAddr                = ""
 ESDiscovery           = true
 LokiURL               = ""
