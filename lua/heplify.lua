@@ -14,7 +14,7 @@ function checkRAW()
 		scriptEngine.GetHEPNodeID()
 		scriptEngine.GetRawMessage()
 		scriptEngine.SetRawMessage(value string)
-		scriptEngine.SetCustomHeader(map luatable)
+		scriptEngine.SetCustomSIPHeader(map luatable)
 		scriptEngine.SetHEPField(field string, value string)
 		scriptEngine.SetSIPHeader(header string, value string)
 		scriptEngine.Logp(level string, message string, data interface{})
@@ -43,7 +43,7 @@ function checkRAW()
 		headers[name] = value
 	end
 
-	scriptEngine.SetCustomHeader(headers)
+	scriptEngine.SetCustomSIPHeader(headers)
 
 	return 
 
@@ -73,14 +73,13 @@ function checkSIP()
 	-- get the parsed SIP struct
 	local sip = scriptEngine.GetSIPStruct()
 
-	-- better always check for nil
+	-- a struct can be nil so better check it
 	if (sip == nil or sip == '') then
 		return
 	end
 
 	if sip.FromHost == "127.0.0.1" then
 		-- scriptEngine.Logp("ERROR", "found User-Agent:", sip.UserAgent)
-		print(sip.ToHost)
 	end
 
 	scriptEngine.SetSIPHeader("FromHost", "1.1.1.1")
@@ -110,7 +109,7 @@ function changeNodeIDtoNameSlow()
 	-- get the parsed HEP struct
 	local hep = scriptEngine.GetHEPStruct()
 
-	-- better always check for nil
+	-- a struct can be nil so better check it
 	if (hep == nil or hep == '') then
 		return
 	end
