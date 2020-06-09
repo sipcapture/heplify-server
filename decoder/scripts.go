@@ -86,17 +86,12 @@ func (d *ScriptEngine) SetRawMessage(value string) {
 	hepPkt.Payload = value
 }
 
-func (d *ScriptEngine) SetCustomHeader(m *map[string]string) {
-	if (*d.hepPkt) == nil {
-		logp.Err("can't set Custom header if HEP struct is nil, please check for nil in lua script")
+func (d *ScriptEngine) SetCustomSIPHeader(m *map[string]string) {
+	if (*d.hepPkt).SIP == nil {
+		logp.Err("can't set custom SIP header if SIP struct is nil, please check for nil in lua script")
 		return
 	}
 	hepPkt := *d.hepPkt
-
-	/* not SIP */
-	if hepPkt.SIP == nil {
-		return
-	}
 
 	if hepPkt.SIP.CustomHeader == nil {
 		hepPkt.SIP.CustomHeader = make(map[string]string)
@@ -218,7 +213,7 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 		"GetHEPNodeID":       dec.GetHEPNodeID,
 		"GetRawMessage":      dec.GetRawMessage,
 		"SetRawMessage":      dec.SetRawMessage,
-		"SetCustomHeader":    dec.SetCustomHeader,
+		"SetCustomSIPHeader": dec.SetCustomSIPHeader,
 		"SetHEPField":        dec.SetHEPField,
 		"SetSIPHeader":       dec.SetSIPHeader,
 		"Logp":               dec.Logp,
