@@ -18,6 +18,9 @@ import (
 	"github.com/sipcapture/heplify-server/decoder/luar"
 )
 
+const luaFuncPrefix = "scriptEngine"
+const luaFuncPrefixDot = luaFuncPrefix + "."
+
 /// structure for Script Engine
 type ScriptEngine struct {
 	functions []string
@@ -200,7 +203,7 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 	dec.LuaEngine = lua.NewState()
 	dec.LuaEngine.OpenLibs()
 
-	luar.Register(dec.LuaEngine, "scriptEngine", luar.Map{
+	m := luar.Map{
 		"GetHEPStruct":       dec.GetHEPStruct,
 		"GetSIPStruct":       dec.GetSIPStruct,
 		"GetHEPProtoType":    dec.GetHEPProtoType,
@@ -218,9 +221,11 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 		"SetSIPHeader":       dec.SetSIPHeader,
 		"Logp":               dec.Logp,
 		"Print":              fmt.Println,
-	})
+	}
 
-	code, funcs, err := scanScripts(config.Setting.ScriptFolder)
+	luar.Register(dec.LuaEngine, luaFuncPrefix, m)
+
+	code, funcs, err := scanScripts(config.Setting.ScriptFolder, m)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +256,7 @@ func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) error {
 	return nil
 }
 
-func scanScripts(path string) (string, []string, error) {
+func scanScripts(path string, m luar.Map) (string, []string, error) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return "", nil, err
@@ -287,6 +292,17 @@ func scanScripts(path string) (string, []string, error) {
 		if strings.HasPrefix(line, "function") {
 			if b, e := strings.Index(line, "("), strings.Index(line, ")"); b > -1 && e > -1 && b < e {
 				funcs = append(funcs, line[len("function"):e+1])
+			}
+		}
+
+		if b := strings.Index(line, luaFuncPrefixDot); b > -1 {
+			var allow string
+			if e := strings.Index(line, "("); e > -1 {
+				allow = line[b+len(luaFuncPrefixDot) : e]
+			}
+			_, ok := m[allow]
+			if !ok {
+				return "", nil, fmt.Errorf("can't find %s%s", luaFuncPrefixDot, allow)
 			}
 		}
 	}
