@@ -183,21 +183,23 @@ func (h *HEPInput) End() {
 
 func (h *HEPInput) worker() {
 	defer h.wg.Done()
+
+	var ok bool
+	var err error
+	var script *decoder.ScriptEngine
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
-	var ok bool
-	var script *decoder.ScriptEngine
-	var err error
+	useScript := config.Setting.ScriptEnable
 
-	if config.Setting.ScriptEnable {
+	if useScript {
 		/* register Lua Engine */
 		script, err = decoder.RegisteredScriptEngine()
 		if err != nil {
-			logp.Err("couldn't activate script engine")
-			return
+			logp.Err("couldn't activate script engine, %v", err)
+			useScript = false
+		} else {
+			defer script.LuaEngine.Close()
 		}
-
-		defer script.LuaEngine.Close()
 	}
 
 	for {
@@ -221,7 +223,7 @@ func (h *HEPInput) worker() {
 			atomic.AddUint64(&h.stats.HEPCount, 1)
 
 			/* execute script for each channel */
-			if config.Setting.ScriptEnable {
+			if useScript {
 				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
 					logp.Err("%v", err)
 				}
