@@ -28,10 +28,16 @@ type ScriptEngine struct {
 }
 
 func (d *ScriptEngine) GetHEPStruct() interface{} {
+	if (*d.hepPkt) == nil {
+		return ""
+	}
 	return (*d.hepPkt)
 }
 
 func (d *ScriptEngine) GetSIPStruct() interface{} {
+	if (*d.hepPkt).SIP == nil {
+		return ""
+	}
 	return (*d.hepPkt).SIP
 }
 
