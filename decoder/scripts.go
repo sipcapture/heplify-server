@@ -78,11 +78,19 @@ func (d *ScriptEngine) GetRawMessage() string {
 }
 
 func (d *ScriptEngine) SetRawMessage(value string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set Raw message if HEP struct is nil, please check for nil in lua script")
+		return
+	}
 	hepPkt := *d.hepPkt
 	hepPkt.Payload = value
 }
 
 func (d *ScriptEngine) SetCustomHeader(m *map[string]string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set Custom header if HEP struct is nil, please check for nil in lua script")
+		return
+	}
 	hepPkt := *d.hepPkt
 
 	/* not SIP */
@@ -100,6 +108,10 @@ func (d *ScriptEngine) SetCustomHeader(m *map[string]string) {
 }
 
 func (d *ScriptEngine) SetHEPField(field string, value string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set HEP field if HEP struct is nil, please check for nil in lua script")
+		return
+	}
 	hepPkt := *d.hepPkt
 
 	switch field {
@@ -135,6 +147,10 @@ func (d *ScriptEngine) SetHEPField(field string, value string) {
 }
 
 func (d *ScriptEngine) SetSIPHeader(header string, value string) {
+	if (*d.hepPkt).SIP == nil {
+		logp.Err("can't set SIP header if SIP struct is nil, please check for nil in lua script")
+		return
+	}
 	hepPkt := *d.hepPkt
 
 	switch header {
