@@ -58,4 +58,5 @@ type HeplifyServer struct {
 	Version            bool     `default:"false"`
 	ScriptEnable       bool     `default:"false"`
 	ScriptFile         string   `default:"lua/heplify.lua"`
+	TLSCertFolder      string   `default:"."`
 }
