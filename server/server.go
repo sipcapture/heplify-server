@@ -225,6 +225,11 @@ func (h *HEPInput) worker() {
 				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
 					logp.Err("%v", err)
 				}
+
+				if hepPkt == nil || hepPkt.ProtoType == 1 && hepPkt.SIP == nil {
+					logp.Warn("nil struct after lua script processing")
+					continue
+				}
 			}
 
 			if h.usePM {
