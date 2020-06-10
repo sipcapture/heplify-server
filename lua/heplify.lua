@@ -1,37 +1,36 @@
 
 -- this function will be executed first
-function init()
+function checkRAW()
+	--[[ Following functions can be used:
+		scriptEngine.GetHEPStruct()
+		scriptEngine.GetSIPStruct()
+		scriptEngine.GetHEPProtoType()
+		scriptEngine.GetHEPSrcIP()
+		scriptEngine.GetHEPSrcPort()
+		scriptEngine.GetHEPDstIP()
+		scriptEngine.GetHEPDstPort()
+		scriptEngine.GetHEPTimeSeconds()
+		scriptEngine.GetHEPTimeUseconds()
+		scriptEngine.GetHEPNodeID()
+		scriptEngine.GetRawMessage()
+		scriptEngine.SetRawMessage(value string)
+		scriptEngine.SetCustomSIPHeader(map luatable)
+		scriptEngine.SetHEPField(field string, value string)
+		scriptEngine.SetSIPHeader(header string, value string)
+		scriptEngine.Logp(level string, message string, data interface{})
+		scriptEngine.Print(text string)
+	--]]
+	
+	local protoType = scriptEngine.GetHEPProtoType()
 
-	local protoType = HEP.api.getHEPProtoType()
-
-	-- Check if we have SIP payload 
+	-- Check if we have SIP type 
 	if protoType ~= 1 then
 		return
 	end
 
-	-- get All SIP parsed variables FromUser, ToUser, CallID
-	local variables = HEP.api.getParsedVariables()
 	-- original SIP message Payload
-	local raw = HEP.api.getRawMessage()
-
-	--[[ "applyHeader":        dec.applyHeader,
-		"logData":            dec.logData,
-		"setCustomHeaders":   dec.setCustomHeaders,
-		"getParsedVariables": dec.getParsedVariables,
-		"getHEPProtoType":    dec.getHEPProtoType,
-		"getHEPSrcIP":        dec.getHEPSrcIP,
-		"getHEPSrcPort":      dec.getHEPSrcPort,
-		"getHEPDstIP":        dec.getHEPDstIP,
-		"getHEPDstPort":      dec.getHEPDstPort,
-		"getHEPTimeSeconds":  dec.getHEPTimeSeconds,
-		"getHEPTimeUseconds": dec.getHEPTimeUseconds,
-		"getHEPObject":       dec.getHEPObject,
-		"getRawMessage":      dec.getRawMessage,
-		"print":              fmt.Println,
-	--]]
-
-	-- HEP.api.logData("ERROR", "check:", raw)
-	-- HEP.api.logData("DEBUG", "data", variables)
+	local raw = scriptEngine.GetRawMessage()
+	-- scriptEngine.Logp("DEBUG", "raw", raw)
 
 	-- Create lua table 
 	local headers = {}
@@ -44,13 +43,83 @@ function init()
 		headers[name] = value
 	end
 
-
-	HEP.api.setCustomHeaders(headers)
-	
-	-- You can change any header and value . I.e. FromUser, "tester", X-CID
-	-- Or replace full SIP messsage (RAW)
-	-- HEP.api.applyHeader("RAW", "SIP 2/0")
+	scriptEngine.SetCustomSIPHeader(headers)
 
 	return 
 
 end
+
+-- this function will be executed second
+function checkSIP()
+	--[[ Following SIP header can be used:
+		"ViaOne"
+		"FromUser"
+		"FromHost"
+		"FromTag"
+		"ToUser"
+		"ToHost"
+		"ToTag"
+		"CallID"
+		"XCallID"
+		"ContactUser"
+		"ContactHost"
+		"Authorization.Username"
+		"UserAgent"
+		"Server"
+		"PaiUser"
+		"PaiHost"
+	--]]
+
+	-- get the parsed SIP struct
+	local sip = scriptEngine.GetSIPStruct()
+
+	-- a struct can be nil so better check it
+	if (sip == nil or sip == '') then
+		return
+	end
+
+	if sip.FromHost == "127.0.0.1" then
+		-- scriptEngine.Logp("ERROR", "found User-Agent:", sip.UserAgent)
+	end
+
+	scriptEngine.SetSIPHeader("FromHost", "1.1.1.1")
+
+	-- Full SIP messsage can be changed
+	-- scriptEngine.SetRawMessage("SIP 2/0")
+
+	return 
+
+end
+
+-- this function will be executed third
+function changeNodeIDtoNameFast()
+
+	-- get only nodeID
+	local nodeID = scriptEngine.GetHEPNodeID()
+	if nodeID == 0 then
+		scriptEngine.SetHEPField("NodeName","TestNode")
+	end
+
+	return 
+
+end
+
+-- this function will be executed fourth
+function changeNodeIDtoNameSlow()
+	-- get the parsed HEP struct
+	local hep = scriptEngine.GetHEPStruct()
+
+	-- a struct can be nil so better check it
+	if (hep == nil or hep == '') then
+		return
+	end
+
+	if hep.NodeID == 0 then
+		hep.NodeName="TestNode"
+	end
+
+	return 
+
+end
+
+

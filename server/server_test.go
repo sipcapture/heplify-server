@@ -19,6 +19,8 @@ func init() {
 	config.Setting.DBDriver = "mock"
 	config.Setting.DBShema = "mock"
 	config.Setting.PromAddr = ":9999"
+	config.Setting.ScriptEnable = true
+	config.Setting.ScriptFolder = "../lua/"
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()
@@ -28,13 +30,16 @@ func init() {
 func TestInput(t *testing.T) {
 	p, err := decoder.DecodeHEP(hepPacket)
 	if err != nil {
-		t.Fail()
+		t.FailNow()
 	}
 	buf := hi.buffer.Get().([]byte)
 	copy(buf, hepPacket)
 	hi.inputCh <- buf[:len(hepPacket)]
 	d := <-hi.dbCh
-	assert.Equal(t, p, d)
+	if d == nil || p == nil {
+		t.FailNow()
+	}
+	assert.Equal(t, p.Payload, d.Payload)
 }
 
 func BenchmarkInput(b *testing.B) {

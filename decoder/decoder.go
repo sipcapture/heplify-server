@@ -82,6 +82,7 @@ type HEP struct {
 	Timestamp   time.Time
 	SIP         *sipparser.SipMsg
 	NodeName    string
+	TargetName  string
 	SID         string
 }
 
@@ -234,6 +235,8 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 		return WriteJSONString(w, h.SIP.DiversionVal)
 	case "expires":
 		return WriteJSONString(w, h.SIP.Expires)
+	case "callid_aleg":
+		return WriteJSONString(w, h.SIP.XCallID)
 	default:
 		return w.Write(strEmpty)
 	}

@@ -1,8 +1,16 @@
 package decoder
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
-	"reflect"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/negbie/logp"
 	"github.com/sipcapture/golua/lua"
@@ -10,67 +18,83 @@ import (
 	"github.com/sipcapture/heplify-server/decoder/luar"
 )
 
+const luaFuncPrefix = "scriptEngine"
+const luaFuncPrefixDot = luaFuncPrefix + "."
+
 /// structure for Script Engine
 type ScriptEngine struct {
+	functions []string
 	LuaEngine *lua.State
 	mapObj    luar.Map
 	/* pointer to modify */
 	hepPkt **HEP
 }
 
-func (d *ScriptEngine) getParsedVariables() interface{} {
-
-	return (*d.hepPkt).SIP
-}
-
-func (d *ScriptEngine) getHEPProtoType() uint32 {
-
-	return (*d.hepPkt).GetProtoType()
-}
-
-func (d *ScriptEngine) getHEPObject() interface{} {
-
+func (d *ScriptEngine) GetHEPStruct() interface{} {
+	if (*d.hepPkt) == nil {
+		return ""
+	}
 	return (*d.hepPkt)
 }
 
-func (d *ScriptEngine) getHEPSrcIP() string {
+func (d *ScriptEngine) GetSIPStruct() interface{} {
+	if (*d.hepPkt).SIP == nil {
+		return ""
+	}
+	return (*d.hepPkt).SIP
+}
 
+func (d *ScriptEngine) GetHEPProtoType() uint32 {
+	return (*d.hepPkt).GetProtoType()
+}
+
+func (d *ScriptEngine) GetHEPSrcIP() string {
 	return (*d.hepPkt).GetSrcIP()
 }
 
-func (d *ScriptEngine) getHEPSrcPort() uint32 {
-
+func (d *ScriptEngine) GetHEPSrcPort() uint32 {
 	return (*d.hepPkt).GetSrcPort()
 }
 
-func (d *ScriptEngine) getHEPDstIP() string {
-
+func (d *ScriptEngine) GetHEPDstIP() string {
 	return (*d.hepPkt).GetDstIP()
 }
 
-func (d *ScriptEngine) getHEPDstPort() uint32 {
-
+func (d *ScriptEngine) GetHEPDstPort() uint32 {
 	return (*d.hepPkt).GetDstPort()
 }
 
-func (d *ScriptEngine) getHEPTimeSeconds() uint32 {
-
+func (d *ScriptEngine) GetHEPTimeSeconds() uint32 {
 	return (*d.hepPkt).GetTsec()
 }
 
-func (d *ScriptEngine) getHEPTimeUseconds() uint32 {
-
+func (d *ScriptEngine) GetHEPTimeUseconds() uint32 {
 	return (*d.hepPkt).GetTmsec()
 }
 
-func (d *ScriptEngine) setCustomHeaders(m *map[string]string) {
+func (d *ScriptEngine) GetHEPNodeID() uint32 {
+	return (*d.hepPkt).GetNodeID()
+}
 
-	hepPkt := *d.hepPkt
+func (d *ScriptEngine) GetRawMessage() string {
+	return (*d.hepPkt).GetPayload()
+}
 
-	/* not SIP */
-	if hepPkt.SIP == nil {
+func (d *ScriptEngine) SetRawMessage(value string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set Raw message if HEP struct is nil, please check for nil in lua script")
 		return
 	}
+	hepPkt := *d.hepPkt
+	hepPkt.Payload = value
+}
+
+func (d *ScriptEngine) SetCustomSIPHeader(m *map[string]string) {
+	if (*d.hepPkt).SIP == nil {
+		logp.Err("can't set custom SIP header if SIP struct is nil, please check for nil in lua script")
+		return
+	}
+	hepPkt := *d.hepPkt
 
 	if hepPkt.SIP.CustomHeader == nil {
 		hepPkt.SIP.CustomHeader = make(map[string]string)
@@ -79,66 +103,91 @@ func (d *ScriptEngine) setCustomHeaders(m *map[string]string) {
 	for k, v := range *m {
 		hepPkt.SIP.CustomHeader[k] = v
 	}
-
-	return
 }
 
-func (d *ScriptEngine) getRawMessage() string {
-
-	hepPkt := *d.hepPkt
-
-	return hepPkt.Payload
-}
-
-func (d *ScriptEngine) applyHeader(header string, value string) {
-
-	hepPkt := *d.hepPkt
-
-	switch {
-
-	case header == "Via":
-		hepPkt.SIP.ViaOne = value
-	case header == "FromUser":
-		hepPkt.SIP.FromUser = value
-	case header == "FromHost":
-		hepPkt.SIP.FromHost = value
-	case header == "FromTag":
-		hepPkt.SIP.FromTag = value
-	case header == "ToUser":
-		hepPkt.SIP.ToUser = value
-	case header == "ToHost":
-		hepPkt.SIP.ToHost = value
-	case header == "ToTag":
-		hepPkt.SIP.ToTag = value
-	case header == "Call-ID":
-		hepPkt.SIP.CallID = value
-	case header == "X-CID":
-		hepPkt.SIP.XCallID = value
-	case header == "ContactUser":
-		hepPkt.SIP.ContactUser = value
-	case header == "ContactHost":
-		hepPkt.SIP.ContactHost = value
-	case header == "User-Agent":
-		hepPkt.SIP.UserAgent = value
-	case header == "Server":
-		hepPkt.SIP.Server = value
-	case header == "AuthorizationUsername":
-		hepPkt.SIP.Authorization.Username = value
-	case header == "Proxy-AuthorizationUsername":
-		hepPkt.SIP.Authorization.Username = value
-	case header == "PAIUser":
-		hepPkt.SIP.PaiUser = value
-	case header == "PAIHost":
-		hepPkt.SIP.PaiHost = value
-	case header == "RAW":
-		hepPkt.Payload = value
+func (d *ScriptEngine) SetHEPField(field string, value string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set HEP field if HEP struct is nil, please check for nil in lua script")
+		return
 	}
+	hepPkt := *d.hepPkt
 
-	return
+	switch field {
+	case "ProtoType":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.ProtoType = uint32(i)
+		}
+	case "SrcIP":
+		hepPkt.SrcIP = value
+	case "SrcPort":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.SrcPort = uint32(i)
+		}
+	case "DstIP":
+		hepPkt.DstIP = value
+	case "DstPort":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.DstPort = uint32(i)
+		}
+	case "NodeID":
+		if i, err := strconv.Atoi(value); err == nil {
+			hepPkt.NodeID = uint32(i)
+		}
+	case "CID":
+		hepPkt.CID = value
+	case "SID":
+		hepPkt.SID = value
+	case "NodeName":
+		hepPkt.NodeName = value
+	case "TargetName":
+		hepPkt.TargetName = value
+	}
 }
 
-func (d *ScriptEngine) logData(level string, message string, data interface{}) {
+func (d *ScriptEngine) SetSIPHeader(header string, value string) {
+	if (*d.hepPkt).SIP == nil {
+		logp.Err("can't set SIP header if SIP struct is nil, please check for nil in lua script")
+		return
+	}
+	hepPkt := *d.hepPkt
 
+	switch header {
+	case "ViaOne":
+		hepPkt.SIP.ViaOne = value
+	case "FromUser":
+		hepPkt.SIP.FromUser = value
+	case "FromHost":
+		hepPkt.SIP.FromHost = value
+	case "FromTag":
+		hepPkt.SIP.FromTag = value
+	case "ToUser":
+		hepPkt.SIP.ToUser = value
+	case "ToHost":
+		hepPkt.SIP.ToHost = value
+	case "ToTag":
+		hepPkt.SIP.ToTag = value
+	case "CallID":
+		hepPkt.SIP.CallID = value
+	case "XCallID":
+		hepPkt.SIP.XCallID = value
+	case "ContactUser":
+		hepPkt.SIP.ContactUser = value
+	case "ContactHost":
+		hepPkt.SIP.ContactHost = value
+	case "UserAgent":
+		hepPkt.SIP.UserAgent = value
+	case "Server":
+		hepPkt.SIP.Server = value
+	case "Authorization.Username":
+		hepPkt.SIP.Authorization.Username = value
+	case "PaiUser":
+		hepPkt.SIP.PaiUser = value
+	case "PaiHost":
+		hepPkt.SIP.PaiHost = value
+	}
+}
+
+func (d *ScriptEngine) Logp(level string, message string, data interface{}) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
 	} else {
@@ -148,58 +197,123 @@ func (d *ScriptEngine) logData(level string, message string, data interface{}) {
 
 // RegisteredScriptEngine returns a script interface
 func RegisteredScriptEngine() (*ScriptEngine, error) {
-
-	dec := &ScriptEngine{}
-
-	dec.LuaEngine = luar.Init()
-
-	API := luar.Map{
-		"applyHeader":        dec.applyHeader,
-		"logData":            dec.logData,
-		"setCustomHeaders":   dec.setCustomHeaders,
-		"getParsedVariables": dec.getParsedVariables,
-		"getHEPProtoType":    dec.getHEPProtoType,
-		"getHEPSrcIP":        dec.getHEPSrcIP,
-		"getHEPSrcPort":      dec.getHEPSrcPort,
-		"getHEPDstIP":        dec.getHEPDstIP,
-		"getHEPDstPort":      dec.getHEPDstPort,
-		"getHEPTimeSeconds":  dec.getHEPTimeSeconds,
-		"getHEPTimeUseconds": dec.getHEPTimeUseconds,
-		"getHEPObject":       dec.getHEPObject,
-		"getRawMessage":      dec.getRawMessage,
-		"print":              fmt.Println,
-	}
-
-	dec.mapObj = make(luar.Map)
-	dec.mapObj["api"] = API
-
 	logp.Debug("script", "Init script engine...")
 
-	luar.Register(dec.LuaEngine, "HEP", dec.mapObj)
+	dec := &ScriptEngine{}
+	dec.LuaEngine = lua.NewState()
+	dec.LuaEngine.OpenLibs()
 
-	/* LOAD */
-	if r := dec.LuaEngine.LoadFile(config.Setting.ScriptFile); r != 0 {
-		logp.Err("[script] ERROR: %v", dec.LuaEngine.ToString(-1))
-		return nil, &reflect.ValueError{}
+	m := luar.Map{
+		"GetHEPStruct":       dec.GetHEPStruct,
+		"GetSIPStruct":       dec.GetSIPStruct,
+		"GetHEPProtoType":    dec.GetHEPProtoType,
+		"GetHEPSrcIP":        dec.GetHEPSrcIP,
+		"GetHEPSrcPort":      dec.GetHEPSrcPort,
+		"GetHEPDstIP":        dec.GetHEPDstIP,
+		"GetHEPDstPort":      dec.GetHEPDstPort,
+		"GetHEPTimeSeconds":  dec.GetHEPTimeSeconds,
+		"GetHEPTimeUseconds": dec.GetHEPTimeUseconds,
+		"GetHEPNodeID":       dec.GetHEPNodeID,
+		"GetRawMessage":      dec.GetRawMessage,
+		"SetRawMessage":      dec.SetRawMessage,
+		"SetCustomSIPHeader": dec.SetCustomSIPHeader,
+		"SetHEPField":        dec.SetHEPField,
+		"SetSIPHeader":       dec.SetSIPHeader,
+		"Logp":               dec.Logp,
+		"Print":              fmt.Println,
 	}
 
-	dec.LuaEngine.Call(0, 0)
+	luar.Register(dec.LuaEngine, luaFuncPrefix, m)
+
+	code, funcs, err := scanScripts(config.Setting.ScriptFolder, m)
+	if err != nil {
+		return nil, err
+	}
+
+	dec.functions = funcs
+	if len(dec.functions) < 1 {
+		return nil, fmt.Errorf("no function name found in lua scripts")
+	}
+
+	err = dec.LuaEngine.DoString(code)
+	if err != nil {
+		return nil, err
+	}
 
 	return dec, nil
-
 }
 
 /* our main point ExecuteScriptEngine */
-func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) {
-
+func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) error {
 	/* preload */
 	d.hepPkt = &hep
-
-	d.LuaEngine.GetGlobal("init")
-
-	err := d.LuaEngine.Call(1, 0)
-	if err != nil {
-		logp.Err("Execute script failed %v\n", err)
-		return
+	for _, v := range d.functions {
+		err := d.LuaEngine.DoString(v)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func scanScripts(path string, m luar.Map) (string, []string, error) {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return "", nil, err
+	}
+
+	buf := bytes.NewBuffer(nil)
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".lua") {
+			f, err := os.Open(filepath.Join(path, file.Name()))
+			if err != nil {
+				return "", nil, err
+			}
+			_, err = io.Copy(buf, f)
+			if err != nil {
+				return "", nil, err
+			}
+			err = f.Close()
+			if err != nil {
+				return "", nil, err
+			}
+		}
+	}
+
+	code := buf.String()
+
+	var funcs []string
+	scanner := bufio.NewScanner(buf)
+	for scanner.Scan() {
+		line := cutSpace(scanner.Text())
+		if strings.HasPrefix(line, "--") {
+			continue
+		}
+		if strings.HasPrefix(line, "function") {
+			if b, e := strings.Index(line, "("), strings.Index(line, ")"); b > -1 && e > -1 && b < e {
+				funcs = append(funcs, line[len("function"):e+1])
+			}
+		}
+
+		if b := strings.Index(line, luaFuncPrefixDot); b > -1 {
+			var allow string
+			if e := strings.Index(line, "("); e > -1 {
+				allow = line[b+len(luaFuncPrefixDot) : e]
+			}
+			_, ok := m[allow]
+			if !ok {
+				return "", nil, fmt.Errorf("can't find %s%s", luaFuncPrefixDot, allow)
+			}
+		}
+	}
+	return code, funcs, nil
+}
+
+func cutSpace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }
