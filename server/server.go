@@ -195,7 +195,7 @@ func (h *HEPInput) worker() {
 		/* register Lua Engine */
 		script, err = decoder.RegisteredScriptEngine()
 		if err != nil {
-			logp.Err("couldn't activate script engine, %v", err)
+			logp.Err("%v, please fix and run killall -HUP heplify-server", err)
 			useScript = false
 		} else {
 			defer script.LuaEngine.Close()
