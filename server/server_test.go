@@ -21,6 +21,7 @@ func init() {
 	config.Setting.PromAddr = ":9999"
 	config.Setting.ScriptEnable = true
 	config.Setting.ScriptFolder = "../lua/"
+	config.Setting.ScriptBase64 = "ZnVuY3Rpb24gbWQ1U3VtVG9DSUQoKQoJCglsb2NhbCBzdW0gPSBzY3JpcHRFbmdpbmUuSGFzaCgiNjczMTg3Y2VhZmM1NzlmYWI3OGNjODRjYjEwNzdhM2ZAMC4wLjAuMCIsICJtZDUiKQoJc2NyaXB0RW5naW5lLlNldEhFUEZpZWxkKCJDSUQiLCBzdW0pCgoJcmV0dXJuIAoKZW5k"
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()

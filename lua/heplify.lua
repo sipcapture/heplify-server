@@ -92,7 +92,7 @@ function checkSIP()
 end
 
 -- this function will be executed third
-function changeNodeIDtoNameFast()
+function changeNodeIDtoName()
 
 	-- get only nodeID
 	local nodeID = scriptEngine.GetHEPNodeID()
@@ -105,21 +105,12 @@ function changeNodeIDtoNameFast()
 end
 
 -- this function will be executed fourth
-function changeNodeIDtoNameSlow()
-	-- get the parsed HEP struct
-	local hep = scriptEngine.GetHEPStruct()
-
-	-- a struct can be nil so better check it
-	if (hep == nil or hep == '') then
-		return
-	end
-
-	if hep.NodeID == 0 then
-		hep.NodeName="TestNode"
-	end
+function sha1SumToCID()
+	
+	local sum = scriptEngine.Hash("673187ceafc579fab78cc84cb1077a3f@0.0.0.0", "sha1")
+	scriptEngine.SetHEPField("CID", sum)
 
 	return 
 
 end
-
 

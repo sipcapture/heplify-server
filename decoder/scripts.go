@@ -3,6 +3,10 @@ package decoder
 import (
 	"bufio"
 	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,7 +23,6 @@ import (
 )
 
 const luaFuncPrefix = "scriptEngine"
-const luaFuncPrefixDot = luaFuncPrefix + "."
 
 /// structure for Script Engine
 type ScriptEngine struct {
@@ -187,6 +190,18 @@ func (d *ScriptEngine) SetSIPHeader(header string, value string) {
 	}
 }
 
+func (d *ScriptEngine) Hash(s, name string) string {
+	switch name {
+	case "md5":
+		return fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	case "sha1":
+		return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
+	case "sha256":
+		return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+	}
+	return s
+}
+
 func (d *ScriptEngine) Logp(level string, message string, data interface{}) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
@@ -203,7 +218,7 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 	dec.LuaEngine = lua.NewState()
 	dec.LuaEngine.OpenLibs()
 
-	m := luar.Map{
+	luar.Register(dec.LuaEngine, luaFuncPrefix, luar.Map{
 		"GetHEPStruct":       dec.GetHEPStruct,
 		"GetSIPStruct":       dec.GetSIPStruct,
 		"GetHEPProtoType":    dec.GetHEPProtoType,
@@ -219,13 +234,12 @@ func RegisteredScriptEngine() (*ScriptEngine, error) {
 		"SetCustomSIPHeader": dec.SetCustomSIPHeader,
 		"SetHEPField":        dec.SetHEPField,
 		"SetSIPHeader":       dec.SetSIPHeader,
+		"Hash":               dec.Hash,
 		"Logp":               dec.Logp,
 		"Print":              fmt.Println,
-	}
+	})
 
-	luar.Register(dec.LuaEngine, luaFuncPrefix, m)
-
-	code, funcs, err := scanScripts(config.Setting.ScriptFolder, m)
+	code, funcs, err := scanCode()
 	if err != nil {
 		return nil, err
 	}
@@ -256,34 +270,52 @@ func (d *ScriptEngine) ExecuteScriptEngine(hep *HEP) error {
 	return nil
 }
 
-func scanScripts(path string, m luar.Map) (string, []string, error) {
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return "", nil, err
-	}
-
+func scanCode() (string, []string, error) {
 	buf := bytes.NewBuffer(nil)
-	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".lua") {
-			f, err := os.Open(filepath.Join(path, file.Name()))
-			if err != nil {
-				return "", nil, err
-			}
-			_, err = io.Copy(buf, f)
-			if err != nil {
-				return "", nil, err
-			}
-			err = f.Close()
-			if err != nil {
-				return "", nil, err
+	path := config.Setting.ScriptFolder
+	b64 := config.Setting.ScriptBase64
+
+	if path != "" {
+		files, err := ioutil.ReadDir(path)
+		if err != nil {
+			return "", nil, err
+		}
+
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".lua") {
+				f, err := os.Open(filepath.Join(path, file.Name()))
+				if err != nil {
+					return "", nil, err
+				}
+				_, err = io.Copy(buf, f)
+				if err != nil {
+					return "", nil, err
+				}
+				err = f.Close()
+				if err != nil {
+					return "", nil, err
+				}
 			}
 		}
 	}
 
-	code := buf.String()
+	if len(b64) > 20 {
+		buf.WriteString("\n")
 
+		b, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return "", nil, err
+		}
+
+		buf.Write(b)
+	}
+
+	return buf.String(), extractFunc(buf), nil
+}
+
+func extractFunc(r io.Reader) []string {
 	var funcs []string
-	scanner := bufio.NewScanner(buf)
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := cutSpace(scanner.Text())
 		if strings.HasPrefix(line, "--") {
@@ -294,19 +326,8 @@ func scanScripts(path string, m luar.Map) (string, []string, error) {
 				funcs = append(funcs, line[len("function"):e+1])
 			}
 		}
-
-		if b := strings.Index(line, luaFuncPrefixDot); b > -1 {
-			var allow string
-			if e := strings.Index(line, "("); e > -1 {
-				allow = line[b+len(luaFuncPrefixDot) : e]
-			}
-			_, ok := m[allow]
-			if !ok {
-				return "", nil, fmt.Errorf("can't find %s%s", luaFuncPrefixDot, allow)
-			}
-		}
 	}
-	return code, funcs, nil
+	return funcs
 }
 
 func cutSpace(str string) string {
