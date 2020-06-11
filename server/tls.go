@@ -6,7 +6,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"path/filepath"
 
+	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/cert"
 	"github.com/negbie/logp"
 )
@@ -26,7 +28,10 @@ func (h *HEPInput) serveTLS(addr string) {
 		return
 	}
 
-	ca, err := cert.NewCertificateAuthority("heplify-server")
+	// get path for certificate/key storage
+	cPath := config.Setting.TLSCertFolder
+	// load any existing certs, otherwise generate a new one
+	ca, err := cert.NewCertificateAuthority( filepath.Join(cPath,  "heplify-server") )
 	if err != nil {
 		logp.Err("%v", err)
 		return

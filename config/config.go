@@ -59,4 +59,5 @@ type HeplifyServer struct {
 	ScriptEnable       bool     `default:"false"`
 	ScriptFolder       string   `default:""`
 	ScriptBase64       string   `default:""`
+	TLSCertFolder      string   `default:"."`
 }
