@@ -1,6 +1,7 @@
 HEPAddr               = "0.0.0.0:9060"
 HEPTCPAddr            = ""
 HEPTLSAddr            = "0.0.0.0:9060"
+TLSCertFolder         = "."
 HEPWSAddr             = "0.0.0.0:3000"
 ESAddr                = ""
 ESDiscovery           = true
