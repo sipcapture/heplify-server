@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.32"
+const Version = "heplify-server 1.39"
 
 var Setting HeplifyServer
 
@@ -57,6 +57,6 @@ type HeplifyServer struct {
 	ConfigHTTPPW       string   `default:""`
 	Version            bool     `default:"false"`
 	ScriptEnable       bool     `default:"false"`
-	ScriptFile         string   `default:"lua/heplify.lua"`
+	ScriptFolder       string   `default:"lua/"`
 	TLSCertFolder      string   `default:"."`
 }

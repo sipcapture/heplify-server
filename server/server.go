@@ -1,9 +1,12 @@
 package input
 
 import (
+	"os"
+	"os/signal"
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/negbie/logp"
@@ -16,25 +19,26 @@ import (
 )
 
 type HEPInput struct {
-	inputCh chan []byte
-	dbCh    chan *decoder.HEP
-	promCh  chan *decoder.HEP
-	esCh    chan *decoder.HEP
-	lokiCh  chan *decoder.HEP
-	lua     decoder.ScriptEngine
-	wg      *sync.WaitGroup
-	buffer  *sync.Pool
-	exitTCP chan bool
-	exitTLS chan bool
-	exitWS  chan bool
-	quit    chan bool
-	stopped uint32
-	stats   HEPStats
-	lokiTF  []int
-	useDB   bool
-	usePM   bool
-	useES   bool
-	useLK   bool
+	inputCh    chan []byte
+	dbCh       chan *decoder.HEP
+	promCh     chan *decoder.HEP
+	esCh       chan *decoder.HEP
+	lokiCh     chan *decoder.HEP
+	wg         *sync.WaitGroup
+	buffer     *sync.Pool
+	exitUDP    chan bool
+	exitTCP    chan bool
+	exitTLS    chan bool
+	exitWS     chan bool
+	exitWorker chan bool
+	quit       chan bool
+	stopped    uint32
+	stats      HEPStats
+	lokiTF     []int
+	useDB      bool
+	usePM      bool
+	useES      bool
+	useLK      bool
 }
 
 type HEPStats struct {
@@ -48,14 +52,16 @@ const maxPktLen = 8192
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
-		inputCh: make(chan []byte, 40000),
-		buffer:  &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
-		wg:      &sync.WaitGroup{},
-		quit:    make(chan bool),
-		exitTCP: make(chan bool),
-		exitTLS: make(chan bool),
-		exitWS:  make(chan bool),
-		lokiTF:  config.Setting.LokiHEPFilter,
+		inputCh:    make(chan []byte, 40000),
+		buffer:     &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
+		wg:         &sync.WaitGroup{},
+		quit:       make(chan bool),
+		exitUDP:    make(chan bool),
+		exitTCP:    make(chan bool),
+		exitTLS:    make(chan bool),
+		exitWS:     make(chan bool),
+		exitWorker: make(chan bool),
+		lokiTF:     config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -81,11 +87,12 @@ func (h *HEPInput) Run() {
 
 	for n := 0; n < runtime.NumCPU(); n++ {
 		h.wg.Add(1)
-		go h.hepWorker()
+		go h.worker()
 	}
 
 	logp.Info("start %s with %#v\n", config.Version, config.Setting)
 	go h.logStats()
+	go h.reloadWorker()
 
 	if len(config.Setting.HEPAddr) > 2 {
 		go h.serveUDP(config.Setting.HEPAddr)
@@ -153,6 +160,9 @@ func (h *HEPInput) Run() {
 func (h *HEPInput) End() {
 	atomic.StoreUint32(&h.stopped, 1)
 
+	if len(config.Setting.HEPAddr) > 2 {
+		<-h.exitUDP
+	}
 	if len(config.Setting.HEPTCPAddr) > 2 {
 		<-h.exitTCP
 	}
@@ -163,33 +173,41 @@ func (h *HEPInput) End() {
 		<-h.exitTLS
 	}
 
+	h.exitWorker <- true
+	<-h.exitWorker
+
 	h.quit <- true
 	<-h.quit
 	close(h.inputCh)
 }
 
-func (h *HEPInput) hepWorker() {
+func (h *HEPInput) worker() {
+	defer h.wg.Done()
+
+	var ok bool
+	var err error
+	var script *decoder.ScriptEngine
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
-	var ok bool
-	defer h.wg.Done()
-	var script *decoder.ScriptEngine
-	var err error
+	useScript := config.Setting.ScriptEnable
 
-	if config.Setting.ScriptEnable {
+	if useScript {
 		/* register Lua Engine */
 		script, err = decoder.RegisteredScriptEngine()
 		if err != nil {
-			logp.Err("couldn't activate script engine")
-			return
+			logp.Err("%v, please fix and run killall -HUP heplify-server", err)
+			useScript = false
+		} else {
+			defer script.LuaEngine.Close()
 		}
-
-		defer script.LuaEngine.Close()
 	}
 
 	for {
 		h.buffer.Put(msg[:maxPktLen])
 		select {
+		case <-h.exitWorker:
+			h.exitWorker <- true
+			return
 		case msg, ok = <-h.inputCh:
 			if !ok {
 				return
@@ -205,8 +223,15 @@ func (h *HEPInput) hepWorker() {
 			atomic.AddUint64(&h.stats.HEPCount, 1)
 
 			/* execute script for each channel */
-			if config.Setting.ScriptEnable {
-				script.ExecuteScriptEngine(hepPkt)
+			if useScript {
+				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
+					logp.Err("%v", err)
+				}
+
+				if hepPkt == nil || hepPkt.ProtoType == 1 && hepPkt.SIP == nil {
+					logp.Warn("nil struct after lua script processing")
+					continue
+				}
 			}
 
 			if h.usePM {
@@ -278,6 +303,32 @@ func (h *HEPInput) logStats() {
 			atomic.StoreUint64(&h.stats.DupCount, 0)
 			atomic.StoreUint64(&h.stats.ErrCount, 0)
 
+		case <-h.quit:
+			h.quit <- true
+			return
+		}
+	}
+}
+
+func (h *HEPInput) reloadWorker() {
+	s := make(chan os.Signal, 1)
+	defer close(s)
+	signal.Notify(s, syscall.SIGHUP)
+
+	for {
+		select {
+		case <-s:
+			logp.Info("reload all worker")
+			h.wg.Add(1)
+
+			h.exitWorker <- true
+			<-h.exitWorker
+
+			for n := 0; n < runtime.NumCPU(); n++ {
+				h.wg.Add(1)
+				go h.worker()
+			}
+			h.wg.Done()
 		case <-h.quit:
 			h.quit <- true
 			return
