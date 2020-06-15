@@ -186,19 +186,19 @@ func (h *HEPInput) worker() {
 
 	var ok bool
 	var err error
-	var script *decoder.ScriptEngine
+	var script decoder.ScriptEngine
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
 	useScript := config.Setting.ScriptEnable
 
 	if useScript {
 		/* register Lua Engine */
-		script, err = decoder.RegisteredScriptEngine()
+		script, err = decoder.NewScriptEngine()
 		if err != nil {
 			logp.Err("%v, please fix and run killall -HUP heplify-server", err)
 			useScript = false
 		} else {
-			defer script.LuaEngine.Close()
+			defer script.Close()
 		}
 	}
 
@@ -224,7 +224,7 @@ func (h *HEPInput) worker() {
 
 			/* execute script for each channel */
 			if useScript {
-				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
+				if err = script.Run(hepPkt); err != nil {
 					logp.Err("%v", err)
 				}
 
