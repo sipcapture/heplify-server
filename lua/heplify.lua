@@ -2,26 +2,26 @@
 -- this function will be executed first
 function checkRAW()
 	--[[ Following functions can be used:
-		scriptEngine.GetHEPStruct()
-		scriptEngine.GetSIPStruct()
-		scriptEngine.GetHEPProtoType()
-		scriptEngine.GetHEPSrcIP()
-		scriptEngine.GetHEPSrcPort()
-		scriptEngine.GetHEPDstIP()
-		scriptEngine.GetHEPDstPort()
-		scriptEngine.GetHEPTimeSeconds()
-		scriptEngine.GetHEPTimeUseconds()
-		scriptEngine.GetHEPNodeID()
-		scriptEngine.GetRawMessage()
-		scriptEngine.SetRawMessage(value string)
-		scriptEngine.SetCustomSIPHeader(map luatable)
-		scriptEngine.SetHEPField(field string, value string)
-		scriptEngine.SetSIPHeader(header string, value string)
-		scriptEngine.Logp(level string, message string, data interface{})
-		scriptEngine.Print(text string)
+		GetHEPStruct()
+		GetSIPStruct()
+		GetHEPProtoType()
+		GetHEPSrcIP()
+		GetHEPSrcPort()
+		GetHEPDstIP()
+		GetHEPDstPort()
+		GetHEPTimeSeconds()
+		GetHEPTimeUseconds()
+		GetHEPNodeID()
+		GetRawMessage()
+		SetRawMessage(value string)
+		SetCustomSIPHeader(map luatable)
+		SetHEPField(field string, value string)
+		SetSIPHeader(header string, value string)
+		Logp(level string, message string, data interface{})
+		Print(text string)
 	--]]
 	
-	local protoType = scriptEngine.GetHEPProtoType()
+	local protoType = GetHEPProtoType()
 
 	-- Check if we have SIP type 
 	if protoType ~= 1 then
@@ -29,8 +29,8 @@ function checkRAW()
 	end
 
 	-- original SIP message Payload
-	local raw = scriptEngine.GetRawMessage()
-	-- scriptEngine.Logp("DEBUG", "raw", raw)
+	local raw = GetRawMessage()
+	-- Logp("DEBUG", "raw", raw)
 
 	-- Create lua table 
 	local headers = {}
@@ -43,7 +43,7 @@ function checkRAW()
 		headers[name] = value
 	end
 
-	scriptEngine.SetCustomSIPHeader(headers)
+	SetCustomSIPHeader(headers)
 
 	return 
 
@@ -71,7 +71,7 @@ function checkSIP()
 	--]]
 
 	-- get the parsed SIP struct
-	local sip = scriptEngine.GetSIPStruct()
+	local sip = GetSIPStruct()
 
 	-- a struct can be nil so better check it
 	if (sip == nil or sip == '') then
@@ -79,13 +79,13 @@ function checkSIP()
 	end
 
 	if sip.FromHost == "127.0.0.1" then
-		-- scriptEngine.Logp("ERROR", "found User-Agent:", sip.UserAgent)
+		-- Logp("ERROR", "found User-Agent:", sip.UserAgent)
 	end
 
-	scriptEngine.SetSIPHeader("FromHost", "1.1.1.1")
+	SetSIPHeader("FromHost", "1.1.1.1")
 
 	-- Full SIP messsage can be changed
-	-- scriptEngine.SetRawMessage("SIP 2/0")
+	-- SetRawMessage("SIP 2/0")
 
 	return 
 
@@ -95,9 +95,9 @@ end
 function changeNodeIDtoName()
 
 	-- get only nodeID
-	local nodeID = scriptEngine.GetHEPNodeID()
+	local nodeID = GetHEPNodeID()
 	if nodeID == 0 then
-		scriptEngine.SetHEPField("NodeName","TestNode")
+		SetHEPField("NodeName","TestNode")
 	end
 
 	return 
@@ -107,8 +107,8 @@ end
 -- this function will be executed fourth
 function sha1SumToCID()
 	
-	local sum = scriptEngine.Hash("673187ceafc579fab78cc84cb1077a3f@0.0.0.0", "sha1")
-	scriptEngine.SetHEPField("CID", sum)
+	local sum = Hash("673187ceafc579fab78cc84cb1077a3f@0.0.0.0", "sha1")
+	SetHEPField("CID", sum)
 
 	return 
 
