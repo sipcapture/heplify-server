@@ -30,9 +30,8 @@ func init() {
 	config.Setting.DBShema = "mock"
 	config.Setting.PromAddr = ":9999"
 	config.Setting.ScriptEnable = true
-	config.Setting.ScriptFolder = "../lua/"
+	config.Setting.ScriptFolder = "../scripts/"
 	config.Setting.ScriptEngine = "lua"
-	config.Setting.ScriptBase64 = "ZnVuY3Rpb24gbWQ1U3VtVG9DSUQoKQ0KCQ0KCWxvY2FsIHN1bSA9IEhhc2goIjY3MzE4N2NlYWZjNTc5ZmFiNzhjYzg0Y2IxMDc3YTNmQDAuMC4wLjAiLCAibWQ1IikNCglTZXRIRVBGaWVsZCgiQ0lEIiwgc3VtKQ0KDQoJcmV0dXJuIA0KDQplbmQ="
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()
