@@ -32,6 +32,7 @@ func init() {
 	config.Setting.ScriptEnable = true
 	config.Setting.ScriptFolder = "../scripts/"
 	config.Setting.ScriptEngine = "lua"
+	//config.Setting.ScriptEngine = "expr"
 	config.Setting.PromTargetName = "proxy_inc_ip,proxy_out_ip"
 	config.Setting.PromTargetIP = "192.168.245.250,192.168.247.250"
 	hi = NewHEPInput()
