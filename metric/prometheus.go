@@ -64,18 +64,21 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 		var srcTarget, dstTarget string
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			if !p.TargetEmpty {
-				var ok bool
-				srcTarget, ok = p.TargetMap[pkt.SrcIP]
-				if ok {
+				var srcHit, dstHit bool
+				srcTarget, srcHit = p.TargetMap[pkt.SrcIP]
+				if srcHit {
 					methodResponses.WithLabelValues(srcTarget, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 
 					if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
 						reasonCause.WithLabelValues(srcTarget, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()
 					}
 				}
-				dstTarget, ok = p.TargetMap[pkt.DstIP]
-				if ok {
+				dstTarget, dstHit = p.TargetMap[pkt.DstIP]
+				if dstHit {
 					methodResponses.WithLabelValues(dstTarget, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+				}
+				if !srcHit && !dstHit {
+					methodResponses.WithLabelValues("unknown", "", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
 			}
 
