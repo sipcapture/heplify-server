@@ -18,6 +18,7 @@ type ExprEngine struct {
 	hepPkt **HEP
 	prog   *vm.Program
 	env    map[string]interface{}
+	v      vm.VM
 }
 
 func (d *ExprEngine) GetHEPStruct() interface{} {
@@ -235,6 +236,8 @@ func NewExprEngine() (*ExprEngine, error) {
 		return nil, err
 	}
 
+	d.v = vm.VM{}
+
 	return d, nil
 
 }
@@ -244,7 +247,7 @@ func (d *ExprEngine) Run(hep *HEP) error {
 	/* preload */
 	d.hepPkt = &hep
 
-	_, err := expr.Run(d.prog, d.env)
+	_, err := d.v.Run(d.prog, d.env)
 	if err != nil {
 		return err
 	}

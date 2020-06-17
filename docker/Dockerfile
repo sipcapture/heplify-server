@@ -16,4 +16,4 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/heplify-server .
-COPY --from=builder /go/src/github.com/sipcapture/heplify-server/lua ./lua
+COPY --from=builder /go/src/github.com/sipcapture/heplify-server/scripts ./scripts
