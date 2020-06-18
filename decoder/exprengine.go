@@ -16,7 +16,7 @@ import (
 // ExprEngine struct
 type ExprEngine struct {
 	hepPkt *HEP
-	prog   *vm.Program
+	prog   []*vm.Program
 	env    map[string]interface{}
 	v      vm.VM
 }
@@ -173,14 +173,17 @@ func NewExprEngine() (*ExprEngine, error) {
 		"Hash":               e.Hash,
 	}
 
-	code, err := scanCode()
+	files, _, err := scanCode()
 	if err != nil {
 		return nil, err
 	}
 
-	e.prog, err = expr.Compile(code.String(), expr.Env(e.env))
-	if err != nil {
-		return nil, err
+	for _, file := range files {
+		prog, err := expr.Compile(file, expr.Env(e.env))
+		if err != nil {
+			return nil, err
+		}
+		e.prog = append(e.prog, prog)
 	}
 
 	e.v = vm.VM{}
@@ -191,9 +194,11 @@ func NewExprEngine() (*ExprEngine, error) {
 func (e *ExprEngine) Run(hep *HEP) error {
 	e.hepPkt = hep
 
-	_, err := e.v.Run(e.prog, e.env)
-	if err != nil {
-		return err
+	for _, prog := range e.prog {
+		_, err := e.v.Run(prog, e.env)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

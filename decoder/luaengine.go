@@ -230,7 +230,7 @@ func NewLuaEngine() (*LuaEngine, error) {
 		"Print":              fmt.Println,
 	})
 
-	code, err := scanCode()
+	_, code, err := scanCode()
 	if err != nil {
 		return nil, err
 	}
