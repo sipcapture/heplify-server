@@ -10,183 +10,131 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/sipparser"
 )
 
-/// structure for Script Engine
+// ExprEngine struct
 type ExprEngine struct {
-	/* pointer to modify */
-	hepPkt **HEP
+	hepPkt *HEP
 	prog   *vm.Program
 	env    map[string]interface{}
 	v      vm.VM
 }
 
-func (d *ExprEngine) GetHEPStruct() interface{} {
-	if (*d.hepPkt) == nil {
-		return ""
-	}
-	return (*d.hepPkt)
+func (e *ExprEngine) GetHEPStruct() *HEP { return e.hepPkt }
+
+func (e *ExprEngine) GetSIPStruct() *sipparser.SipMsg { return e.hepPkt.SIP }
+
+func (e *ExprEngine) GetHEPProtoType() uint32 { return e.hepPkt.GetProtoType() }
+
+func (e *ExprEngine) GetHEPSrcIP() string { return e.hepPkt.GetSrcIP() }
+
+func (e *ExprEngine) GetHEPSrcPort() uint32 { return e.hepPkt.GetSrcPort() }
+
+func (e *ExprEngine) GetHEPDstIP() string { return e.hepPkt.GetDstIP() }
+
+func (e *ExprEngine) GetHEPDstPort() uint32 { return e.hepPkt.GetDstPort() }
+
+func (e *ExprEngine) GetHEPTimeSeconds() uint32 { return e.hepPkt.GetTsec() }
+
+func (e *ExprEngine) GetHEPTimeUseconds() uint32 { return e.hepPkt.GetTmsec() }
+
+func (e *ExprEngine) GetHEPNodeID() uint32 { return e.hepPkt.GetNodeID() }
+
+func (e *ExprEngine) GetRawMessage() string { return e.hepPkt.GetPayload() }
+
+func (e *ExprEngine) SetRawMessage(p string) uint8 {
+	e.hepPkt.Payload = p
+	return 1
 }
 
-func (d *ExprEngine) GetSIPStruct() interface{} {
-	if (*d.hepPkt).SIP == nil {
-		return ""
-	}
-	return (*d.hepPkt).SIP
-}
+func (e *ExprEngine) SetCustomSIPHeader(m map[string]string) uint8 {
 
-func (d *ExprEngine) GetHEPProtoType() uint32 {
-	return (*d.hepPkt).GetProtoType()
-}
-
-func (d *ExprEngine) GetHEPSrcIP() string {
-	return (*d.hepPkt).GetSrcIP()
-}
-
-func (d *ExprEngine) GetHEPSrcPort() uint32 {
-	return (*d.hepPkt).GetSrcPort()
-}
-
-func (d *ExprEngine) GetHEPDstIP() string {
-	return (*d.hepPkt).GetDstIP()
-}
-
-func (d *ExprEngine) GetHEPDstPort() uint32 {
-	return (*d.hepPkt).GetDstPort()
-}
-
-func (d *ExprEngine) GetHEPTimeSeconds() uint32 {
-	return (*d.hepPkt).GetTsec()
-}
-
-func (d *ExprEngine) GetHEPTimeUseconds() uint32 {
-	return (*d.hepPkt).GetTmsec()
-}
-
-func (d *ExprEngine) GetHEPNodeID() uint32 {
-	return (*d.hepPkt).GetNodeID()
-}
-
-func (d *ExprEngine) GetRawMessage() string {
-	return (*d.hepPkt).GetPayload()
-}
-
-func (d *ExprEngine) SetRawMessage(value string) error {
-	if (*d.hepPkt) == nil {
-		err := fmt.Errorf("can't set Raw message if HEP struct is nil, please check for nil in lua script\n")
-		logp.Err("%v", err)
-		return err
-	}
-	hepPkt := *d.hepPkt
-	hepPkt.Payload = value
-	return nil
-}
-
-func (d *ExprEngine) SetCustomSIPHeader(m *map[string]string) error {
-	if (*d.hepPkt).SIP == nil {
-		err := fmt.Errorf("can't set custom SIP header if SIP struct is nil, please check for nil in lua script\n")
-		logp.Err("%v", err)
-		return err
-	}
-	hepPkt := *d.hepPkt
-
-	if hepPkt.SIP.CustomHeader == nil {
-		hepPkt.SIP.CustomHeader = make(map[string]string)
+	if e.hepPkt.SIP.CustomHeader == nil {
+		e.hepPkt.SIP.CustomHeader = make(map[string]string)
 	}
 
-	for k, v := range *m {
-		hepPkt.SIP.CustomHeader[k] = v
+	for k, v := range m {
+		e.hepPkt.SIP.CustomHeader[k] = v
 	}
-	return nil
+	return 1
 }
 
-func (d *ExprEngine) SetHEPField(field string, value string) error {
-	if (*d.hepPkt) == nil {
-		err := fmt.Errorf("can't set HEP field if HEP struct is nil, please check for nil in lua script\n")
-		logp.Err("%v", err)
-		return err
-	}
-	hepPkt := *d.hepPkt
+func (e *ExprEngine) SetHEPField(field string, value string) uint8 {
 
 	switch field {
 	case "ProtoType":
 		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.ProtoType = uint32(i)
+			e.hepPkt.ProtoType = uint32(i)
 		}
 	case "SrcIP":
-		hepPkt.SrcIP = value
+		e.hepPkt.SrcIP = value
 	case "SrcPort":
 		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.SrcPort = uint32(i)
+			e.hepPkt.SrcPort = uint32(i)
 		}
 	case "DstIP":
-		hepPkt.DstIP = value
+		e.hepPkt.DstIP = value
 	case "DstPort":
 		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.DstPort = uint32(i)
+			e.hepPkt.DstPort = uint32(i)
 		}
 	case "NodeID":
 		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.NodeID = uint32(i)
+			e.hepPkt.NodeID = uint32(i)
 		}
 	case "CID":
-		hepPkt.CID = value
+		e.hepPkt.CID = value
 	case "SID":
-		hepPkt.SID = value
+		e.hepPkt.SID = value
 	case "NodeName":
-		hepPkt.NodeName = value
+		e.hepPkt.NodeName = value
 	case "TargetName":
-		hepPkt.TargetName = value
+		e.hepPkt.TargetName = value
 	}
-	return nil
+	return 1
 }
 
-func (d *ExprEngine) SetSIPHeader(header string, value string) error {
-	if (*d.hepPkt).SIP == nil {
-		err := fmt.Errorf("can't set SIP header if SIP struct is nil, please check for nil in lua script\n")
-		logp.Err("%v", err)
-		return err
-	}
-	hepPkt := *d.hepPkt
+func (e *ExprEngine) SetSIPHeader(header string, value string) uint8 {
 
 	switch header {
 	case "ViaOne":
-		hepPkt.SIP.ViaOne = value
+		e.hepPkt.SIP.ViaOne = value
 	case "FromUser":
-		hepPkt.SIP.FromUser = value
+		e.hepPkt.SIP.FromUser = value
 	case "FromHost":
-		hepPkt.SIP.FromHost = value
+		e.hepPkt.SIP.FromHost = value
 	case "FromTag":
-		hepPkt.SIP.FromTag = value
+		e.hepPkt.SIP.FromTag = value
 	case "ToUser":
-		hepPkt.SIP.ToUser = value
+		e.hepPkt.SIP.ToUser = value
 	case "ToHost":
-		hepPkt.SIP.ToHost = value
+		e.hepPkt.SIP.ToHost = value
 	case "ToTag":
-		hepPkt.SIP.ToTag = value
+		e.hepPkt.SIP.ToTag = value
 	case "CallID":
-		hepPkt.SIP.CallID = value
+		e.hepPkt.SIP.CallID = value
 	case "XCallID":
-		hepPkt.SIP.XCallID = value
+		e.hepPkt.SIP.XCallID = value
 	case "ContactUser":
-		hepPkt.SIP.ContactUser = value
+		e.hepPkt.SIP.ContactUser = value
 	case "ContactHost":
-		hepPkt.SIP.ContactHost = value
+		e.hepPkt.SIP.ContactHost = value
 	case "UserAgent":
-		hepPkt.SIP.UserAgent = value
+		e.hepPkt.SIP.UserAgent = value
 	case "Server":
-		hepPkt.SIP.Server = value
+		e.hepPkt.SIP.Server = value
 	case "Authorization.Username":
-		hepPkt.SIP.Authorization.Username = value
+		e.hepPkt.SIP.Authorization.Username = value
 	case "PaiUser":
-		hepPkt.SIP.PaiUser = value
+		e.hepPkt.SIP.PaiUser = value
 	case "PaiHost":
-		hepPkt.SIP.PaiHost = value
+		e.hepPkt.SIP.PaiHost = value
 	}
-	return nil
+	return 1
 }
 
-func (d *ExprEngine) Hash(s, name string) string {
+func (e *ExprEngine) Hash(s, name string) string {
 	switch name {
 	case "md5":
 		return fmt.Sprintf("%x", md5.Sum([]byte(s)))
@@ -198,32 +146,31 @@ func (d *ExprEngine) Hash(s, name string) string {
 	return s
 }
 
-func (d *ExprEngine) Close() {}
+// Close implements interface
+func (e *ExprEngine) Close() {}
 
 // NewExprEngine returns the script engine struct
 func NewExprEngine() (*ExprEngine, error) {
-	logp.Debug("script", "register Expr engine")
+	logp.Debug("script", "register expr engine")
 
-	var err error
-	d := &ExprEngine{}
-
-	d.env = map[string]interface{}{
-		"GetHEPStruct":       d.GetHEPStruct,
-		"GetSIPStruct":       d.GetSIPStruct,
-		"GetHEPProtoType":    d.GetHEPProtoType,
-		"GetHEPSrcIP":        d.GetHEPSrcIP,
-		"GetHEPSrcPort":      d.GetHEPSrcPort,
-		"GetHEPDstIP":        d.GetHEPDstIP,
-		"GetHEPDstPort":      d.GetHEPDstPort,
-		"GetHEPTimeSeconds":  d.GetHEPTimeSeconds,
-		"GetHEPTimeUseconds": d.GetHEPTimeUseconds,
-		"GetHEPNodeID":       d.GetHEPNodeID,
-		"GetRawMessage":      d.GetRawMessage,
-		"SetRawMessage":      d.SetRawMessage,
-		"SetCustomSIPHeader": d.SetCustomSIPHeader,
-		"SetHEPField":        d.SetHEPField,
-		"SetSIPHeader":       d.SetSIPHeader,
-		"Hash":               d.Hash,
+	e := &ExprEngine{}
+	e.env = map[string]interface{}{
+		"GetHEPStruct":       e.GetHEPStruct,
+		"GetSIPStruct":       e.GetSIPStruct,
+		"GetHEPProtoType":    e.GetHEPProtoType,
+		"GetHEPSrcIP":        e.GetHEPSrcIP,
+		"GetHEPSrcPort":      e.GetHEPSrcPort,
+		"GetHEPDstIP":        e.GetHEPDstIP,
+		"GetHEPDstPort":      e.GetHEPDstPort,
+		"GetHEPTimeSeconds":  e.GetHEPTimeSeconds,
+		"GetHEPTimeUseconds": e.GetHEPTimeUseconds,
+		"GetHEPNodeID":       e.GetHEPNodeID,
+		"GetRawMessage":      e.GetRawMessage,
+		"SetRawMessage":      e.SetRawMessage,
+		"SetCustomSIPHeader": e.SetCustomSIPHeader,
+		"SetHEPField":        e.SetHEPField,
+		"SetSIPHeader":       e.SetSIPHeader,
+		"Hash":               e.Hash,
 	}
 
 	code, err := scanCode()
@@ -231,23 +178,20 @@ func NewExprEngine() (*ExprEngine, error) {
 		return nil, err
 	}
 
-	d.prog, err = expr.Compile(code.String(), expr.Env(d.env))
+	e.prog, err = expr.Compile(code.String(), expr.Env(e.env))
 	if err != nil {
 		return nil, err
 	}
 
-	d.v = vm.VM{}
-
-	return d, nil
-
+	e.v = vm.VM{}
+	return e, nil
 }
 
 // Run will execute the script
-func (d *ExprEngine) Run(hep *HEP) error {
-	/* preload */
-	d.hepPkt = &hep
+func (e *ExprEngine) Run(hep *HEP) error {
+	e.hepPkt = hep
 
-	_, err := d.v.Run(d.prog, d.env)
+	_, err := e.v.Run(e.prog, e.env)
 	if err != nil {
 		return err
 	}

@@ -229,7 +229,7 @@ func (h *HEPInput) worker() {
 				}
 
 				if hepPkt == nil || hepPkt.ProtoType == 1 && hepPkt.SIP == nil {
-					logp.Warn("nil struct after lua script processing")
+					logp.Warn("nil struct after script processing")
 					continue
 				}
 			}
