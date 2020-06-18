@@ -31,30 +31,39 @@ func NewScriptEngine() (ScriptEngine, error) {
 	return nil, fmt.Errorf("unknown script engine %s\n", config.Setting.ScriptEngine)
 }
 
-func scanCode() (*bytes.Buffer, error) {
+func scanCode() ([]string, *bytes.Buffer, error) {
+	var files []string
 	buf := bytes.NewBuffer(nil)
 	path := config.Setting.ScriptFolder
 	b64 := config.Setting.ScriptBase64
 
 	if path != "" {
-		files, err := ioutil.ReadDir(path)
+		dir, err := ioutil.ReadDir(path)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		for _, file := range files {
+		for _, file := range dir {
 			if !file.IsDir() && strings.HasSuffix(file.Name(), "."+config.Setting.ScriptEngine) {
-				f, err := os.Open(filepath.Join(path, file.Name()))
+				p := filepath.Join(path, file.Name())
+				f, err := os.Open(p)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				_, err = io.Copy(buf, f)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				err = f.Close()
 				if err != nil {
-					return nil, err
+					return nil, nil, err
+				}
+				s, err := ioutil.ReadFile(p)
+				if err != nil {
+					return nil, nil, err
+				}
+				if len(s) > 4 {
+					files = append(files, string(s))
 				}
 			}
 		}
@@ -65,13 +74,13 @@ func scanCode() (*bytes.Buffer, error) {
 
 		b, err := base64.StdEncoding.DecodeString(b64)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		buf.Write(b)
 	}
 
-	return buf, nil
+	return files, buf, nil
 }
 
 func extractFunc(r io.Reader) []string {
