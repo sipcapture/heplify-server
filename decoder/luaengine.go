@@ -210,6 +210,7 @@ func NewLuaEngine() (*LuaEngine, error) {
 		"SetCustomSIPHeader": d.SetCustomSIPHeader,
 		"SetHEPField":        d.SetHEPField,
 		"SetSIPHeader":       d.SetSIPHeader,
+		"HashTable":          HashTable,
 		"HashString":         HashString,
 		"Logp":               d.Logp,
 		"Print":              fmt.Println,

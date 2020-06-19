@@ -28,7 +28,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	dedup                 = fastcache.New(32 * 1024 * 1024)
+	dedupCache            = fastcache.New(32 * 1024 * 1024)
+	scriptCache           = fastcache.New(32 * 1024 * 1024)
 	strBackslashQuote     = []byte(`\"`)
 	strBackslashBackslash = []byte(`\\`)
 	strBackslashN         = []byte(`\n`)
@@ -165,7 +166,7 @@ func (h *HEP) normPayload() {
 		ks := xxhash.Sum64String(h.Payload)
 		binary.BigEndian.PutUint64(kh, ks)
 
-		if buf := dedup.Get(nil, kh); buf != nil {
+		if buf := dedupCache.Get(nil, kh); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
 			d := ts - i
 			if i > ts {
@@ -179,7 +180,7 @@ func (h *HEP) normPayload() {
 
 		tb := make([]byte, 8)
 		binary.BigEndian.PutUint64(tb, ts)
-		dedup.Set(kh, tb)
+		dedupCache.Set(kh, tb)
 	}
 	if !utf8.ValidString(h.Payload) {
 		h.Payload = strings.Map(fixUTF8, h.Payload)
