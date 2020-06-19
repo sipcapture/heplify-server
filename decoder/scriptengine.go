@@ -123,3 +123,17 @@ func HashString(algo, s string) string {
 	}
 	return s
 }
+
+func HashTable(op, key, val string) string {
+	switch op {
+	case "get":
+		if res := scriptCache.Get(nil, stb(key)); res != nil {
+			return string(res)
+		}
+	case "set":
+		scriptCache.Set(stb(key), stb(val))
+	case "del":
+		scriptCache.Del(stb(key))
+	}
+	return ""
+}
