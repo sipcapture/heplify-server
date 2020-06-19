@@ -34,7 +34,6 @@ type HEPInput struct {
 	quit       chan bool
 	stopped    uint32
 	stats      HEPStats
-	lokiTF     []int
 	useDB      bool
 	usePM      bool
 	useES      bool
@@ -61,7 +60,6 @@ func NewHEPInput() *HEPInput {
 		exitTLS:    make(chan bool),
 		exitWS:     make(chan bool),
 		exitWorker: make(chan bool),
-		lokiTF:     config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -222,12 +220,15 @@ func (h *HEPInput) worker() {
 			}
 			atomic.AddUint64(&h.stats.HEPCount, 1)
 
-			/* execute script for each channel */
 			if useScript {
-				if err = script.Run(hepPkt); err != nil {
-					logp.Err("%v", err)
+				for _, v := range config.Setting.ScriptHEPFilter {
+					if hepPkt.ProtoType == uint32(v) {
+						if err = script.Run(hepPkt); err != nil {
+							logp.Err("%v", err)
+						}
+						break
+					}
 				}
-
 				if hepPkt == nil || hepPkt.ProtoType == 1 && hepPkt.SIP == nil {
 					logp.Warn("nil struct after script processing")
 					continue
@@ -268,7 +269,7 @@ func (h *HEPInput) worker() {
 			}
 
 			if h.useLK {
-				for _, v := range h.lokiTF {
+				for _, v := range config.Setting.LokiHEPFilter {
 					if hepPkt.ProtoType == uint32(v) {
 						select {
 						case h.lokiCh <- hepPkt:
