@@ -1,25 +1,6 @@
 
 -- this function will be executed first
 function checkRAW()
-	--[[ Following functions can be used:
-		GetHEPStruct()
-		GetSIPStruct()
-		GetHEPProtoType()
-		GetHEPSrcIP()
-		GetHEPSrcPort()
-		GetHEPDstIP()
-		GetHEPDstPort()
-		GetHEPTimeSeconds()
-		GetHEPTimeUseconds()
-		GetHEPNodeID()
-		GetRawMessage()
-		SetRawMessage(value string)
-		SetCustomSIPHeader(map luatable)
-		SetHEPField(field string, value string)
-		SetSIPHeader(header string, value string)
-		Logp(level string, message string, data interface{})
-		Print(text string)
-	--]]
 	
 	local protoType = GetHEPProtoType()
 
@@ -51,24 +32,6 @@ end
 
 -- this function will be executed second
 function checkSIP()
-	--[[ Following SIP header can be used:
-		"ViaOne"
-		"FromUser"
-		"FromHost"
-		"FromTag"
-		"ToUser"
-		"ToHost"
-		"ToTag"
-		"CallID"
-		"XCallID"
-		"ContactUser"
-		"ContactHost"
-		"Authorization.Username"
-		"UserAgent"
-		"Server"
-		"PaiUser"
-		"PaiHost"
-	--]]
 
 	-- get the parsed SIP struct
 	local sip = GetSIPStruct()
@@ -83,9 +46,6 @@ function checkSIP()
 	end
 
 	SetSIPHeader("FromHost", "1.1.1.1")
-
-	-- Full SIP messsage can be changed
-	-- SetRawMessage("SIP 2/0")
 
 	return 
 
@@ -107,7 +67,7 @@ end
 -- this function will be executed fourth
 function sha1SumToCID()
 	
-	local sum = Hash("673187ceafc579fab78cc84cb1077a3f@0.0.0.0", "sha1")
+	local sum = HashString("md5", "673187ceafc579fab78cc84cb1077a3f@0.0.0.0")
 	SetHEPField("CID", sum)
 
 	return 

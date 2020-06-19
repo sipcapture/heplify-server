@@ -1,14 +1,11 @@
 package decoder
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
-	"fmt"
 	"strconv"
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	"github.com/dgraph-io/ristretto"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/sipparser"
 )
@@ -16,6 +13,7 @@ import (
 // ExprEngine struct
 type ExprEngine struct {
 	hepPkt *HEP
+	cache  *ristretto.Cache
 	prog   []*vm.Program
 	env    map[string]interface{}
 	v      vm.VM
@@ -134,16 +132,19 @@ func (e *ExprEngine) SetSIPHeader(header string, value string) uint8 {
 	return 1
 }
 
-func (e *ExprEngine) Hash(s, name string) string {
-	switch name {
-	case "md5":
-		return fmt.Sprintf("%x", md5.Sum([]byte(s)))
-	case "sha1":
-		return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
-	case "sha256":
-		return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+func (e *ExprEngine) HashTable(op string, key, val interface{}) interface{} {
+	switch op {
+	case "get":
+		v, ok := e.cache.Get(key)
+		if ok {
+			return v
+		}
+	case "set":
+		e.cache.Set(key, val, 1)
+	case "del":
+		e.cache.Del(key)
 	}
-	return s
+	return false
 }
 
 // Close implements interface
@@ -170,7 +171,8 @@ func NewExprEngine() (*ExprEngine, error) {
 		"SetCustomSIPHeader": e.SetCustomSIPHeader,
 		"SetHEPField":        e.SetHEPField,
 		"SetSIPHeader":       e.SetSIPHeader,
-		"Hash":               e.Hash,
+		"HashTable":          e.HashTable,
+		"HashString":         HashString,
 	}
 
 	files, _, err := scanCode()
@@ -187,6 +189,16 @@ func NewExprEngine() (*ExprEngine, error) {
 	}
 
 	e.v = vm.VM{}
+
+	e.cache, err = ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e6,     // number of keys to track frequency of (1M).
+		MaxCost:     1 << 26, // maximum cost of cache (64MB).
+		BufferItems: 32,      // number of keys per Get buffer.
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return e, nil
 }
 
