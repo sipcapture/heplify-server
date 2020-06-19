@@ -7,6 +7,7 @@ require (
 	github.com/antonmedv/expr v1.8.8
 	github.com/buger/jsonparser v1.0.0
 	github.com/cespare/xxhash/v2 v2.1.1
+	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect

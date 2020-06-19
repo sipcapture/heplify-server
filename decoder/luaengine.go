@@ -1,9 +1,6 @@
 package decoder
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
 	"fmt"
 	"strconv"
 
@@ -177,18 +174,6 @@ func (d *LuaEngine) SetSIPHeader(header string, value string) {
 	}
 }
 
-func (d *LuaEngine) Hash(s, name string) string {
-	switch name {
-	case "md5":
-		return fmt.Sprintf("%x", md5.Sum([]byte(s)))
-	case "sha1":
-		return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
-	case "sha256":
-		return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
-	}
-	return s
-}
-
 func (d *LuaEngine) Logp(level string, message string, data interface{}) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
@@ -225,7 +210,7 @@ func NewLuaEngine() (*LuaEngine, error) {
 		"SetCustomSIPHeader": d.SetCustomSIPHeader,
 		"SetHEPField":        d.SetHEPField,
 		"SetSIPHeader":       d.SetSIPHeader,
-		"Hash":               d.Hash,
+		"HashString":         HashString,
 		"Logp":               d.Logp,
 		"Print":              fmt.Println,
 	})

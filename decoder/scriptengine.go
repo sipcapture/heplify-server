@@ -3,6 +3,9 @@ package decoder
 import (
 	"bufio"
 	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -107,4 +110,16 @@ func cutSpace(str string) string {
 		}
 		return r
 	}, str)
+}
+
+func HashString(algo, s string) string {
+	switch algo {
+	case "md5":
+		return fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	case "sha1":
+		return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
+	case "sha256":
+		return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+	}
+	return s
 }
