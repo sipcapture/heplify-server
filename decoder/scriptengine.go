@@ -6,7 +6,6 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +17,7 @@ import (
 	"github.com/sipcapture/heplify-server/config"
 )
 
+// ScriptEngine interface
 type ScriptEngine interface {
 	Run(hep *HEP) error
 	Close()
@@ -31,14 +31,13 @@ func NewScriptEngine() (ScriptEngine, error) {
 	case "expr":
 		return NewExprEngine()
 	}
-	return nil, fmt.Errorf("unknown script engine %s\n", config.Setting.ScriptEngine)
+	return nil, fmt.Errorf("unknown script engine %s", config.Setting.ScriptEngine)
 }
 
 func scanCode() ([]string, *bytes.Buffer, error) {
 	var files []string
 	buf := bytes.NewBuffer(nil)
 	path := config.Setting.ScriptFolder
-	b64 := config.Setting.ScriptBase64
 
 	if path != "" {
 		dir, err := ioutil.ReadDir(path)
@@ -47,40 +46,33 @@ func scanCode() ([]string, *bytes.Buffer, error) {
 		}
 
 		for _, file := range dir {
-			if !file.IsDir() && strings.HasSuffix(file.Name(), "."+config.Setting.ScriptEngine) {
-				p := filepath.Join(path, file.Name())
-				f, err := os.Open(p)
-				if err != nil {
-					return nil, nil, err
-				}
-				_, err = io.Copy(buf, f)
-				if err != nil {
-					return nil, nil, err
-				}
-				err = f.Close()
-				if err != nil {
-					return nil, nil, err
-				}
-				s, err := ioutil.ReadFile(p)
-				if err != nil {
-					return nil, nil, err
-				}
-				if len(s) > 4 {
-					files = append(files, string(s))
+			if !file.IsDir() {
+				n := file.Name()
+				p := filepath.Join(path, n)
+				if strings.HasSuffix(n, ".lua") {
+					f, err := os.Open(p)
+					if err != nil {
+						return nil, nil, err
+					}
+					_, err = io.Copy(buf, f)
+					if err != nil {
+						return nil, nil, err
+					}
+					err = f.Close()
+					if err != nil {
+						return nil, nil, err
+					}
+				} else if strings.HasSuffix(n, ".expr") {
+					s, err := ioutil.ReadFile(p)
+					if err != nil {
+						return nil, nil, err
+					}
+					if len(s) > 4 {
+						files = append(files, string(s))
+					}
 				}
 			}
 		}
-	}
-
-	if len(b64) > 20 {
-		buf.WriteString("\n")
-
-		b, err := base64.StdEncoding.DecodeString(b64)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		buf.Write(b)
 	}
 
 	return files, buf, nil
@@ -112,6 +104,7 @@ func cutSpace(str string) string {
 	}, str)
 }
 
+// HashString returns md5, sha1 or sha256 sum
 func HashString(algo, s string) string {
 	switch algo {
 	case "md5":
@@ -124,6 +117,7 @@ func HashString(algo, s string) string {
 	return s
 }
 
+// HashTable is a simple kv store
 func HashTable(op, key, val string) string {
 	switch op {
 	case "get":

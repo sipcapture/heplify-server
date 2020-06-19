@@ -2,6 +2,7 @@ package decoder
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
@@ -156,6 +157,7 @@ func NewExprEngine() (*ExprEngine, error) {
 		"SetSIPHeader":       e.SetSIPHeader,
 		"HashTable":          HashTable,
 		"HashString":         HashString,
+		"ReplaceString":      strings.ReplaceAll,
 	}
 
 	files, _, err := scanCode()
