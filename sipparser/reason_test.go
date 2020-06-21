@@ -5,12 +5,7 @@
 
 package sipparser
 
-// Imports from the go standard library
-import (
-	"testing"
-)
-
-func TestReason(t *testing.T) {
+/* func TestReason(t *testing.T) {
 	sm := &SipMsg{}
 	s := "Q.850;cause=16;text=\"NORMAL_CLEARING\""
 	sm.parseReason(s)
@@ -32,3 +27,4 @@ func TestReason(t *testing.T) {
 		t.Errorf("[TestReason] Error parsing reason hdr: Q.850;cause=102.  Cause should be \"102\" but received: " + sm.Reason.Cause)
 	}
 }
+*/

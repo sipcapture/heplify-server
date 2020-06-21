@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	
+
 	"github.com/sipcapture/heplify-server/config"
 )
 
@@ -76,7 +76,6 @@ type SipMsg struct {
 	Cseq             *Cseq
 	CseqMethod       string
 	CseqVal          string
-	Reason           *Reason
 	ReasonVal        string
 	RTPStatVal       string
 	ViaOne           string
@@ -97,9 +96,11 @@ type SipMsg struct {
 	FirstMethod      string
 	FirstResp        string
 	FirstRespText    string
+	Profile          string
 	eof              int
 	hdr              string
 	hdrv             string
+	//Reason           *Reason
 	//Via                []*Via
 	//StartLine          *StartLine
 	//Headers            []*Header
@@ -256,7 +257,7 @@ func (s *SipMsg) addHdr(str string) {
 					if s.hdr == s.XHeader[i] {
 						filter, ok := config.CompileStore.RegexMap[s.XHeader[i]]
 						if ok {
-							if filter.MatchString(s.hdrv){
+							if filter.MatchString(s.hdrv) {
 								s.XCallID = filter.FindStringSubmatch(s.hdrv)[1]
 							}
 						} else {
@@ -455,10 +456,10 @@ func (s *SipMsg) ParsePAssertedId(str string) {
 	s.Error = s.Rack.parse()
 } */
 
-func (s *SipMsg) parseReason(str string) {
+/* func (s *SipMsg) parseReason(str string) {
 	s.Reason = &Reason{Val: str}
 	s.Reason.parse()
-}
+} */
 
 func (s *SipMsg) parseRTPStat(str string) {
 	s.RTPStatVal = str
