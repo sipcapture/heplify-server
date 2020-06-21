@@ -46,13 +46,8 @@ func (e *ExprEngine) SetRawMessage(p string) uint8 {
 }
 
 func (e *ExprEngine) SetCustomSIPHeader(m map[string]string) uint8 {
-
-	if e.hepPkt.SIP.CustomHeader == nil {
-		e.hepPkt.SIP.CustomHeader = make(map[string]string)
-	}
-
 	for k, v := range m {
-		e.hepPkt.SIP.CustomHeader[k] = v
+		e.SetSIPHeader(k, v)
 	}
 	return 1
 }
@@ -92,41 +87,63 @@ func (e *ExprEngine) SetHEPField(field string, value string) uint8 {
 	return 1
 }
 
+func (e *ExprEngine) SetSIPProfile(p string) uint8 {
+	if strings.HasPrefix(p, "c") || strings.HasPrefix(p, "C") {
+		e.hepPkt.SIP.Profile = "call"
+	} else if strings.HasPrefix(p, "r") || strings.HasPrefix(p, "R") {
+		e.hepPkt.SIP.Profile = "registration"
+	} else {
+		e.hepPkt.SIP.Profile = "default"
+	}
+	return 1
+}
+
 func (e *ExprEngine) SetSIPHeader(header string, value string) uint8 {
 
 	switch header {
-	case "ViaOne":
-		e.hepPkt.SIP.ViaOne = value
-	case "FromUser":
+	case "FromUser", "from_user":
 		e.hepPkt.SIP.FromUser = value
-	case "FromHost":
+	case "FromHost", "from_domain":
 		e.hepPkt.SIP.FromHost = value
-	case "FromTag":
+	case "FromTag", "from_tag":
 		e.hepPkt.SIP.FromTag = value
-	case "ToUser":
+	case "ToUser", "to_user":
 		e.hepPkt.SIP.ToUser = value
-	case "ToHost":
+	case "ToHost", "to_domain":
 		e.hepPkt.SIP.ToHost = value
-	case "ToTag":
+	case "ToTag", "to_tag":
 		e.hepPkt.SIP.ToTag = value
+	case "URIUser", "ruri_user":
+		e.hepPkt.SIP.URIUser = value
+	case "URIHost", "ruri_domain":
+		e.hepPkt.SIP.URIHost = value
 	case "CallID":
 		e.hepPkt.SIP.CallID = value
-	case "XCallID":
-		e.hepPkt.SIP.XCallID = value
-	case "ContactUser":
+	case "Method":
+		e.hepPkt.SIP.FirstMethod = value
+	case "ContactUser", "contact_user":
 		e.hepPkt.SIP.ContactUser = value
-	case "ContactHost":
+	case "ContactHost", "contact_domain":
 		e.hepPkt.SIP.ContactHost = value
-	case "UserAgent":
+	case "AuthUser", "auth_user":
+		e.hepPkt.SIP.AuthUser = value
+	case "UserAgent", "user_agent":
 		e.hepPkt.SIP.UserAgent = value
 	case "Server":
 		e.hepPkt.SIP.Server = value
-	case "Authorization.Username":
-		e.hepPkt.SIP.Authorization.Username = value
-	case "PaiUser":
+	case "PaiUser", "pid_user":
 		e.hepPkt.SIP.PaiUser = value
-	case "PaiHost":
+	case "PaiHost", "pid_domain":
 		e.hepPkt.SIP.PaiHost = value
+	case "ViaOne", "via":
+		e.hepPkt.SIP.ViaOne = value
+	case "XCallID", "callid_aleg":
+		e.hepPkt.SIP.XCallID = value
+	default:
+		if e.hepPkt.SIP.CustomHeader == nil {
+			e.hepPkt.SIP.CustomHeader = make(map[string]string)
+		}
+		e.hepPkt.SIP.CustomHeader[header] = value
 	}
 	return 1
 }
@@ -154,6 +171,7 @@ func NewExprEngine() (*ExprEngine, error) {
 		"SetRawMessage":      e.SetRawMessage,
 		"SetCustomSIPHeader": e.SetCustomSIPHeader,
 		"SetHEPField":        e.SetHEPField,
+		"SetSIPProfile":      e.SetSIPProfile,
 		"SetSIPHeader":       e.SetSIPHeader,
 		"HashTable":          HashTable,
 		"HashString":         HashString,

@@ -3,6 +3,7 @@ package decoder
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/negbie/logp"
 	"github.com/sipcapture/golua/lua"
@@ -131,6 +132,17 @@ func (d *LuaEngine) SetHEPField(field string, value string) {
 	}
 }
 
+func (d *LuaEngine) SetSIPProfile(p string) {
+	hepPkt := *d.hepPkt
+	if strings.HasPrefix(p, "c") || strings.HasPrefix(p, "C") {
+		hepPkt.SIP.Profile = "call"
+	} else if strings.HasPrefix(p, "r") || strings.HasPrefix(p, "R") {
+		hepPkt.SIP.Profile = "registration"
+	} else {
+		hepPkt.SIP.Profile = "default"
+	}
+}
+
 func (d *LuaEngine) SetSIPHeader(header string, value string) {
 	if (*d.hepPkt).SIP == nil {
 		logp.Err("can't set SIP header if SIP struct is nil, please check for nil in lua script")
@@ -139,38 +151,49 @@ func (d *LuaEngine) SetSIPHeader(header string, value string) {
 	hepPkt := *d.hepPkt
 
 	switch header {
-	case "ViaOne":
-		hepPkt.SIP.ViaOne = value
-	case "FromUser":
+	case "FromUser", "from_user":
 		hepPkt.SIP.FromUser = value
-	case "FromHost":
+	case "FromHost", "from_domain":
 		hepPkt.SIP.FromHost = value
-	case "FromTag":
+	case "FromTag", "from_tag":
 		hepPkt.SIP.FromTag = value
-	case "ToUser":
+	case "ToUser", "to_user":
 		hepPkt.SIP.ToUser = value
-	case "ToHost":
+	case "ToHost", "to_domain":
 		hepPkt.SIP.ToHost = value
-	case "ToTag":
+	case "ToTag", "to_tag":
 		hepPkt.SIP.ToTag = value
+	case "URIUser", "ruri_user":
+		hepPkt.SIP.URIUser = value
+	case "URIHost", "ruri_domain":
+		hepPkt.SIP.URIHost = value
 	case "CallID":
 		hepPkt.SIP.CallID = value
-	case "XCallID":
-		hepPkt.SIP.XCallID = value
-	case "ContactUser":
+	case "Method":
+		hepPkt.SIP.FirstMethod = value
+	case "ContactUser", "contact_user":
 		hepPkt.SIP.ContactUser = value
-	case "ContactHost":
+	case "ContactHost", "contact_domain":
 		hepPkt.SIP.ContactHost = value
-	case "UserAgent":
+	case "AuthUser", "auth_user":
+		hepPkt.SIP.AuthUser = value
+	case "UserAgent", "user_agent":
 		hepPkt.SIP.UserAgent = value
 	case "Server":
 		hepPkt.SIP.Server = value
-	case "Authorization.Username":
-		hepPkt.SIP.Authorization.Username = value
-	case "PaiUser":
+	case "PaiUser", "pid_user":
 		hepPkt.SIP.PaiUser = value
-	case "PaiHost":
+	case "PaiHost", "pid_domain":
 		hepPkt.SIP.PaiHost = value
+	case "ViaOne", "via":
+		hepPkt.SIP.ViaOne = value
+	case "XCallID", "callid_aleg":
+		hepPkt.SIP.XCallID = value
+	default:
+		if hepPkt.SIP.CustomHeader == nil {
+			hepPkt.SIP.CustomHeader = make(map[string]string)
+		}
+		hepPkt.SIP.CustomHeader[header] = value
 	}
 }
 
@@ -209,6 +232,7 @@ func NewLuaEngine() (*LuaEngine, error) {
 		"SetRawMessage":      d.SetRawMessage,
 		"SetCustomSIPHeader": d.SetCustomSIPHeader,
 		"SetHEPField":        d.SetHEPField,
+		"SetSIPProfile":      d.SetSIPProfile,
 		"SetSIPHeader":       d.SetSIPHeader,
 		"HashTable":          HashTable,
 		"HashString":         HashString,
