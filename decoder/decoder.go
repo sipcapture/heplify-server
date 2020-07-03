@@ -142,6 +142,10 @@ func (h *HEP) parse(packet []byte) error {
 				}
 			}
 		}
+		
+		if config.Setting.RCallIDwCID {
+			h.SIP.CallID = h.CID
+		}
 	}
 
 	if h.NodeName == "" {

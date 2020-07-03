@@ -61,4 +61,5 @@ type HeplifyServer struct {
 	ScriptFolder       string   `default:""`
 	ScriptHEPFilter    []int    `default:"1,5,100"`
 	TLSCertFolder      string   `default:"."`
+	RCallIDwCID        bool     `default:"false"`
 }
