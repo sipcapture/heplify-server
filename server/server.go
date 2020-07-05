@@ -190,7 +190,6 @@ func (h *HEPInput) worker() {
 	useScript := config.Setting.ScriptEnable
 
 	if useScript {
-		/* register Lua Engine */
 		script, err = decoder.NewScriptEngine()
 		if err != nil {
 			logp.Err("%v, please fix and run killall -HUP heplify-server", err)

@@ -38,6 +38,8 @@ func (e *ExprEngine) GetHEPTimeUseconds() uint32 { return e.hepPkt.GetTmsec() }
 
 func (e *ExprEngine) GetHEPNodeID() uint32 { return e.hepPkt.GetNodeID() }
 
+func (e *ExprEngine) GetHEPCID() string { return e.hepPkt.GetCID() }
+
 func (e *ExprEngine) GetRawMessage() string { return e.hepPkt.GetPayload() }
 
 func (e *ExprEngine) SetRawMessage(p string) uint8 {
@@ -167,6 +169,7 @@ func NewExprEngine() (*ExprEngine, error) {
 		"GetHEPTimeSeconds":  e.GetHEPTimeSeconds,
 		"GetHEPTimeUseconds": e.GetHEPTimeUseconds,
 		"GetHEPNodeID":       e.GetHEPNodeID,
+		"GetHEPCID":          e.GetHEPCID,
 		"GetRawMessage":      e.GetRawMessage,
 		"SetRawMessage":      e.SetRawMessage,
 		"SetCustomSIPHeader": e.SetCustomSIPHeader,
