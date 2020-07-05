@@ -1,1 +1,1 @@
-SetHEPField("CID", HashString("md5", GetSIPStruct().CallID))
+SetSIPHeader("CallID", GetHEPCID())
