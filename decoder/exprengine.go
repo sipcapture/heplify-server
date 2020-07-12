@@ -20,8 +20,6 @@ type ExprEngine struct {
 
 func (e *ExprEngine) GetHEPStruct() *HEP { return e.hepPkt }
 
-func (e *ExprEngine) GetSIPStruct() *sipparser.SipMsg { return e.hepPkt.SIP }
-
 func (e *ExprEngine) GetHEPProtoType() uint32 { return e.hepPkt.GetProtoType() }
 
 func (e *ExprEngine) GetHEPSrcIP() string { return e.hepPkt.GetSrcIP() }
@@ -39,6 +37,15 @@ func (e *ExprEngine) GetHEPTimeUseconds() uint32 { return e.hepPkt.GetTmsec() }
 func (e *ExprEngine) GetHEPNodeID() uint32 { return e.hepPkt.GetNodeID() }
 
 func (e *ExprEngine) GetHEPCID() string { return e.hepPkt.GetCID() }
+
+func (e *ExprEngine) GetSIPStruct() *sipparser.SipMsg { return e.hepPkt.SIP }
+
+func (e *ExprEngine) GetSIPCallID() string {
+	if e.hepPkt.SIP == nil {
+		return ""
+	}
+	return e.hepPkt.SIP.CallID
+}
 
 func (e *ExprEngine) GetRawMessage() string { return e.hepPkt.GetPayload() }
 
@@ -160,7 +167,6 @@ func NewExprEngine() (*ExprEngine, error) {
 	e := &ExprEngine{}
 	e.env = map[string]interface{}{
 		"GetHEPStruct":       e.GetHEPStruct,
-		"GetSIPStruct":       e.GetSIPStruct,
 		"GetHEPProtoType":    e.GetHEPProtoType,
 		"GetHEPSrcIP":        e.GetHEPSrcIP,
 		"GetHEPSrcPort":      e.GetHEPSrcPort,
@@ -170,6 +176,8 @@ func NewExprEngine() (*ExprEngine, error) {
 		"GetHEPTimeUseconds": e.GetHEPTimeUseconds,
 		"GetHEPNodeID":       e.GetHEPNodeID,
 		"GetHEPCID":          e.GetHEPCID,
+		"GetSIPStruct":       e.GetSIPStruct,
+		"GetSIPCallID":       e.GetSIPCallID,
 		"GetRawMessage":      e.GetRawMessage,
 		"SetRawMessage":      e.SetRawMessage,
 		"SetCustomSIPHeader": e.SetCustomSIPHeader,
