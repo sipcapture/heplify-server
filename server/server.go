@@ -47,7 +47,7 @@ type HEPStats struct {
 	PktCount uint64
 }
 
-const maxPktLen = 8192
+const maxPktLen = 65507
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
