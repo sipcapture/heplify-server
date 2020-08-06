@@ -4,9 +4,6 @@ PKGLIST=$(shell go list ./... | grep -Ev '/vendor|/metric|/config|/sipparser/int
 
 
 all:
-	@if [ "` ldconfig -p | grep libluajit-5.1 $$f`" = "" ]; then\
-		sudo apt-get install -y luajit-5.1;\
-	fi
 	go build -ldflags "-s -w" -o $(NAME) cmd/heplify-server/*.go
 
 debug:
