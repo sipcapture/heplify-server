@@ -36,6 +36,9 @@ func (h *HEP) parseSIP() error {
 		} else {
 			h.CID = h.SIP.CallID
 		}
+		/* if Asterisk sends the correlation_id already but we wanna force use B-Leg (X-CID)*/
+	} else if config.Setting.IgnoreCorrHeader && h.SIP.XCallID != "" {
+		h.CID = h.SIP.XCallID
 	}
 
 	h.SID = h.SIP.CallID

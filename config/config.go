@@ -46,6 +46,7 @@ type HeplifyServer struct {
 	Dedup              bool     `default:"false"`
 	DiscardMethod      []string `default:""`
 	AlegIDs            []string `default:""`
+	IgnoreCorrHeader   bool     `default:"false"`
 	CustomHeader       []string `default:""`
 	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent"`
 	LogDbg             string   `default:""`
