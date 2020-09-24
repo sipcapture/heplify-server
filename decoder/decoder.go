@@ -134,6 +134,14 @@ func (h *HEP) parse(packet []byte) error {
 			return err
 		}
 
+		for _, m := range config.Setting.CensorMethod {
+			if m == h.SIP.CseqMethod {
+				lb := len(h.SIP.Body)
+				h.SIP.Body = strings.Repeat("x", lb)
+				h.Payload = h.Payload[:len(h.Payload) - lb] + h.SIP.Body
+			}
+		}
+
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {

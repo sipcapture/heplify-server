@@ -88,7 +88,9 @@ func (h *HEPInput) Run() {
 		go h.worker()
 	}
 
-	logp.Info("start %s with %#v\n", config.Version, config.Setting)
+	s := config.Setting
+	s.DBPass = "<private>"
+	logp.Info("start %s with %#v\n", config.Version, s)
 	go h.logStats()
 	go h.reloadWorker()
 
