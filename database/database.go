@@ -79,9 +79,9 @@ func ConnectString(dbName string) (string, error) {
 	var dsn string
 	driver := config.Setting.DBDriver
 	addr := strings.Split(config.Setting.DBAddr, ":")
-	if len(addr) != 2 {
-		return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", config.Setting.DBAddr)
-	}
+	//if len(addr) != 2 {
+	//	return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", config.Setting.DBAddr)
+	//}
 	if (addr[1] == "3306" && driver == "postgres") ||
 		addr[1] == "5432" && driver == "mysql" {
 		return "", fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], driver)
@@ -107,12 +107,14 @@ func ConnectString(dbName string) (string, error) {
 			addr[0] = addr[1]
 			addr[1] = "''"
 		}
-		dsn = "sslmode=disable connect_timeout=4" +
+		sslmode = config.Setting.DBSSLMode or "disable"
+		dsn = "connect_timeout=4" +
 			" host=" + addr[0] +
 			" port=" + addr[1] +
 			" dbname=" + dbName +
 			" user=" + config.Setting.DBUser +
 			" password=" + config.Setting.DBPass
+			" sslmode=" +  sslmode
 	}
 	return dsn, nil
 }
