@@ -20,6 +20,7 @@ DBUser                = "postgres"
 DBPass                = ""
 DBDataTable           = "homer_data"
 DBConfTable           = "homer_config"
+DBSSLMode             = "disable"
 DBBulk                = 200
 DBTimer               = 4
 DBBuffer              = 400000
