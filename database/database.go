@@ -3,7 +3,6 @@ package database
 import (
 	"fmt"
 	"runtime"
-	"strings"
 
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
@@ -78,41 +77,43 @@ func (d *Database) End() {
 func ConnectString(dbName string) (string, error) {
 	var dsn string
 	driver := config.Setting.DBDriver
-	addr := strings.Split(config.Setting.DBAddr, ":")
-	if len(addr) != 2 {
-		return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", config.Setting.DBAddr)
-	}
-	if (addr[1] == "3306" && driver == "postgres") ||
-		addr[1] == "5432" && driver == "mysql" {
-		return "", fmt.Errorf("don't use port: %s, for db driver: %s", addr[1], driver)
+	addr := config.Setting.DBAddr
+	port := config.Setting.DBPort
+	//if len(addr) != 2 {
+	//	return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", config.Setting.DBAddr)
+	//}
+	if (port == "3306" && driver == "postgres") ||
+		port == "5432" && driver == "mysql" {
+		return "", fmt.Errorf("don't use port: %s, for db driver: %s", port, driver)
 	}
 
 	if driver == "mysql" {
-		if addr[0] == "unix" {
+		if addr == "unix" {
 			// user:password@unix(/tmp/mysql.sock)/dbname?loc=Local
 			dsn = config.Setting.DBUser + ":" + config.Setting.DBPass +
-				"@unix(" + addr[1] + ")/" + dbName +
+				"@unix(" + addr + ")/" + dbName +
 				"?collation=utf8mb4_unicode_ci&parseTime=true"
 		} else {
 			// user:password@tcp(localhost:5555)/dbname?tls=skip-verify&autocommit=true
 			dsn = config.Setting.DBUser + ":" + config.Setting.DBPass +
-				"@tcp(" + addr[0] + ":" + addr[1] + ")/" + dbName +
+				"@tcp(" + addr + ":" + port + ")/" + dbName +
 				"?collation=utf8mb4_unicode_ci&parseTime=true"
 		}
 	} else {
 		if dbName == "" {
 			dbName = "''"
 		}
-		if addr[0] == "unix" {
-			addr[0] = addr[1]
-			addr[1] = "''"
+		if addr == "unix" {
+			addr = port
+			addr = "''"
 		}
-		dsn = "sslmode=disable connect_timeout=4" +
-			" host=" + addr[0] +
-			" port=" + addr[1] +
+		dsn = "connect_timeout=4" +
+			" host=" + addr +
+			" port=" + port +
 			" dbname=" + dbName +
 			" user=" + config.Setting.DBUser +
-			" password=" + config.Setting.DBPass
+			" password=" + config.Setting.DBPass +
+			" sslmode=" + config.Setting.DBSSLMode
 	}
 	return dsn, nil
 }

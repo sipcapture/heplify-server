@@ -24,7 +24,9 @@ type HeplifyServer struct {
 	PromTargetName     string   `default:""`
 	DBShema            string   `default:"homer5"`
 	DBDriver           string   `default:"mysql"`
-	DBAddr             string   `default:"localhost:3306"`
+	DBAddr             string   `default:"localhost"`
+	DBPort             string   `default:""`
+	DBSSLMode          string   `default:"disable"`
 	DBUser             string   `default:"root"`
 	DBPass             string   `default:""`
 	DBDataTable        string   `default:"homer_data"`
