@@ -16,8 +16,10 @@ import (
 func parseTLSVersion(versionText string ) uint16 {
 	switch(versionText){
 	case "1.0":
+		logp.Warn("TLS1.0 is not recommended.  Use 1.2 or greater where possible")
 		return tls.VersionTLS10
 	case "1.1":
+		logp.Warn("TLS1.1 is not recommended.  Use 1.2 or greater where possible")
 		return tls.VersionTLS11
 	case "1.2":
 		return tls.VersionTLS12
