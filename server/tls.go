@@ -13,6 +13,22 @@ import (
 	"github.com/negbie/logp"
 )
 
+func parseTLSVersion(versionText string ) uint16 {
+	switch(versionText){
+	case "1.0":
+		return tls.VersionTLS10
+	case "1.1":
+		return tls.VersionTLS11
+	case "1.2":
+		return tls.VersionTLS12
+	case "1.3":
+		return tls.VersionTLS13
+	default:
+		logp.Warn("Invalid TLS version %s, defaulting to 1.2", versionText)
+		return tls.VersionTLS12
+	}
+}
+
 func (h *HEPInput) serveTLS(addr string) {
 	defer close(h.exitTLS)
 
@@ -30,6 +46,7 @@ func (h *HEPInput) serveTLS(addr string) {
 
 	// get path for certificate/key storage
 	cPath := config.Setting.TLSCertFolder
+	minTLSVersion := parseTLSVersion(config.Setting.TLSMinVersion)
 	// load any existing certs, otherwise generate a new one
 	ca, err := cert.NewCertificateAuthority( filepath.Join(cPath,  "heplify-server") )
 	if err != nil {
@@ -62,7 +79,7 @@ func (h *HEPInput) serveTLS(addr string) {
 		logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
 		go func() {
-			h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate}))
+			h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate, MinVersion: minTLSVersion}))
 			wg.Done()
 		}()
 	}
