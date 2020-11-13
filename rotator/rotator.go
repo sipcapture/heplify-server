@@ -436,8 +436,8 @@ func (r *Rotator) Rotate() {
 		logp.Err("%v", err)
 	}
 	if r.usageProtection {
-		_, err = r.createJob.AddFunc("* * * * *", func() {
-			logp.Info("indie disk space usage job\n")
+		_, err = r.createJob.AddFunc("30 04 * * *", func() {
+			logp.Info("run disk space usage job\n")
 			if err := r.UsageProtection(); err != nil {
 				logp.Err("%v", err)
 			}
