@@ -36,6 +36,15 @@ var (
 		Help: "Log errors and warnings"},
 		[]string{"node_id", "level", "host"})
 
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// X-RTPE-MOS Metrics
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	xrtpeMOS = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "heplify_rtpe_rtcp_mos",
+		Help: "MOS values from rtpengine"},
+		[]string{"queue_name", "cc_name", "id_user"})
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 	// X-RTP-Stat Metrics
 	xrtpCS = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_xrtp_cs",

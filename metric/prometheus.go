@@ -4,6 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"time"
+
+	//!!!!!
+	"strconv"
+	//!!!!!
 	"sync"
 
 	"github.com/VictoriaMetrics/fastcache"
@@ -13,22 +18,45 @@ import (
 )
 
 const (
-	invite    = "INVITE"
-	register  = "REGISTER"
-	cacheSize = 60 * 1024 * 1024
+	invite   = "INVITE"
+	register = "REGISTER"
+	//!!cacheSize = 60 * 1024 * 1024
+	cacheSize = 120 * 1024 * 1024
+	bye       = "BYE"
 )
 
 type Prometheus struct {
-	TargetEmpty bool
-	TargetIP    []string
-	TargetName  []string
-	TargetMap   map[string]string
-	TargetConf  *sync.RWMutex
-	cache       *fastcache.Cache
+	TargetEmpty       bool
+	TargetIP          []string
+	TargetName        []string
+	TargetMap         map[string]string
+	TargetConf        *sync.RWMutex
+	cache             *fastcache.Cache
+	muLastSync        *sync.RWMutex
+	lastSyncDate      int64
+	expirationTimeout int64
+}
+
+func (p *Prometheus) cleaner() {
+	ticker := time.Tick(15 * time.Second)
+	for range ticker {
+		p.reset()
+	}
+}
+
+func (p *Prometheus) reset() {
+	p.muLastSync.RLock()
+	defer p.muLastSync.RUnlock()
+	if time.Now().Unix()-p.lastSyncDate < p.expirationTimeout {
+		return
+	}
+	xrtpeMOS.Reset()
 }
 
 func (p *Prometheus) setup() (err error) {
 	p.TargetConf = new(sync.RWMutex)
+	p.muLastSync = new(sync.RWMutex)
+	p.expirationTimeout = 60 // sec
 	p.TargetIP = strings.Split(cutSpace(config.Setting.PromTargetIP), ",")
 	p.TargetName = strings.Split(cutSpace(config.Setting.PromTargetName), ",")
 	p.cache = fastcache.New(cacheSize)
@@ -52,7 +80,7 @@ func (p *Prometheus) setup() (err error) {
 		logp.Info("please give every PromTargetIP a unique IP and PromTargetName a unique name")
 		return fmt.Errorf("faulty PromTargetIP or PromTargetName")
 	}
-
+	go p.cleaner()
 	return err
 }
 
@@ -152,6 +180,32 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			if pkt.SIP.RTPStatVal != "" {
 				p.dissectXRTPStats(srcTarget, pkt.SIP.RTPStatVal)
 			}
+			//!!!!!!!!!!!!!!!!!!!!!!
+			// xrtpeMOS stats
+			if !skip && (pkt.SIP.FirstMethod == bye && pkt.SIP.CseqMethod == bye) {
+				if val, ok := pkt.SIP.CustomHeader["X-RTPE-MOS"]; ok && len(pkt.SIP.CustomHeader["X-RTPE-MOS"]) > 0 {
+					if mos, err := strconv.ParseFloat(val, 64); err == nil {
+						q_cc_name := ""
+						if val, ok := pkt.SIP.CustomHeader["X-CC-Name"]; ok && len(pkt.SIP.CustomHeader["X-CC-Name"]) > 0 {
+							q_cc_name = val
+						}
+						q_id_user := ""
+						if val, ok := pkt.SIP.CustomHeader["X-ID-User"]; ok && len(pkt.SIP.CustomHeader["X-ID-User"]) > 0 {
+							q_id_user = val
+						}
+						q_queue_name := ""
+						if val, ok := pkt.SIP.CustomHeader["X-Queue-Name"]; ok && len(pkt.SIP.CustomHeader["X-Queue-Name"]) > 0 {
+							q_queue_name = val
+						}
+						xrtpeMOS.WithLabelValues(q_queue_name, q_cc_name, q_id_user).Set(mos)
+						p.muLastSync.Lock()
+						p.lastSyncDate = time.Now().Unix()
+						p.muLastSync.Unlock()
+					}
+				}
+
+			}
+			//!!!!!!!!!!!!!!!!!!!!!!
 
 		} else if pkt.ProtoType == 5 {
 			p.dissectRTCPStats(pkt.NodeName, []byte(pkt.Payload))
