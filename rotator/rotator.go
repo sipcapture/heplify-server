@@ -44,6 +44,8 @@ type Rotator struct {
 	dropDaysDefault  int
 	dropOnStart      bool
 	usageProtection  bool
+	usageScheme      string
+	percentageUsage  string
 	maxDBSize        string
 	dropLimit        int
 	createJob        *cron.Cron
@@ -65,6 +67,8 @@ func Setup(quit chan bool) *Rotator {
 		dropDaysCall:    config.Setting.DBDropDaysCall,
 		dropOnStart:     config.Setting.DBDropOnStart,
 		usageProtection: config.Setting.DBUsageProtection,
+		usageScheme:     config.Setting.DBUsageScheme,
+		percentageUsage: config.Setting.DBPercentageUsage,
 		maxDBSize:       config.Setting.DBMaxSize,
 		dropLimit:       config.Setting.DBProcDropLimit,
 		createJob:       cron.New(),
@@ -169,17 +173,17 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 	return nil
 }
 
-func (r *Rotator) getSizeInBtyes() (int, error) {
+func (r *Rotator) getSizeInBtyes() (float64, error) {
 	re := regexp.MustCompile("[0-9]+")
 	switch true {
 	case strings.Contains(r.maxDBSize, "MB"), strings.Contains(r.maxDBSize, "mb"):
-		size, err := strconv.Atoi(re.FindAllString(r.maxDBSize, 1)[0])
+		size, err := strconv.ParseFloat(re.FindAllString(r.maxDBSize, 1)[0], 64)
 		if err != nil {
 			return 0, err
 		}
 		return size * 1024 * 1024, nil
 	case strings.Contains(r.maxDBSize, "GB"), strings.Contains(r.maxDBSize, "gb"):
-		size, err := strconv.Atoi(re.FindAllString(r.maxDBSize, 1)[0])
+		size, err := strconv.ParseFloat(re.FindAllString(r.maxDBSize, 1)[0], 64)
 		if err != nil {
 			return 0, err
 		}
@@ -188,10 +192,10 @@ func (r *Rotator) getSizeInBtyes() (int, error) {
 	return 0, errors.New("unsupported disk usage")
 }
 
-func (r *Rotator) GetDatabaseSize(db *sql.DB) (currentSize int, err error) {
+func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 	var databaseSize string
-	if r.driver == "postgres" {
-		// Set this connection to UTC time and create the partitions with it.
+	switch schema {
+	case "maxusage":
 		rows, err := db.Query("select pg_database_size('homer_data');")
 		checkDBErr(err)
 		if rows.Next() {
@@ -201,30 +205,58 @@ func (r *Rotator) GetDatabaseSize(db *sql.DB) (currentSize int, err error) {
 				return 0, err
 			}
 		}
+		return strconv.ParseFloat(databaseSize, 64)
+	default:
+		rows, err := db.Query("select * from sys_df();")
+		checkDBErr(err)
+		if rows.Next() {
+			err = rows.Scan(&databaseSize)
+			if err != nil {
+				logp.Err("%v", err)
+				return 0, err
+			}
+		}
+		percentageUsage, _ := strconv.ParseFloat(strings.TrimSuffix(strings.Split(databaseSize[1:len(databaseSize)-1], ",")[4], "%"), 64)
+		return percentageUsage, nil
 	}
-	return strconv.Atoi(databaseSize)
-
+	return 0, nil
 }
 
-func (r *Rotator) UsageProtection() (err error) {
-	maxDBSizeInBtyes, err := r.getSizeInBtyes()
-	if err != nil {
-		logp.Err("%v", err)
-		return err
-	}
+func (r *Rotator) UsageProtection(scheme string) error {
 
 	db, err := sql.Open(r.driver, r.dataDBAddr)
 	defer db.Close()
 	if err = db.Ping(); err != nil {
 		return err
 	}
-	currentSize, err := r.GetDatabaseSize(db)
-	if err != nil {
-		logp.Err("%v", err)
-		return err
-	}
 
-	for currentSize > maxDBSizeInBtyes {
+	var configuredSize, curSize float64
+
+	switch scheme {
+	case "maxusage":
+		configuredSize, err = r.getSizeInBtyes()
+		if err != nil {
+			logp.Err("%v", err)
+			return err
+		}
+		curSize, err = r.GetDatabaseSize(db, scheme)
+		if err != nil {
+			logp.Err("%v", err)
+			return err
+		}
+	default:
+		configuredSize, err = strconv.ParseFloat(strings.TrimSuffix(r.percentageUsage, "%"), 64)
+		if err != nil {
+			logp.Err("%v", err)
+			return err
+		}
+		curSize, err = r.GetDatabaseSize(db, scheme)
+		if err != nil {
+			logp.Err("%v", err)
+			return err
+		}
+	}
+	for curSize > configuredSize {
 		r.dbExecDropTablesForFreeSpace(db, selectlogpg, droplogpg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectisuppg, dropisuppg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectreportpg, dropreportpg, r.dropDays)
@@ -232,7 +264,7 @@ func (r *Rotator) UsageProtection() (err error) {
 		r.dbExecDropTablesForFreeSpace(db, selectcallpg, dropcallpg, r.dropLimit)
 		r.dbExecDropTablesForFreeSpace(db, selectregisterpg, dropregisterpg, r.dropDaysRegister)
 		r.dbExecDropTablesForFreeSpace(db, selectdefaultpg, dropdefaultpg, r.dropDaysDefault)
-		currentSize, err = r.GetDatabaseSize(db)
+		curSize, err = r.GetDatabaseSize(db, scheme)
 		if err != nil {
 			logp.Err("%v", err)
 			return err
@@ -420,6 +452,16 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 	}
 }
 
+func (r *Rotator) createPCFunc() error {
+	db, err := sql.Open(r.driver, r.dataDBAddr)
+	defer db.Close()
+	if err = db.Ping(); err != nil {
+		fmt.Println(err)
+	}
+	_, err = db.Query(sysDF)
+	return err
+}
+
 func (r *Rotator) Rotate() {
 	r.createTables()
 	_, err := r.createJob.AddFunc("30 03 * * *", func() {
@@ -436,14 +478,32 @@ func (r *Rotator) Rotate() {
 		logp.Err("%v", err)
 	}
 	if r.usageProtection {
-		_, err = r.createJob.AddFunc("30 04 * * *", func() {
-			logp.Info("run disk space usage job\n")
-			if err := r.UsageProtection(); err != nil {
+		switch r.usageScheme {
+		case "maxusage":
+			_, err = r.createJob.AddFunc("30 04 * * *", func() {
+				logp.Info("run disk space usage job\n")
+				if err := r.UsageProtection("maxusage"); err != nil {
+					logp.Err("%v", err)
+				}
+			})
+			if err != nil {
 				logp.Err("%v", err)
 			}
-		})
-		if err != nil {
-			logp.Err("%v", err)
+		default:
+			err := r.createPCFunc()
+			if err != nil {
+				logp.Err("%v", err)
+			} else {
+				_, err = r.createJob.AddFunc("45 04 * * *", func() {
+					logp.Info("run disk space usage job\n")
+					if err := r.UsageProtection("percentage"); err != nil {
+						logp.Err("%v", err)
+					}
+				})
+				if err != nil {
+					logp.Err("%v", err)
+				}
+			}
 		}
 	}
 	r.createJob.Start()

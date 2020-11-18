@@ -44,6 +44,8 @@ type HeplifyServer struct {
 	DBDropDaysDefault  int      `default:"0"`
 	DBDropOnStart      bool     `default:"false"`
 	DBUsageProtection  bool     `default:"false"`
+	DBUsageScheme      string   `default:"percentage"`
+	DBPercentageUsage  string   `default:"80%"`
 	DBMaxSize          string   `default:"20GB"`
 	DBProcDropLimit    int      `default:"2"`
 	Dedup              bool     `default:"false"`
