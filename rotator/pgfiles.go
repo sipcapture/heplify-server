@@ -11,6 +11,9 @@ var (
 )
 
 var (
+	sysDF = "CREATE OR REPLACE FUNCTION sys_df() \nRETURNS SETOF text[]\nLANGUAGE plpgsql \nas\n$$\nBEGIN\n    CREATE TEMP TABLE IF NOT EXISTS tmp_sys_df (content text) ON COMMIT DROP;\n    COPY tmp_sys_df FROM PROGRAM 'df $PGDATA | tail -n +2';\n    RETURN QUERY SELECT regexp_split_to_array(content, '\\s+') FROM tmp_sys_df;\nEND;\n$$;"
+)
+var (
 	droplogpg      = "DROP TABLE IF EXISTS {{partName}};"
 	dropreportpg   = "DROP TABLE IF EXISTS {{partName}};"
 	dropisuppg     = "DROP TABLE IF EXISTS {{partName}};"
