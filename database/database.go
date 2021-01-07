@@ -107,7 +107,8 @@ func ConnectString(dbName string) (string, error) {
 			addr[0] = addr[1]
 			addr[1] = "''"
 		}
-		dsn = "sslmode=disable connect_timeout=4" +
+		dsn = "sslmode=" + config.Setting.DBSSLMode +
+			" connect_timeout=4" +
 			" host=" + addr[0] +
 			" port=" + addr[1] +
 			" dbname=" + dbName +
