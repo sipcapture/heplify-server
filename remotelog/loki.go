@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"io"
 	"net/http"
 	"net/url"
@@ -124,6 +125,9 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
 			}
 
+			hostname, _ := os.Hostname()
+
+			l.entry.labels["hostname"] = hostname
 			l.entry.labels["job"] = jobName
 			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
 			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
