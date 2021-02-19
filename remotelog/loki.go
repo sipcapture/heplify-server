@@ -77,6 +77,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 		batch       = map[model.Fingerprint]*logproto.Stream{}
 		batchSize   = 0
 		maxWait     = time.NewTimer(l.BatchWait)
+		hostname    string
 	)
 
 	defer func() {
@@ -84,6 +85,12 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			logp.Err("loki flush: %v", err)
 		}
 	}()
+
+	hostname, err := os.Hostname()
+
+	if err != nil {
+		logp.Warn("Failed to obtain hostname: %v", err)
+	}
 
 	for {
 		select {
@@ -124,8 +131,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				}
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
 			}
-
-			hostname, _ := os.Hostname()
 
 			l.entry.labels["hostname"] = hostname
 			l.entry.labels["job"] = jobName
