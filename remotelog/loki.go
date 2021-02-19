@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"io"
+	"os"
 	"net/http"
 	"net/url"
 	"strings"
@@ -87,9 +87,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 	}()
 
 	hostname, err := os.Hostname()
-
 	if err != nil {
-		logp.Warn("Failed to obtain hostname: %v", err)
+		logp.Warn("Unable to obtain hostname: %v", err)
 	}
 
 	for {
@@ -132,8 +131,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
 			}
 
-			l.entry.labels["hostname"] = hostname
 			l.entry.labels["job"] = jobName
+			l.entry.labels["hostname"] = model.LabelValue(hostname)
 			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
 			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
 			l.entry.Entry.Line = pktMeta.String()
