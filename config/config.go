@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.38"
+const Version = "heplify-server 1.53"
 
 var Setting HeplifyServer
 
@@ -25,6 +25,7 @@ type HeplifyServer struct {
 	DBShema            string   `default:"homer5"`
 	DBDriver           string   `default:"mysql"`
 	DBAddr             string   `default:"localhost:3306"`
+	DBSSLMode          string   `default:"disable"`
 	DBUser             string   `default:"root"`
 	DBPass             string   `default:""`
 	DBDataTable        string   `default:"homer_data"`
@@ -43,9 +44,16 @@ type HeplifyServer struct {
 	DBDropDaysRegister int      `default:"0"`
 	DBDropDaysDefault  int      `default:"0"`
 	DBDropOnStart      bool     `default:"false"`
+	DBUsageProtection  bool     `default:"false"`
+	DBUsageScheme      string   `default:"percentage"`
+	DBPercentageUsage  string   `default:"80%"`
+	DBMaxSize          string   `default:"20GB"`
+	DBProcDropLimit    int      `default:"2"`
 	Dedup              bool     `default:"false"`
 	DiscardMethod      []string `default:""`
+	CensorMethod       []string `default:""`
 	AlegIDs            []string `default:""`
+	ForceALegID        bool     `default:"false"`
 	CustomHeader       []string `default:""`
 	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent"`
 	LogDbg             string   `default:""`
@@ -57,5 +65,8 @@ type HeplifyServer struct {
 	ConfigHTTPPW       string   `default:""`
 	Version            bool     `default:"false"`
 	ScriptEnable       bool     `default:"false"`
-	ScriptFolder       string   `default:"lua/"`
+	ScriptEngine       string   `default:"lua"`
+	ScriptFolder       string   `default:""`
+	ScriptHEPFilter    []int    `default:"1,5,100"`
+	TLSCertFolder      string   `default:"."`
 }

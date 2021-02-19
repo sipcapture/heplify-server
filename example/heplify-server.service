@@ -6,11 +6,12 @@
 [Unit]
 Description=HEP Server & Switch in Go 
 After=network.target
+#Only if you have postgresql on the same host!
+#After=network.target postgresql.service
 
 [Service]
 Environment="HEPLIFY_CONFIG=-config=/etc/heplify-server.toml"
 ExecStart=/usr/local/bin/heplify-server $HEPLIFY_CONFIG
-ExecStop=/bin/kill ${MAINPID}
 Restart=on-failure
 RestartSec=10s
 Type=simple

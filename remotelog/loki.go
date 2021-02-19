@@ -87,8 +87,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 	}()
 
 	hostname, err := os.Hostname()
-
-	if err := nil {
+	if err != nil {
 		logp.Warn("Unable to obtain hostname: %v", err)
 	}
 

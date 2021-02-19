@@ -107,8 +107,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				pHeader := makeProtoHeader(pkt, bb)
 				dHeader := makeSIPDataHeader(pkt, bb, t)
-				switch pkt.SIP.CseqMethod {
-				case "INVITE", "ACK", "BYE", "CANCEL", "UPDATE", "PRACK", "REFER", "INFO":
+				switch pkt.SIP.Profile {
+				case "call":
 					callRows = append(callRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					callCnt++
 					if callCnt == p.bulkCnt {
@@ -116,7 +116,7 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						callRows = []string{}
 						callCnt = 0
 					}
-				case "REGISTER":
+				case "registration":
 					regRows = append(regRows, pkt.SID, date, pHeader, dHeader, pkt.Payload)
 					regCnt++
 					if regCnt == p.bulkCnt {

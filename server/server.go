@@ -34,7 +34,6 @@ type HEPInput struct {
 	quit       chan bool
 	stopped    uint32
 	stats      HEPStats
-	lokiTF     []int
 	useDB      bool
 	usePM      bool
 	useES      bool
@@ -48,7 +47,7 @@ type HEPStats struct {
 	PktCount uint64
 }
 
-const maxPktLen = 8192
+const maxPktLen = 65507
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
@@ -61,7 +60,6 @@ func NewHEPInput() *HEPInput {
 		exitTLS:    make(chan bool),
 		exitWS:     make(chan bool),
 		exitWorker: make(chan bool),
-		lokiTF:     config.Setting.LokiHEPFilter,
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
@@ -90,7 +88,9 @@ func (h *HEPInput) Run() {
 		go h.worker()
 	}
 
-	logp.Info("start %s with %#v\n", config.Version, config.Setting)
+	s := config.Setting
+	s.DBPass = "<private>"
+	logp.Info("start %s with %#v\n", config.Version, s)
 	go h.logStats()
 	go h.reloadWorker()
 
@@ -186,19 +186,18 @@ func (h *HEPInput) worker() {
 
 	var ok bool
 	var err error
-	var script *decoder.ScriptEngine
+	var script decoder.ScriptEngine
 	lastWarn := time.Now()
 	msg := h.buffer.Get().([]byte)
 	useScript := config.Setting.ScriptEnable
 
 	if useScript {
-		/* register Lua Engine */
-		script, err = decoder.RegisteredScriptEngine()
+		script, err = decoder.NewScriptEngine()
 		if err != nil {
-			logp.Err("couldn't activate script engine, %v", err)
+			logp.Err("%v, please fix and run killall -HUP heplify-server", err)
 			useScript = false
 		} else {
-			defer script.LuaEngine.Close()
+			defer script.Close()
 		}
 	}
 
@@ -222,14 +221,17 @@ func (h *HEPInput) worker() {
 			}
 			atomic.AddUint64(&h.stats.HEPCount, 1)
 
-			/* execute script for each channel */
 			if useScript {
-				if err = script.ExecuteScriptEngine(hepPkt); err != nil {
-					logp.Err("%v", err)
+				for _, v := range config.Setting.ScriptHEPFilter {
+					if hepPkt.ProtoType == uint32(v) {
+						if err = script.Run(hepPkt); err != nil {
+							logp.Err("%v", err)
+						}
+						break
+					}
 				}
-
 				if hepPkt == nil || hepPkt.ProtoType == 1 && hepPkt.SIP == nil {
-					logp.Warn("nil struct after lua script processing")
+					logp.Warn("nil struct after script processing")
 					continue
 				}
 			}
@@ -268,7 +270,7 @@ func (h *HEPInput) worker() {
 			}
 
 			if h.useLK {
-				for _, v := range h.lokiTF {
+				for _, v := range config.Setting.LokiHEPFilter {
 					if hepPkt.ProtoType == uint32(v) {
 						select {
 						case h.lokiCh <- hepPkt:

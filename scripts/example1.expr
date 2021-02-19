@@ -1,0 +1,1 @@
+GetHEPProtoType()==1 && GetSIPStruct().FromHost=="192.168.111.111" ? SetSIPHeader("FromHost", "1.1.1.1") : SetSIPHeader("FromHost", "2.2.2.2")

@@ -28,7 +28,8 @@ import (
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
-	dedup                 = fastcache.New(32 * 1024 * 1024)
+	dedupCache            = fastcache.New(32 * 1024 * 1024)
+	scriptCache           = fastcache.New(32 * 1024 * 1024)
 	strBackslashQuote     = []byte(`\"`)
 	strBackslashBackslash = []byte(`\\`)
 	strBackslashN         = []byte(`\n`)
@@ -133,6 +134,14 @@ func (h *HEP) parse(packet []byte) error {
 			return err
 		}
 
+		for _, m := range config.Setting.CensorMethod {
+			if m == h.SIP.CseqMethod {
+				lb := len(h.SIP.Body)
+				h.SIP.Body = strings.Repeat("x", lb)
+				h.Payload = h.Payload[:len(h.Payload) - lb] + h.SIP.Body
+			}
+		}
+
 		if len(config.Setting.DiscardMethod) > 0 {
 			for k := range config.Setting.DiscardMethod {
 				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
@@ -151,13 +160,6 @@ func (h *HEP) parse(packet []byte) error {
 	return nil
 }
 
-var fixUTF8 = func(r rune) rune {
-	if r == utf8.RuneError || r == '\x00' {
-		return -1
-	}
-	return r
-}
-
 func (h *HEP) normPayload() {
 	if config.Setting.Dedup {
 		ts := uint64(h.Timestamp.UnixNano())
@@ -165,7 +167,7 @@ func (h *HEP) normPayload() {
 		ks := xxhash.Sum64String(h.Payload)
 		binary.BigEndian.PutUint64(kh, ks)
 
-		if buf := dedup.Get(nil, kh); buf != nil {
+		if buf := dedupCache.Get(nil, kh); buf != nil {
 			i := binary.BigEndian.Uint64(buf)
 			d := ts - i
 			if i > ts {
@@ -179,14 +181,10 @@ func (h *HEP) normPayload() {
 
 		tb := make([]byte, 8)
 		binary.BigEndian.PutUint64(tb, ts)
-		dedup.Set(kh, tb)
+		dedupCache.Set(kh, tb)
 	}
-	if !utf8.ValidString(h.Payload) {
-		h.Payload = strings.Map(fixUTF8, h.Payload)
-	}
-	if config.Setting.DBDriver == "postgres" && strings.Index(h.Payload, "\x00") > -1 {
-		h.Payload = strings.Map(fixUTF8, h.Payload)
-	}
+
+	h.Payload = toUTF8(h.Payload, "")
 }
 
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
@@ -301,4 +299,56 @@ func stb(s string) []byte {
 		Cap:  sh.Len,
 	}
 	return *(*[]byte)(unsafe.Pointer(&bh))
+}
+
+func toUTF8(s, replacement string) string {
+	var b strings.Builder
+
+	for i, c := range s {
+		if c != utf8.RuneError && c != '\x00' {
+			continue
+		}
+
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			b.Grow(len(s) + len(replacement))
+			b.WriteString(s[:i])
+			s = s[i:]
+			break
+		}
+	}
+
+	// Fast path for unchanged input
+	if b.Cap() == 0 { // didn't call b.Grow above
+		return s
+	}
+
+	invalid := false // previous byte was from an invalid UTF-8 sequence
+	for i := 0; i < len(s); {
+		c := s[i]
+		if c == '\x00' {
+			i++
+			invalid = false
+			continue
+		} else if c < utf8.RuneSelf {
+			i++
+			invalid = false
+			b.WriteByte(c)
+			continue
+		}
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			i++
+			if !invalid {
+				invalid = true
+				b.WriteString(replacement)
+			}
+			continue
+		}
+		invalid = false
+		b.WriteString(s[i : i+wid])
+		i += wid
+	}
+
+	return b.String()
 }
