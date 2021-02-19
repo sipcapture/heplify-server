@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"net/http"
 	"net/url"
 	"strings"
@@ -76,6 +77,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 		batch       = map[model.Fingerprint]*logproto.Stream{}
 		batchSize   = 0
 		maxWait     = time.NewTimer(l.BatchWait)
+		hostname    string
 	)
 
 	defer func() {
@@ -83,6 +85,12 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			logp.Err("loki flush: %v", err)
 		}
 	}()
+
+	hostname, err := os.Hostname()
+
+	if err := nil {
+		logp.Warn("Unable to obtain hostname: %v", err)
+	}
 
 	for {
 		select {
@@ -125,6 +133,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			}
 
 			l.entry.labels["job"] = jobName
+			l.entry.labels["hostname"] = model.LabelValue(hostname)
 			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
 			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
 			l.entry.Entry.Line = pktMeta.String()
