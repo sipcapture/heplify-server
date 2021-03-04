@@ -11,7 +11,7 @@ if [ "$CONT" = "y" ]; then
  docker run --rm \
   -v $PWD:/app \
   golang:1.13 \
-  bash -c "apt update && apt install -y libpcap-dev && cd /app && make all"
+  bash -c "apt update && apt install -y libpcap-dev libluajit-5.1-dev && cd /app && make all"
 else
   echo "Exiting..."
 fi
