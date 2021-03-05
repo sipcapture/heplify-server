@@ -5,6 +5,8 @@ platform: "linux"
 version: "v${VERSION}"
 section: "default"
 priority: "extra"
+depends:
+- luajit
 replaces:
 - heplify-server
 provides:
