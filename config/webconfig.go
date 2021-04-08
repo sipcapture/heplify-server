@@ -52,7 +52,7 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		webSetting.DBConfTable = "homer_config"
 	}
 	webSetting.DBAddr = r.FormValue("DBAddr")
-	webSetting.DBAddr = r.FormValue("DBSSLMode")
+	webSetting.DBSSLMode = r.FormValue("DBSSLMode")
 	webSetting.DBUser = r.FormValue("DBUser")
 	DBPass := r.FormValue("DBPass")
 	if DBPass != "*******" {
@@ -235,9 +235,9 @@ var WebForm = `
 			<input  type="text" name="DBAddr" placeholder="{{.DBAddr}}" value="{{.DBAddr}}">
 		</div>
 		<div>
-		<label>DBSSLMode</label>
-		<input  type="text" name="DBSSLMode" placeholder="{{.DBSSLMode}}" value="{{.DBSSLMode}}">
-	</div>
+			<label>DBSSLMode</label>
+			<input  type="text" name="DBSSLMode" placeholder="{{.DBSSLMode}}" value="{{.DBSSLMode}}">
+		</div>
 		<div>
 			<label>DBUser</label>
 			<input  type="text" name="DBUser" placeholder="{{.DBUser}}" value="{{.DBUser}}">
