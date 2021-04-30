@@ -113,12 +113,10 @@ func (h *HEP) parse(packet []byte) error {
 		}
 	}
 
-	t := time.Now()
 	h.Timestamp = time.Unix(int64(h.Tsec), int64(h.Tmsec*1000))
-	d := t.Sub(h.Timestamp)
-	if d < 0 || (h.Tsec == 0 && h.Tmsec == 0) {
-		logp.Debug("hep", "got timestamp in the future with delta: %d from nodeID %d", d, h.NodeID)
-		h.Timestamp = t
+	if h.Tsec == 0 && h.Tmsec == 0 {
+		logp.Debug("hep", "got null timestamp from nodeID %d", h.NodeID)
+		h.Timestamp = time.Now()
 	}
 
 	h.normPayload()
@@ -138,7 +136,7 @@ func (h *HEP) parse(packet []byte) error {
 			if m == h.SIP.CseqMethod {
 				lb := len(h.SIP.Body)
 				h.SIP.Body = strings.Repeat("x", lb)
-				h.Payload = h.Payload[:len(h.Payload) - lb] + h.SIP.Body
+				h.Payload = h.Payload[:len(h.Payload)-lb] + h.SIP.Body
 			}
 		}
 
