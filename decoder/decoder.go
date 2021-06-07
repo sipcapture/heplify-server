@@ -291,12 +291,13 @@ func WriteJSONString(w io.Writer, s string) (int, error) {
 
 func stb(s string) []byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
+	var res []byte
+
+	bh := (*reflect.SliceHeader)((unsafe.Pointer(&res)))
+	bh.Data = sh.Data
+	bh.Len = sh.Len
+	bh.Cap = sh.Len
+	return res
 }
 
 func toUTF8(s, replacement string) string {

@@ -194,6 +194,8 @@ func (r *Rotator) getSizeInBtyes() (float64, error) {
 
 func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 	var databaseSize string
+	var size float64
+	var err error
 	switch schema {
 	case "maxusage":
 		rows, err := db.Query("select pg_database_size('homer_data');")
@@ -205,7 +207,7 @@ func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 				return 0, err
 			}
 		}
-		return strconv.ParseFloat(databaseSize, 64)
+		size, err = strconv.ParseFloat(databaseSize, 64)
 	default:
 		rows, err := db.Query("select * from sys_df();")
 		checkDBErr(err)
@@ -216,10 +218,9 @@ func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 				return 0, err
 			}
 		}
-		percentageUsage, _ := strconv.ParseFloat(strings.TrimSuffix(strings.Split(databaseSize[1:len(databaseSize)-1], ",")[4], "%"), 64)
-		return percentageUsage, nil
+		size, err = strconv.ParseFloat(strings.TrimSuffix(strings.Split(databaseSize[1:len(databaseSize)-1], ",")[4], "%"), 64)
 	}
-	return 0, nil
+	return size, err
 }
 
 func (r *Rotator) UsageProtection(scheme string) error {
