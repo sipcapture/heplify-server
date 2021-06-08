@@ -187,7 +187,7 @@ func (r *Rotator) getSizeInBtyes() (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		return size * 1024 * 1024, nil
+		return size * 1024 * 1024 * 1024, nil
 	}
 	return 0, errors.New("unsupported disk usage")
 }
