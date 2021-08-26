@@ -69,4 +69,5 @@ type HeplifyServer struct {
 	ScriptFolder       string   `default:""`
 	ScriptHEPFilter    []int    `default:"1,5,100"`
 	TLSCertFolder      string   `default:"."`
+	TLSMinVersion      string   `default:"1.2"`
 }
