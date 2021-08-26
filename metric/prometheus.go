@@ -67,7 +67,7 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				var srcHit, dstHit bool
 				srcTarget, srcHit = p.TargetMap[pkt.SrcIP]
 				if srcHit {
-					methodResponses.WithLabelValues(srcTarget, "src", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(srcTarget, "src", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 
 					if pkt.SIP.ReasonVal != "" && strings.Contains(pkt.SIP.ReasonVal, "850") {
 						reasonCause.WithLabelValues(srcTarget, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()
@@ -75,10 +75,10 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 				}
 				dstTarget, dstHit = p.TargetMap[pkt.DstIP]
 				if dstHit {
-					methodResponses.WithLabelValues(dstTarget, "dst", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues(dstTarget, "dst", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
 				if !srcHit && !dstHit {
-					methodResponses.WithLabelValues("unknown", "", "", pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
+					methodResponses.WithLabelValues("unknown", "", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
 			}
 
