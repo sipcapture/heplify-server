@@ -83,56 +83,56 @@ func (p *Prometheus) dissectXRTPStats(tn, stats string) {
 	xrtpMOS.WithLabelValues(tn).Set(mos)
 }
 
-func (p *Prometheus) dissectRTCPStats(nodeID string, data []byte) {
+func (p *Prometheus) dissectRTCPStats(targetName string, direction string, nodeID string, data []byte) {
 	jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpFractionLost.WithLabelValues(nodeID).Set(normMax(fractionLost))
+				rtcpFractionLost.WithLabelValues(targetName, direction, nodeID).Set(normMax(fractionLost))
 			}
 		case 1:
 			if packetsLost, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpPacketsLost.WithLabelValues(nodeID).Set(normMax(packetsLost))
+				rtcpPacketsLost.WithLabelValues(targetName, direction, nodeID).Set(normMax(packetsLost))
 			}
 		case 2:
 			if iaJitter, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpJitter.WithLabelValues(nodeID).Set(normMax(iaJitter))
+				rtcpJitter.WithLabelValues(targetName, direction, nodeID).Set(normMax(iaJitter))
 			}
 		case 3:
 			if dlsr, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpDLSR.WithLabelValues(nodeID).Set(normMax(dlsr))
+				rtcpDLSR.WithLabelValues(targetName, direction, nodeID).Set(normMax(dlsr))
 			}
 		case 4:
 			if fractionLost, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrFractionLost.WithLabelValues(nodeID).Set(fractionLost)
+				rtcpxrFractionLost.WithLabelValues(targetName, direction, nodeID).Set(fractionLost)
 			}
 		case 5:
 			if fractionDiscard, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrFractionDiscard.WithLabelValues(nodeID).Set(fractionDiscard)
+				rtcpxrFractionDiscard.WithLabelValues(targetName, direction, nodeID).Set(fractionDiscard)
 			}
 		case 6:
 			if burstDensity, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrBurstDensity.WithLabelValues(nodeID).Set(burstDensity)
+				rtcpxrBurstDensity.WithLabelValues(targetName, direction, nodeID).Set(burstDensity)
 			}
 		case 7:
 			if gapDensity, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrGapDensity.WithLabelValues(nodeID).Set(gapDensity)
+				rtcpxrGapDensity.WithLabelValues(targetName, direction, nodeID).Set(gapDensity)
 			}
 		case 8:
 			if burstDuration, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrBurstDuration.WithLabelValues(nodeID).Set(burstDuration)
+				rtcpxrBurstDuration.WithLabelValues(targetName, direction, nodeID).Set(burstDuration)
 			}
 		case 9:
 			if gapDuration, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrGapDuration.WithLabelValues(nodeID).Set(gapDuration)
+				rtcpxrGapDuration.WithLabelValues(targetName, direction, nodeID).Set(gapDuration)
 			}
 		case 10:
 			if roundTripDelay, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrRoundTripDelay.WithLabelValues(nodeID).Set(roundTripDelay)
+				rtcpxrRoundTripDelay.WithLabelValues(targetName, direction, nodeID).Set(roundTripDelay)
 			}
 		case 11:
 			if endSystemDelay, err := jsonparser.ParseFloat(value); err == nil {
-				rtcpxrEndSystemDelay.WithLabelValues(nodeID).Set(endSystemDelay)
+				rtcpxrEndSystemDelay.WithLabelValues(targetName, direction, nodeID).Set(endSystemDelay)
 			}
 		}
 	}, rtcpPaths...)

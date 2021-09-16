@@ -70,53 +70,53 @@ var (
 	rtcpFractionLost = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcp_fraction_lost",
 		Help: "RTCP fraction lost"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpPacketsLost = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcp_packets_lost",
 		Help: "RTCP packets lost"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpJitter = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcp_jitter",
 		Help: "RTCP jitter"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpDLSR = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcp_dlsr",
 		Help: "RTCP dlsr"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 
 	// RTCP-XR Metrics
 	rtcpxrFractionLost = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_fraction_lost",
 		Help: "RTCPXR fraction lost"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrFractionDiscard = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_fraction_discard",
 		Help: "RTCPXR fraction discard"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrBurstDensity = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_burst_density",
 		Help: "RTCPXR burst density"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrBurstDuration = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_burst_duration",
 		Help: "RTCPXR burst duration"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrGapDensity = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_gap_density",
 		Help: "RTCPXR gap density"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrGapDuration = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_gap_duration",
 		Help: "RTCPXR gap duration"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrRoundTripDelay = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_round_trip_delay",
 		Help: "RTCPXR round trip delay"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 	rtcpxrEndSystemDelay = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heplify_rtcpxr_end_system_delay",
 		Help: "RTCPXR end system delay"},
-		[]string{"node_id"})
+		[]string{"target_name", "direction", "node_id"})
 
 	// VQ-RTCP-XR Metrics
 	vqrtcpxrNLR = promauto.NewGaugeVec(prometheus.GaugeOpts{

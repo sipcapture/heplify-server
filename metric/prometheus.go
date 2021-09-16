@@ -62,10 +62,15 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 		packetsBySize.WithLabelValues(pkt.NodeName, pkt.ProtoString).Set(float64(len(pkt.Payload)))
 
 		var srcTarget, dstTarget string
+		var srcHit, dstHit bool
+
+		if !p.TargetEmpty {
+			srcTarget, srcHit = p.TargetMap[pkt.SrcIP]
+			dstTarget, dstHit = p.TargetMap[pkt.DstIP]
+		}
+
 		if pkt.SIP != nil && pkt.ProtoType == 1 {
 			if !p.TargetEmpty {
-				var srcHit, dstHit bool
-				srcTarget, srcHit = p.TargetMap[pkt.SrcIP]
 				if srcHit {
 					methodResponses.WithLabelValues(srcTarget, "src", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 
@@ -73,7 +78,6 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 						reasonCause.WithLabelValues(srcTarget, extractXR("cause=", pkt.SIP.ReasonVal), pkt.SIP.FirstMethod).Inc()
 					}
 				}
-				dstTarget, dstHit = p.TargetMap[pkt.DstIP]
 				if dstHit {
 					methodResponses.WithLabelValues(dstTarget, "dst", pkt.NodeName, pkt.SIP.FirstMethod, pkt.SIP.CseqMethod).Inc()
 				}
@@ -154,7 +158,15 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 			}
 
 		} else if pkt.ProtoType == 5 {
-			p.dissectRTCPStats(pkt.NodeName, []byte(pkt.Payload))
+			if srcHit {
+				p.dissectRTCPStats(srcTarget, "src", pkt.NodeName, []byte(pkt.Payload))
+			}
+			if dstHit {
+				p.dissectRTCPStats(dstTarget, "dst", pkt.NodeName, []byte(pkt.Payload))
+			}
+			if !srcHit && !dstHit {
+				p.dissectRTCPStats("unknown", "", pkt.NodeName, []byte(pkt.Payload))
+			}
 		} else if pkt.ProtoType == 34 {
 			p.dissectRTPStats(pkt.NodeName, []byte(pkt.Payload))
 		} else if pkt.ProtoType == 35 {
