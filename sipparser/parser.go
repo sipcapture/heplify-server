@@ -272,8 +272,15 @@ func (s *SipMsg) addHdr(str string) {
 				}
 
 				for i := range s.CHeader {
-					if s.hdr == s.CHeader[i] {
-						s.CustomHeader[s.hdr] = s.hdrv
+					//if we wanna compare ignoring case
+					if config.Setting.IgnoreCaseCH {
+						if strings.EqualFold(s.hdr, s.CHeader[i]) {
+							s.CustomHeader[s.CHeader[i]] = s.hdrv
+						}
+					} else {
+						if s.hdr == s.CHeader[i] {
+							s.CustomHeader[s.hdr] = s.hdrv
+						}
 					}
 				}
 			}
