@@ -105,6 +105,12 @@ func (h *HEP) parse(packet []byte) error {
 			logp.Warn("%v", err)
 			return err
 		}
+	} else if bytes.HasPrefix(packet, []byte{0x1}) || bytes.HasPrefix(packet, []byte{0x2}) {
+		err = h.parseHEP2(packet)
+		if err != nil {
+			logp.Warn("%v", err)
+			return err
+		}
 	} else {
 		err = h.Unmarshal(packet)
 		if err != nil {

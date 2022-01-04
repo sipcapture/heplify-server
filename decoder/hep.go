@@ -105,3 +105,40 @@ func (h *HEP) parseHEP(packet []byte) error {
 	}
 	return nil
 }
+
+func (h *HEP) parseHEP2(packet []byte) error {
+
+	h.ProtoString = "sip"
+	h.ProtoType = 1
+
+	h.Version = uint32(packet[0])
+	//length := packet[1]
+	family := packet[2]
+	h.Protocol = uint32(packet[3])
+	h.SrcPort = uint32(binary.BigEndian.Uint16(packet[4:6]))
+	h.DstPort = uint32(binary.BigEndian.Uint16(packet[6:8]))
+	totalLen := 8
+
+	if family == 10 {
+		h.SrcIP = net.IP(packet[8:12]).To16().String()
+		h.DstIP = net.IP(packet[12:16]).To16().String()
+		totalLen += 32
+	} else {
+		h.SrcIP = net.IP(packet[8:10]).To4().String()
+		h.DstIP = net.IP(packet[10:12]).To4().String()
+		totalLen += 8
+	}
+
+	if h.Version == 2 {
+		h.Tsec = binary.BigEndian.Uint32(packet[totalLen:(totalLen + 4)])
+		totalLen += 4
+		h.Tmsec = binary.BigEndian.Uint32(packet[totalLen:(totalLen + 4)])
+		totalLen += 4
+		h.CID = string(packet[totalLen:(totalLen + 2)])
+		totalLen += 2
+	}
+
+	h.Payload = string(packet[totalLen:])
+
+	return nil
+}
