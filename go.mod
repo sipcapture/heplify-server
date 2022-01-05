@@ -26,10 +26,10 @@ require (
 	github.com/prometheus/common v0.10.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sipcapture/golua v0.0.0-20200610090950-538d24098d76
-	github.com/stretchr/testify v1.5.1
+	github.com/sipcapture/heplify v0.0.0-20201208095155-78c3e1de0fb4 // indirect
+	github.com/stretchr/testify v1.7.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.1
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/genproto v0.0.0-20200619004808-3e7fca5c55db // indirect

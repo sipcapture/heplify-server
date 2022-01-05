@@ -120,12 +120,12 @@ func (h *HEP) parseHEP2(packet []byte) error {
 	totalLen := 8
 
 	if family == 10 {
-		h.SrcIP = net.IP(packet[8:12]).To16().String()
-		h.DstIP = net.IP(packet[12:16]).To16().String()
+		h.SrcIP = net.IP(packet[8:24]).To16().String()
+		h.DstIP = net.IP(packet[24:40]).To16().String()
 		totalLen += 32
 	} else {
-		h.SrcIP = net.IP(packet[8:10]).To4().String()
-		h.DstIP = net.IP(packet[10:12]).To4().String()
+		h.SrcIP = net.IP(packet[8:12]).To4().String()
+		h.DstIP = net.IP(packet[12:16]).To4().String()
 		totalLen += 8
 	}
 
