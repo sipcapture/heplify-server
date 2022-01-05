@@ -11,6 +11,7 @@ type HeplifyServer struct {
 	HEPWSAddr          string   `default:""`
 	ESAddr             string   `default:""`
 	ESDiscovery        bool     `default:"true"`
+	HEPv2Enable        bool     `default:"true"`
 	ESUser             string   `default:""`
 	ESPass             string   `default:""`
 	LokiURL            string   `default:""`
