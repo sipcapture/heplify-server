@@ -217,6 +217,8 @@ func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {
 		return WriteJSONString(w, h.SIP.ToTag)
 	case "via":
 		return WriteJSONString(w, h.SIP.ViaOne)
+	case "via_branch":
+		return WriteJSONString(w, h.SIP.ViaOneBranch)
 	case "contact_user":
 		return WriteJSONString(w, h.SIP.ContactUser)
 	case "contact_domain":

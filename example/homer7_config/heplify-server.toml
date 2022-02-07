@@ -62,7 +62,7 @@ ConfigHTTPAddr        = ""
 # AlegIDs         = ["X-CID","P-Charging-Vector,icid-value=\"?(.*?)(?:\"|;|$)","X-BroadWorks-Correlation-Info"]
 # DiscardMethod   = ["OPTIONS","NOTIFY"]
 # CustomHeader    = ["X-CustomerIP","X-Billing"]
-# SIPHeader       = ["callid","callid_aleg","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user"]
+# SIPHeader       = ["callid","callid_aleg","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user","via_branch"]
 # LogDbg          = "hep,sql,loki"
 # LogLvl          = "warning"
 # ConfigHTTPAddr  = "0.0.0.0:9876"

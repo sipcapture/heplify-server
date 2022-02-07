@@ -57,7 +57,7 @@ type HeplifyServer struct {
 	ForceALegID        bool     `default:"false"`
 	CustomHeader       []string `default:""`
 	IgnoreCaseCH       bool     `default:"false"`
-	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent"`
+	SIPHeader          []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent,via_branch"`
 	LogDbg             string   `default:""`
 	LogLvl             string   `default:"info"`
 	LogStd             bool     `default:"false"`
