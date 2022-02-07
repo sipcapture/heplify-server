@@ -80,6 +80,7 @@ type SipMsg struct {
 	RTPStatVal       string
 	ViaOne           string
 	ViaOneBranch     string
+	ViaCount		 int
 	Privacy          string
 	RemotePartyIdVal string
 	DiversionVal     string
@@ -598,15 +599,42 @@ func (s *SipMsg) parseVia(str string) {
 	   		s.Via = append(s.Via, v)
 	   	}
 	*/
+	if len(s.ViaOne) == 0 {
+		s.ViaCount = 0
+	}
 	s.ViaOne = str
-	if a := strings.Index(str, "branch="); a > -1 && a < len(str) {
+	loopMaxCount := 0
+	for {
+		a := strings.Index(str, "branch=")
+		if a < 0 || a >= len(str) {
+			break
+		}
+		if loopMaxCount > 100 {
+			break
+		}
 		b := str[a:]
 		l := len(b)
-		if c := strings.Index(b, ";"); c > -1 && c < l && l > 7 {
-			s.ViaOneBranch = b[7:c]
-		} else if l > 7 {
-			s.ViaOneBranch = b[7:]
+		c := strings.Index(b, ";")
+		d := strings.Index(b, ",")
+		if d > -1 && d < c {
+			c = d
 		}
+		if c > -1 && c < l && l > 7 {
+			if len(s.ViaOneBranch) == 0 {
+				s.ViaOneBranch = b[7:c]
+			} else {
+				s.ViaOneBranch = s.ViaOneBranch + ";" + b[7:c]
+			}
+		} else if l > 7 {
+			if len(s.ViaOneBranch) == 0 {
+				s.ViaOneBranch = b[7:]
+			} else {
+				s.ViaOneBranch = s.ViaOneBranch + ";" + b[7:]
+			}
+		}
+		str = b[7:]
+		s.ViaCount++
+		loopMaxCount++
 	}
 }
 
