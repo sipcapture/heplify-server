@@ -61,8 +61,8 @@ ConfigHTTPAddr        = ""
 # PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
 # AlegIDs         = ["X-CID","P-Charging-Vector,icid-value=\"?(.*?)(?:\"|;|$)","X-BroadWorks-Correlation-Info"]
 # DiscardMethod   = ["OPTIONS","NOTIFY"]
-# CustomHeader    = ["X-CustomerIP","X-Billing"]
-# SIPHeader       = ["callid","callid_aleg","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user","via_branch"]
+# CustomHeader    = ["X-CustomerIP","X-Billing","via_branch"]
+# SIPHeader       = ["callid","callid_aleg","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user"]
 # LogDbg          = "hep,sql,loki"
 # LogLvl          = "warning"
 # ConfigHTTPAddr  = "0.0.0.0:9876"

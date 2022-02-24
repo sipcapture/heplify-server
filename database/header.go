@@ -2,6 +2,7 @@ package database
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/negbie/logp"
@@ -49,7 +50,16 @@ func makeSIPDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttem
 
 	t.ExecuteFunc(bb, h.EscapeFields)
 
-	if len(h.SIP.CHeader) > 0 || h.SIP.CustomHeader != nil {
+	if len(h.SIP.CHeader) > 0 {
+		for _, v := range h.SIP.CHeader {
+			if strings.EqualFold(v, "via_branch") {
+				bb.WriteString(`,"` + v + `":"`)
+				bb.WriteString(h.SIP.ViaOneBranch + `"`)
+			}
+		}
+	}
+
+	if h.SIP.CustomHeader != nil {
 		for k, v := range h.SIP.CustomHeader {
 			bb.WriteString(`,"` + k + `":"`)
 			bb.WriteString(v + `"`)
