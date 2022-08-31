@@ -1,0 +1,22 @@
+# mv dockerfile-arm Dockerfile
+# docker buildx build --load --platform=linux/arm64 .
+
+FROM --platform=$BUILDPLATFORM golang:alpine as builder
+
+RUN apk update && apk add --no-cache git build-base
+
+RUN wget -O 2.1.0.tar.gz https://github.com/LuaJIT/LuaJIT/archive/v2.1.0-beta3.tar.gz \
+ && tar xvf 2.1.0.tar.gz \
+ && cd LuaJIT-2.1.0-beta3 \
+ && make CCOPT="-static -fPIC" BUILDMODE="static" && make install
+
+RUN go env -w GO111MODULE=auto 
+RUN go get -u -d -v github.com/sipcapture/heplify-server/...
+WORKDIR /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/
+RUN CGO_ENABLED=1 GOOS=linux go build -a --ldflags '-linkmode external -extldflags "-static -s -w"' -o heplify-server .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/heplify-server .
+COPY --from=builder /go/src/github.com/sipcapture/heplify-server/scripts ./scripts
