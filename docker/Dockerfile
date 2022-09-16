@@ -13,7 +13,11 @@ WORKDIR /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/
 RUN CGO_ENABLED=1 GOOS=linux go build -a --ldflags '-linkmode external -extldflags "-static -s -w"' -o heplify-server .
 
 FROM alpine:latest
+
+RUN apk update
 RUN apk --no-cache add ca-certificates
+RUN apk upgrade
+
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/heplify-server .
 COPY --from=builder /go/src/github.com/sipcapture/heplify-server/scripts ./scripts
