@@ -106,15 +106,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 			pktMeta.Reset()
 			pktMeta.WriteString(pkt.Payload)
-			pktMeta.WriteString(" src_ip=")
-			pktMeta.WriteString(pkt.SrcIP)
-			pktMeta.WriteString(" dst_ip=")
-			pktMeta.WriteString(pkt.DstIP)
-			if pkt.ProtoType < 110 {
-				pktMeta.WriteString(" id=")
-				pktMeta.WriteString(pkt.CID)
-			}
-
 			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			switch {
