@@ -200,25 +200,35 @@ func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 	case "maxusage":
 		rows, err := db.Query("select pg_database_size('homer_data');")
 		checkDBErr(err)
-		if rows.Next() {
-			err = rows.Scan(&databaseSize)
-			if err != nil {
-				logp.Err("%v", err)
-				return 0, err
+		if err == nil {
+			if rows.Next() {
+				err = rows.Scan(&databaseSize)
+				if err != nil {
+					logp.Err("%v", err)
+					return 0, err
+				}
 			}
+			size, err = strconv.ParseFloat(databaseSize, 64)
+		} else {
+			logp.Err("Error maxusage: %v", err)
+			return 0, err
 		}
-		size, err = strconv.ParseFloat(databaseSize, 64)
 	default:
 		rows, err := db.Query("select * from sys_df();")
 		checkDBErr(err)
-		if rows.Next() {
-			err = rows.Scan(&databaseSize)
-			if err != nil {
-				logp.Err("%v", err)
-				return 0, err
+		if err == nil {
+			if rows.Next() {
+				err = rows.Scan(&databaseSize)
+				if err != nil {
+					logp.Err("%v", err)
+					return 0, err
+				}
 			}
+			size, err = strconv.ParseFloat(strings.TrimSuffix(strings.Split(databaseSize[1:len(databaseSize)-1], ",")[4], "%"), 64)
+		} else {
+			logp.Err("Error getdb %v", err)
+			return 0, err
 		}
-		size, err = strconv.ParseFloat(strings.TrimSuffix(strings.Split(databaseSize[1:len(databaseSize)-1], ",")[4], "%"), 64)
 	}
 	return size, err
 }
