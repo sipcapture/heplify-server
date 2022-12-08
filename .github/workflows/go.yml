@@ -25,10 +25,10 @@ jobs:
       run: sudo apt-get install -y libpcap-dev libluajit-5.1-dev
       
     - name: LuaJIT
-      run: git clone https://luajit.org/git/luajit-2.0.git && cd luajit-2.0 && make CCOPT="-static -fPIC" BUILDMODE="static"
+      run: git clone https://luajit.org/git/luajit-2.0.git && cd luajit-2.0 && make CCOPT="-static -fPIC" BUILDMODE="static" && sudo make install
       
     - name: Build
-      run: LD_LIBRARY_PATH:=$LD_LIBRARY_PATH:$(pwd)/luajit-2.0 CGO_ENABLED=1 GOOS=linux go build -a --ldflags '-linkmode external -extldflags "-static -s -w"' -o heplify-server .
+      run: CGO_ENABLED=1 GOOS=linux go build -a --ldflags '-linkmode external -extldflags "-static -s -w"' -o heplify-server .
       
   docker-push:
     runs-on: ubuntu-latest
