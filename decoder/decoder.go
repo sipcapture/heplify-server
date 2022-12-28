@@ -65,26 +65,44 @@ const (
 
 // HEP represents HEP packet
 type HEP struct {
-	Version     uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
-	Protocol    uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
-	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
-	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
-	SrcPort     uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
-	DstPort     uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
-	Tsec        uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
-	Tmsec       uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
-	ProtoType   uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
-	NodeID      uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
-	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
-	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
-	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID"`
-	Vlan        uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
-	ProtoString string
+	Version     uint32 `protobuf:"varint,1,req,name=Version" json:"Version" parquet:"name=Version, type=INT32, convertedtype=UINT_32"`
+	Protocol    uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol" parquet:"name=Protocol, type=INT32, convertedtype=UINT_32"`
+	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP" parquet:"name=SrcIP, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP" parquet:"name=DstIP, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	SrcPort     uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort" parquet:"name=SrcPort, type=INT32, convertedtype=UINT_32"`
+	DstPort     uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort" parquet:"name=DstPort, type=INT32, convertedtype=UINT_32"`
+	Tsec        uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec" parquet:"name=Tsec, type=INT32, convertedtype=UINT_32"`
+	Tmsec       uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec" parquet:"name=Tmsec, type=INT32, convertedtype=UINT_32"`
+	ProtoType   uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType" parquet:"name=ProtoType, type=INT32, convertedtype=UINT_32"`
+	NodeID      uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID" parquet:"name=NodeID, type=INT32, convertedtype=UINT_32"`
+	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW" parquet:"name=NodePW, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload" parquet:"name=Payload, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID" parquet:"name=CID, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Vlan        uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan" parquet:"name=Vlan, type=INT32, convertedtype=UINT_32"`
+	ProtoString string `parquet:"name=ProtoString, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 	Timestamp   time.Time
 	SIP         *sipparser.SipMsg
 	NodeName    string
 	TargetName  string
 	SID         string
+}
+
+type HEPParquet struct {
+	Version     int32  `protobuf:"varint,1,req,name=Version" json:"Version" parquet:"name=Version, type=INT32, convertedtype=UINT_32"`
+	Protocol    int32  `protobuf:"varint,2,req,name=Protocol" json:"Protocol" parquet:"name=Protocol, type=INT32, convertedtype=UINT_32"`
+	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP" parquet:"name=SrcIP, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP" parquet:"name=DstIP, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	SrcPort     int32  `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort" parquet:"name=SrcPort, type=INT32, convertedtype=UINT_32"`
+	DstPort     int32  `protobuf:"varint,6,req,name=DstPort" json:"DstPort" parquet:"name=DstPort, type=INT32, convertedtype=UINT_32"`
+	Tsec        int64  `protobuf:"varint,7,req,name=Tsec" json:"Tsec" parquet:"name=Tsec, type=INT32, convertedtype=UINT_32"`
+	Tmsec       int64  `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec" parquet:"name=Tmsec, type=INT32, convertedtype=UINT_32"`
+	ProtoType   int32  `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType" parquet:"name=ProtoType, type=INT32, convertedtype=UINT_32"`
+	NodeID      int32  `protobuf:"varint,10,req,name=NodeID" json:"NodeID" parquet:"name=NodeID, type=INT32, convertedtype=UINT_32"`
+	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW" parquet:"name=NodePW, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload" parquet:"name=Payload, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID" parquet:"name=CID, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Vlan        int32  `protobuf:"varint,14,req,name=Vlan" json:"Vlan" parquet:"name=Vlan, type=INT32, convertedtype=UINT_32"`
+	ProtoString string `parquet:"name=ProtoString, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 }
 
 // DecodeHEP returns a parsed HEP message

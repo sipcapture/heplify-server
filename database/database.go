@@ -26,6 +26,7 @@ func New(name string) *Database {
 		"mysql":    new(MySQL),
 		"postgres": new(Postgres),
 		"mock":     new(Mock),
+		"parquet":  new(Parquet),
 	}
 
 	return &Database{
@@ -38,7 +39,9 @@ func (d *Database) Run() error {
 	shema := config.Setting.DBShema
 	worker := config.Setting.DBWorker
 
-	if driver != "mock" {
+	logp.Debug("DRIVER:", "%+v\n\n", driver)
+
+	if driver != "mock" && driver != "parquet" {
 		if driver != "mysql" && driver != "postgres" {
 			return fmt.Errorf("invalid DBDriver: %s, please use mysql or postgres", driver)
 		}
@@ -61,6 +64,8 @@ func (d *Database) Run() error {
 	if worker > runtime.NumCPU() {
 		worker = runtime.NumCPU()
 	}
+
+	worker = 1
 
 	for i := 0; i < worker; i++ {
 		go func() {
