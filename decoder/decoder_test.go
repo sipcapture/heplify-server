@@ -17,8 +17,8 @@ var (
 	hepLen7     = []byte{0x00, 0x07}
 	hepLen8     = []byte{0x00, 0x08}
 	hepLen10    = []byte{0x00, 0x0a}
-	chunck16    = []byte{0x00, 0x00}
-	chunck32    = []byte{0x00, 0x00, 0x00, 0x00}
+	chunk16    = []byte{0x00, 0x00}
+	chunk32    = []byte{0x00, 0x00, 0x00, 0x00}
 )
 
 func TestDecodeEncodeHEP(t *testing.T) {
@@ -60,17 +60,17 @@ func BenchmarkDecodeHEP(b *testing.B) {
 }
 
 // EncodeHEP creates the HEP Packet which
-// will be send to wire
+// will be sent on the wire
 func EncodeHEP(h *HEP) []byte {
-	hepMsg := makeChuncks(h)
+	hepMsg := makeChunks(h)
 	binary.BigEndian.PutUint16(hepMsg[4:6], uint16(len(hepMsg)))
 	return hepMsg
 }
 
 var w bytes.Buffer
 
-// makeChuncks will construct the respective HEP chunck
-func makeChuncks(h *HEP) []byte {
+// makeChunks will construct the respective HEP chunk
+func makeChunks(h *HEP) []byte {
 	w.Reset()
 	w.Write([]byte{0x48, 0x45, 0x50, 0x33})
 	// hepMsg length placeholder. Will be written later
@@ -101,26 +101,26 @@ func makeChuncks(h *HEP) []byte {
 	// Chunk protocol source port
 	w.Write([]byte{0x00, 0x00, 0x00, 0x07})
 	w.Write(hepLen8)
-	binary.BigEndian.PutUint16(chunck16, uint16(h.SrcPort))
-	w.Write(chunck16)
+	binary.BigEndian.PutUint16(chunk16, uint16(h.SrcPort))
+	w.Write(chunk16)
 
 	// Chunk protocol destination port
 	w.Write([]byte{0x00, 0x00, 0x00, 0x08})
 	w.Write(hepLen8)
-	binary.BigEndian.PutUint16(chunck16, uint16(h.DstPort))
-	w.Write(chunck16)
+	binary.BigEndian.PutUint16(chunk16, uint16(h.DstPort))
+	w.Write(chunk16)
 
 	// Chunk unix timestamp, seconds
 	w.Write([]byte{0x00, 0x00, 0x00, 0x09})
 	w.Write(hepLen10)
-	binary.BigEndian.PutUint32(chunck32, h.Tsec)
-	w.Write(chunck32)
+	binary.BigEndian.PutUint32(chunk32, h.Tsec)
+	w.Write(chunk32)
 
 	// Chunk unix timestamp, microseconds offset
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0a})
 	w.Write(hepLen10)
-	binary.BigEndian.PutUint32(chunck32, h.Tmsec)
-	w.Write(chunck32)
+	binary.BigEndian.PutUint32(chunk32, h.Tmsec)
+	w.Write(chunk32)
 
 	// Chunk protocol type (DNS, LOG, RTCP, SIP)
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0b})
@@ -130,8 +130,8 @@ func makeChuncks(h *HEP) []byte {
 	// Chunk capture agent ID
 	w.Write([]byte{0x00, 0x00, 0x00, 0x0c})
 	w.Write(hepLen10)
-	binary.BigEndian.PutUint32(chunck32, h.NodeID)
-	w.Write(chunck32)
+	binary.BigEndian.PutUint32(chunk32, h.NodeID)
+	w.Write(chunk32)
 
 	// Chunk keep alive timer
 	//w.Write([]byte{0x00, 0x00, 0x00, 0x0d})
