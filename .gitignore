@@ -1,4 +1,4 @@
 heplify-server
+heplify-server.*
 fuzz-workdir
 sipparser-fuzz.zip
-heplify-server.toml
