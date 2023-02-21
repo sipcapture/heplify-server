@@ -19,7 +19,16 @@ You have 3 options to get **heplify-server** up and running:
   
   or 
   
-  `yum install luajit-devel` 
+  `yum install luajit-devel`
+
+  or for macOS
+
+  ```sh
+  # Assuming brew installs to /usr/local/
+  brew install lua@5.1 luajit
+  ln -s /usr/local/lib/pkgconfig/luajit.pc /usr/local/lib/pkgconfig/luajit-5.1.pc
+  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
+  ```
   
   [install](https://golang.org/doc/install) Go 1.11+
 
