@@ -20,11 +20,11 @@ import (
 )
 
 // The first 4 bytes are the string "HEP3". The next 2 bytes are the length of the
-// whole message (len("HEP3") + length of all the chucks we have. The next bytes
-// are all the chuncks created by makeChuncks()
+// whole message (len("HEP3") + length of all the chunks we have. The next bytes
+// are all the chunks created by makeChunks()
 // Bytes: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31......
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//        | "HEP3"|len|chuncks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
+//        | "HEP3"|len|chunks(0x0001|0x0002|0x0003|0x0004|0x0007|0x0008|0x0009|0x000a|0x000b|......)
 //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 var (
@@ -42,7 +42,7 @@ var (
 	strEmpty              = []byte(``)
 )
 
-// HEP chuncks
+// HEP chunks
 const (
 	Version   = 1  // Chunk 0x0001 IP protocol family (0x02=IPv4, 0x0a=IPv6)
 	Protocol  = 2  // Chunk 0x0002 IP protocol ID (0x06=TCP, 0x11=UDP)
