@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=$($PWD/heplify-server --version | grep "VERSION:" | grep -Po '\d.\d+')
+VERSION=$($PWD/heplify-server --version | grep "VERSION:" | grep -Po '\d.\d+.\d+')
 PACKAGE=${PACKAGE:-"heplify-server"}
 RELEASE=${VERSION:-"1.1.4"}
 ARCH=${ARCH:-"amd64"}
@@ -25,4 +25,3 @@ docker run --rm \
   -v $PWD:/tmp/pkg \
   -e VERSION="$RELEASE" \
   goreleaser/nfpm pkg --config /tmp/pkg/example/$PACKAGE.yaml --target "/tmp/pkg/$PACKAGE-$RELEASE-$ARCH.$EXT"
-

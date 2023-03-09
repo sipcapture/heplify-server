@@ -5,14 +5,14 @@ go 1.14
 require (
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/antonmedv/expr v1.8.8
-	github.com/buger/jsonparser v1.0.0
+	github.com/buger/jsonparser v1.1.1
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.3
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
 	github.com/lib/pq v1.7.0
 	github.com/mailru/easyjson v0.7.1 // indirect
@@ -26,12 +26,10 @@ require (
 	github.com/prometheus/common v0.10.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sipcapture/golua v0.0.0-20200610090950-538d24098d76
-	github.com/sipcapture/heplify v0.0.0-20201208095155-78c3e1de0fb4 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.1
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/genproto v0.0.0-20200619004808-3e7fca5c55db // indirect
 	google.golang.org/grpc v1.29.1
 )
