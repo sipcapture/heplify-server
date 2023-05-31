@@ -37,6 +37,7 @@ type Rotator struct {
 	partLog          int
 	partIsup         int
 	partQos          int
+	partDiameter     int
 	partSip          int
 	dropDays         int
 	dropDaysCall     int
@@ -62,6 +63,7 @@ func Setup(quit chan bool) *Rotator {
 		partLog:         setStep(config.Setting.DBPartLog),
 		partIsup:        setStep(config.Setting.DBPartIsup),
 		partQos:         setStep(config.Setting.DBPartQos),
+		partDiameter:    setStep(config.Setting.DBPartDiameter),
 		partSip:         setStep(config.Setting.DBPartSip),
 		dropDays:        config.Setting.DBDropDays,
 		dropDaysCall:    config.Setting.DBDropDaysCall,
@@ -165,8 +167,10 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 		r.dbExecFileLoop(db, parqospg, suffix, duration, r.partQos)
 		r.dbExecFileLoop(db, parisuppg, suffix, duration, r.partIsup)
 		r.dbExecFileLoop(db, parsippg, suffix, duration, r.partSip)
+		r.dbExecFileLoop(db, pardiameterpg, suffix, duration, r.partDiameter)
 		r.dbExecFileLoop(db, idxlogpg, suffix, duration, r.partLog)
 		r.dbExecFileLoop(db, idxisuppg, suffix, duration, r.partIsup)
+		r.dbExecFileLoop(db, idxdiametergpg, suffix, duration, r.partIsup)
 		r.dbExecFileLoop(db, idxqospg, suffix, duration, r.partQos)
 		r.dbExecFileLoop(db, idxsippg, suffix, duration, r.partSip)
 	}
@@ -271,6 +275,7 @@ func (r *Rotator) UsageProtection(scheme string) error {
 		r.dbExecDropTablesForFreeSpace(db, selectlogpg, droplogpg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectisuppg, dropisuppg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectreportpg, dropreportpg, r.dropDays)
+		r.dbExecDropTablesForFreeSpace(db, selectdiameterpg, dropdiameterpg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectrtcppg, droprtcppg, r.dropDays)
 		r.dbExecDropTablesForFreeSpace(db, selectcallpg, dropcallpg, r.dropLimit)
 		r.dbExecDropTablesForFreeSpace(db, selectregisterpg, dropregisterpg, r.dropDaysRegister)
@@ -318,6 +323,7 @@ func (r *Rotator) DropTables() (err error) {
 		r.dbExecDropTables(db, selectlogpg, droplogpg, r.dropDays)
 		r.dbExecDropTables(db, selectisuppg, dropisuppg, r.dropDays)
 		r.dbExecDropTables(db, selectreportpg, dropreportpg, r.dropDays)
+		r.dbExecDropTables(db, selectdiameterpg, dropdiameterpg, r.dropDays)
 		r.dbExecDropTables(db, selectrtcppg, droprtcppg, r.dropDays)
 		r.dbExecDropTables(db, selectcallpg, dropcallpg, r.dropDaysCall)
 		r.dbExecDropTables(db, selectregisterpg, dropregisterpg, r.dropDaysRegister)

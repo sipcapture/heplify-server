@@ -54,7 +54,7 @@ const (
 	DstPort   = 8  // Chunk 0x0008 Protocol destination port
 	Tsec      = 9  // Chunk 0x0009 Unix timestamp, seconds
 	Tmsec     = 10 // Chunk 0x000a Unix timestamp, microseconds
-	ProtoType = 11 // Chunk 0x000b Protocol type (DNS, LOG, RTCP, SIP)
+	ProtoType = 11 // Chunk 0x000b Protocol type (DNS, LOG, RTCP, SIP, DIAMETER)
 	NodeID    = 12 // Chunk 0x000c Capture client ID
 	NodePW    = 14 // Chunk 0x000e Authentication key (plain text / TLS connection)
 	Payload   = 15 // Chunk 0x000f Captured packet payload
