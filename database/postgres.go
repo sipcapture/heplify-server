@@ -25,6 +25,7 @@ const (
 	rtcpCopy     = "COPY hep_proto_5_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	reportCopy   = "COPY hep_proto_35_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	dnsCopy      = "COPY hep_proto_53_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
+	diameterCopy = "COPY hep_proto_56_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	isupCopy     = "COPY hep_proto_54_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
@@ -64,17 +65,18 @@ func (p *Postgres) setup() error {
 
 func (p *Postgres) insert(hCh chan *decoder.HEP) {
 	var (
-		callCnt, regCnt, defCnt, dnsCnt, logCnt, rtcpCnt, isupCnt, reportCnt int
+		callCnt, regCnt, defCnt, dnsCnt, diameterCnt, logCnt, rtcpCnt, isupCnt, reportCnt int
 
-		callRows   = make([]string, 0, p.bulkCnt)
-		regRows    = make([]string, 0, p.bulkCnt)
-		defRows    = make([]string, 0, p.bulkCnt)
-		dnsRows    = make([]string, 0, p.bulkCnt)
-		logRows    = make([]string, 0, p.bulkCnt)
-		isupRows   = make([]string, 0, p.bulkCnt)
-		rtcpRows   = make([]string, 0, p.bulkCnt)
-		reportRows = make([]string, 0, p.bulkCnt)
-		maxWait    = p.dbTimer
+		callRows     = make([]string, 0, p.bulkCnt)
+		regRows      = make([]string, 0, p.bulkCnt)
+		defRows      = make([]string, 0, p.bulkCnt)
+		dnsRows      = make([]string, 0, p.bulkCnt)
+		diameterRows = make([]string, 0, p.bulkCnt)
+		logRows      = make([]string, 0, p.bulkCnt)
+		isupRows     = make([]string, 0, p.bulkCnt)
+		rtcpRows     = make([]string, 0, p.bulkCnt)
+		reportRows   = make([]string, 0, p.bulkCnt)
+		maxWait      = p.dbTimer
 	)
 
 	timer := time.NewTimer(maxWait)
@@ -164,6 +166,14 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						p.bulkInsert(dnsCopy, dnsRows)
 						dnsRows = []string{}
 						dnsCnt = 0
+					}
+				case 56:
+					diameterRows = append(diameterRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
+					diameterCnt++
+					if diameterCnt == p.bulkCnt {
+						p.bulkInsert(diameterCopy, diameterRows)
+						diameterRows = []string{}
+						diameterCnt = 0
 					}
 				case 100:
 					logRows = append(logRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)

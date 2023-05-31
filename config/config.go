@@ -38,6 +38,7 @@ type HeplifyServer struct {
 	DBRotate           bool     `default:"true"`
 	DBPartLog          string   `default:"2h"`
 	DBPartIsup         string   `default:"6h"`
+	DBPartDiameter     string   `default:"6h"`
 	DBPartSip          string   `default:"2h"`
 	DBPartQos          string   `default:"6h"`
 	DBDropDays         int      `default:"14"`

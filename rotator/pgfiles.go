@@ -4,6 +4,7 @@ var (
 	selectlogpg      = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_100_default_%' and tablename < 'hep_proto_100_default_{{date}}_{{time}}';"
 	selectreportpg   = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_35_default_%' and tablename < 'hep_proto_35_default_{{date}}_{{time}}';"
 	selectisuppg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_54_default_%' and tablename < 'hep_proto_54_default_{{date}}_{{time}}';"
+	selectdiameterpg = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_56_default_%' and tablename < 'hep_proto_56_default_{{date}}_{{time}}';"
 	selectrtcppg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_5_default_%' and tablename < 'hep_proto_5_default_{{date}}_{{time}}';"
 	selectcallpg     = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_call_%' and tablename < 'hep_proto_1_call_{{date}}_{{time}}';"
 	selectregisterpg = "SELECT tablename FROM pg_tables WHERE tablename LIKE 'hep_proto_1_registration_%' and tablename < 'hep_proto_1_registration_{{date}}_{{time}}';"
@@ -17,6 +18,7 @@ var (
 	droplogpg      = "DROP TABLE IF EXISTS {{partName}};"
 	dropreportpg   = "DROP TABLE IF EXISTS {{partName}};"
 	dropisuppg     = "DROP TABLE IF EXISTS {{partName}};"
+	dropdiameterpg = "DROP TABLE IF EXISTS {{partName}};"
 	droprtcppg     = "DROP TABLE IF EXISTS {{partName}};"
 	dropcallpg     = "DROP TABLE IF EXISTS {{partName}};"
 	dropregisterpg = "DROP TABLE IF EXISTS {{partName}};"
@@ -42,6 +44,14 @@ var idxisuppg = []string{
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_cic ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'cic'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_msg_name ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'msg_name'));",
 	"CREATE INDEX IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}}_callid ON hep_proto_54_default_{{date}}_{{time}} ((data_header->>'callid'));",
+}
+
+var diametergpg = []string{
+	"CREATE INDEX IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}}_create_date ON hep_proto_56_default_{{date}}_{{time}} (create_date);",
+	"CREATE INDEX IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}}_sid ON hep_proto_56_default_{{date}}_{{time}} (sid);",
+	"CREATE INDEX IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}}_srcIp ON hep_proto_56_default_{{date}}_{{time}} ((protocol_header->>'srcIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}}_dstIp ON hep_proto_56_default_{{date}}_{{time}} ((protocol_header->>'dstIp'));",
+	"CREATE INDEX IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}}_correlation_id ON hep_proto_56_default_{{date}}_{{time}} ((protocol_header->>'correlation_id'));",
 }
 
 var idxqospg = []string{
@@ -113,6 +123,10 @@ var parisuppg = []string{
 	"CREATE TABLE IF NOT EXISTS hep_proto_54_default_{{date}}_{{time}} PARTITION OF hep_proto_54_default FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
 }
 
+var pardiameterpg = []string{
+	"CREATE TABLE IF NOT EXISTS hep_proto_56_default_{{date}}_{{time}} PARTITION OF hep_proto_56_default FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
+}
+
 var parqospg = []string{
 	"CREATE TABLE IF NOT EXISTS hep_proto_35_default_{{date}}_{{time}} PARTITION OF hep_proto_35_default FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
 	"CREATE TABLE IF NOT EXISTS hep_proto_5_default_{{date}}_{{time}} PARTITION OF hep_proto_5_default FOR VALUES FROM ('{{startTime}}') TO ('{{endTime}}');",
@@ -180,6 +194,15 @@ var tbldatapg = []string{
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_54_default (
+		id BIGSERIAL NOT NULL,
+		sid varchar NOT NULL,
+		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		protocol_header jsonb NOT NULL,
+		data_header jsonb NOT NULL,
+		raw varchar NOT NULL
+	) PARTITION BY RANGE (create_date);`,
+
+	`CREATE TABLE IF NOT EXISTS hep_proto_56_default (
 		id BIGSERIAL NOT NULL,
 		sid varchar NOT NULL,
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
