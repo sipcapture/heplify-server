@@ -106,6 +106,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 
 			date := pkt.Timestamp.Format(time.RFC3339Nano)
 
+			logp.Debug("insert data: ", "%+v\n\n", pkt)
+
 			if pkt.ProtoType == 1 && pkt.Payload != "" && pkt.SIP != nil {
 				pHeader := makeProtoHeader(pkt, bb)
 				dHeader := makeSIPDataHeader(pkt, bb, t)
@@ -168,6 +170,8 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 						dnsCnt = 0
 					}
 				case 56:
+
+					logp.Debug("diameter data data: ", "%+v\n\n", pkt)
 					diameterRows = append(diameterRows, pkt.CID, date, pHeader, dHeader, pkt.Payload)
 					diameterCnt++
 					if diameterCnt == p.bulkCnt {
