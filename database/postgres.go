@@ -259,6 +259,12 @@ func (p *Postgres) insert(hCh chan *decoder.HEP) {
 				isupRows = []string{}
 				isupCnt = 0
 			}
+			if diameterCnt > 0 {
+				l := len(diameterRows)
+				p.bulkInsert(diameterCopy, diameterRows[:l])
+				diameterRows = []string{}
+				diameterCnt = 0
+			}
 		}
 	}
 }
