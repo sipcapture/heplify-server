@@ -160,7 +160,7 @@ func (h *HEP) parse(packet []byte) error {
 		h.NodeName = strconv.FormatUint(uint64(h.NodeID), 10)
 	}
 
-	logp.Debug("hep", "%+v\n\n", h)
+	logp.Debug("hep [last]: ", "%+v\n\n", h)
 	return nil
 }
 

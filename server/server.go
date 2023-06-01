@@ -248,6 +248,7 @@ func (h *HEPInput) worker() {
 			}
 
 			if h.useDB {
+				logp.Debug("send data: ", "%+v\n\n", hepPkt)
 				select {
 				case h.dbCh <- hepPkt:
 				default:
