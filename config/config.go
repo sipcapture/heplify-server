@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.59.3"
+const Version = "heplify-server 1.59.4"
 
 var Setting HeplifyServer
 
@@ -19,6 +19,7 @@ type HeplifyServer struct {
 	LokiTimer          int      `default:"4"`
 	LokiBuffer         int      `default:"100000"`
 	LokiHEPFilter      []int    `default:"1,5,100"`
+	LokiIPPortLabels   bool     `default:"false"`
 	ForceHEPPayload    []int    `default:""`
 	PromAddr           string   `default:":9096"`
 	PromTargetIP       string   `default:""`
