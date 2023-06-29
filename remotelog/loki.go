@@ -6,9 +6,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -127,6 +128,13 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
 			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
 			l.entry.Entry.Line = pktMeta.String()
+
+			if config.Setting.LokiIPPortLabels {
+				l.entry.labels["src_ip"] = model.LabelValue(pkt.SrcIP)
+				l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
+				l.entry.labels["dst_ip"] = model.LabelValue(pkt.DstIP)
+				l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
+			}
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {
