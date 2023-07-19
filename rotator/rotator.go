@@ -336,11 +336,11 @@ func (r *Rotator) dbExecDropTables(db *sql.DB, listfile, dropfile string, d int)
 	var partName string
 
 	rows, err := db.Query(listquery)
-	defer rows.Close()
 	if err != nil {
 		logp.Err("%v", err)
 		return err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.Scan(&partName)
@@ -372,12 +372,14 @@ func (r *Rotator) dbExecDropTablesForFreeSpace(db *sql.DB, listfile, dropfile st
 	listquery := strings.Replace(listfile, partitionDate, partDate, -1)
 	listquery = strings.Replace(listquery, partitionTime, partTime, -1)
 	var partName string
+
 	rows, err := db.Query(listquery)
-	defer rows.Close()
 	if err != nil {
 		logp.Err("%v", err)
 		return err
 	}
+	defer rows.Close()
+
 	i := 1
 	for rows.Next() {
 		err := rows.Scan(&partName)
