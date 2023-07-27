@@ -3,6 +3,7 @@ package input
 import (
 	"bufio"
 	"encoding/binary"
+	"io"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -58,8 +59,12 @@ func (h *HEPInput) serveTCP(addr string) {
 }
 
 func (h *HEPInput) handleTCP(c net.Conn) {
+	h.handleStream(c, "TCP")
+}
+
+func (h *HEPInput) handleStream(c net.Conn, protocol string) {
 	defer func() {
-		logp.Info("closing TCP connection from %s", c.RemoteAddr())
+		logp.Info("closing %s connection from %s", protocol, c.RemoteAddr())
 		err := c.Close()
 		if err != nil {
 			logp.Err("%v", err)
@@ -67,17 +72,6 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 	}()
 
 	r := bufio.NewReader(c)
-	readBytes := func(buffer []byte) (int, error) {
-		n := uint(0)
-		for n < uint(len(buffer)) {
-			nn, err := r.Read(buffer[n:])
-			n += uint(nn)
-			if err != nil {
-				return 0, err
-			}
-		}
-		return int(n), nil
-	}
 	for {
 		if atomic.LoadUint32(&h.stopped) == 1 {
 			return
@@ -96,11 +90,11 @@ func (h *HEPInput) handleTCP(c net.Conn) {
 				return
 			}
 			buf := h.buffer.Get().([]byte)
-			n, err := readBytes(buf[:size])
-			if err != nil || n > maxPktLen {
+			n, err := io.ReadFull(r, buf[:size])
+			if err != nil || n != int(size) {
 				logp.Warn("%v, unusal packet size with %d bytes", err, n)
 				atomic.AddUint64(&h.stats.ErrCount, 1)
-				continue
+				return
 			}
 			h.inputCh <- buf[:n]
 			atomic.AddUint64(&h.stats.PktCount, 1)
