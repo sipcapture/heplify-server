@@ -3,18 +3,18 @@ package input
 import (
 	"crypto/tls"
 	"net"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
-	"path/filepath"
 
-	"github.com/sipcapture/heplify-server/config"
 	"github.com/negbie/cert"
 	"github.com/negbie/logp"
+	"github.com/sipcapture/heplify-server/config"
 )
 
-func parseTLSVersion(versionText string ) uint16 {
-	switch(versionText){
+func parseTLSVersion(versionText string) uint16 {
+	switch versionText {
 	case "1.0":
 		logp.Warn("TLS1.0 is not recommended.  Use 1.2 or greater where possible")
 		return tls.VersionTLS10
@@ -50,7 +50,7 @@ func (h *HEPInput) serveTLS(addr string) {
 	cPath := config.Setting.TLSCertFolder
 	minTLSVersion := parseTLSVersion(config.Setting.TLSMinVersion)
 	// load any existing certs, otherwise generate a new one
-	ca, err := cert.NewCertificateAuthority( filepath.Join(cPath,  "heplify-server") )
+	ca, err := cert.NewCertificateAuthority(filepath.Join(cPath, "heplify-server"))
 	if err != nil {
 		logp.Err("%v", err)
 		return
@@ -88,30 +88,5 @@ func (h *HEPInput) serveTLS(addr string) {
 }
 
 func (h *HEPInput) handleTLS(c net.Conn) {
-	defer func() {
-		logp.Info("closing TLS connection from %s", c.RemoteAddr())
-		err := c.Close()
-		if err != nil {
-			logp.Err("%v", err)
-		}
-	}()
-
-	for {
-		if atomic.LoadUint32(&h.stopped) == 1 {
-			return
-		}
-
-		buf := h.buffer.Get().([]byte)
-		n, err := c.Read(buf)
-		if err != nil {
-			logp.Warn("%v from %s", err, c.RemoteAddr())
-			return
-		} else if n > maxPktLen {
-			logp.Warn("received too big packet with %d bytes", n)
-			atomic.AddUint64(&h.stats.ErrCount, 1)
-			continue
-		}
-		h.inputCh <- buf[:n]
-		atomic.AddUint64(&h.stats.PktCount, 1)
-	}
+	h.handleStream(c, "TLS")
 }
