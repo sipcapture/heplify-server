@@ -24,6 +24,7 @@ type HEPInput struct {
 	promCh     chan *decoder.HEP
 	esCh       chan *decoder.HEP
 	lokiCh     chan *decoder.HEP
+	kafkaCh    chan *decoder.HEP
 	wg         *sync.WaitGroup
 	buffer     *sync.Pool
 	exitUDP    chan bool
@@ -38,6 +39,7 @@ type HEPInput struct {
 	usePM      bool
 	useES      bool
 	useLK      bool
+	useKafka   bool
 }
 
 type HEPStats struct {
@@ -76,6 +78,10 @@ func NewHEPInput() *HEPInput {
 	if len(config.Setting.LokiURL) > 2 {
 		h.useLK = true
 		h.lokiCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
+	}
+	if len(config.Setting.KafkaBroker) > 2 {
+		h.useKafka = true
+		h.kafkaCh = make(chan *decoder.HEP, 40000)
 	}
 
 	return h
@@ -152,6 +158,16 @@ func (h *HEPInput) Run() {
 			logp.Err("%v", err)
 		}
 		defer d.End()
+	}
+
+	if h.useKafka {
+		k := remotelog.New("kafka")
+		k.Chan = h.kafkaCh
+
+		if err := k.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer k.End()
 	}
 
 	h.wg.Wait()
@@ -282,6 +298,17 @@ func (h *HEPInput) worker() {
 						}
 						break
 					}
+				}
+			}
+
+			if h.useKafka {
+				select {
+				case h.kafkaCh <- hepPkt:
+				default:
+					if time.Since(lastWarn) > 1e9 {
+						logp.Warn("overflowing kafka channel")
+					}
+					lastWarn = time.Now()
 				}
 			}
 		}

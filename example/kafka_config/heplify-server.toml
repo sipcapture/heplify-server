@@ -1,0 +1,75 @@
+HEPAddr               = "0.0.0.0:9060"
+HEPTCPAddr            = ""
+HEPTLSAddr            = "0.0.0.0:9060"
+HEPWSAddr             = "0.0.0.0:3000"
+ESAddr                = ""
+ESDiscovery           = true
+LokiURL               = ""
+LokiBulk              = 200
+LokiTimer             = 4
+LokiBuffer            = 100000
+LokiHEPFilter         = [1,5,100]
+ForceHEPPayload	      = []
+PromAddr              = ""
+PromTargetIP          = ""
+PromTargetName        = ""
+DBShema               = "homer7"
+DBDriver              = "postgres"
+DBAddr                = "localhost:5432"
+DBUser                = "postgres"
+DBPass                = ""
+DBDataTable           = "homer_data"
+DBConfTable           = "homer_config"
+DBBulk                = 200
+DBTimer               = 4
+DBBuffer              = 400000
+DBWorker              = 8
+DBRotate              = true
+DBPartLog             = "2h"
+DBPartSip             = "1h"
+DBPartQos             = "6h"
+DBDropDays            = 14
+DBDropDaysCall        = 0
+DBDropDaysRegister    = 0
+DBDropDaysDefault     = 0
+DBDropOnStart         = false
+DBUsageProtection     = true
+DBUsageScheme         = "percentage"
+DBPercentageUsage     = "80%"
+DBMaxSize             = "30MB"
+Dedup                 = false
+DiscardMethod         = []
+AlegIDs               = []
+CustomHeader          = []
+SIPHeader             = []
+LogDbg                = ""
+LogLvl                = "info"
+LogStd                = false
+LogSys                = false
+Config                = "./heplify-server.toml"
+ConfigHTTPAddr        = ""
+KafkaBroker           = ""
+KafkaTopic            = ""
+KafkaDeliveryTimeout  = 60000
+KafkaBatchNum         = 10
+KafkaLinger           = 5000
+# Examples:
+# -------------------------------------
+# ESAddr          = "http://127.0.0.1:9200"
+# DBShema         = "homer7"
+# DBDriver        = "postgres"
+# LokiURL         = "http://localhost:3100/api/prom/push"
+# LokiHEPFilter   = [1,5,100]
+# PromAddr        = "0.0.0.0:8899"
+# PromTargetIP    = "10.1.2.111,10.1.2.4,10.1.2.5,10.1.2.6,10.12.44.222"
+# PromTargetName  = "sbc_access,sbc_core,kamailio,asterisk,pstn_gateway"
+# AlegIDs         = ["X-CID","P-Charging-Vector,icid-value=\"?(.*?)(?:\"|;|$)","X-BroadWorks-Correlation-Info"]
+# DiscardMethod   = ["OPTIONS","NOTIFY"]
+# CustomHeader    = ["X-CustomerIP","X-Billing"]
+# SIPHeader       = ["callid","callid_aleg","method","ruri_user","ruri_domain","from_user","from_domain","from_tag","to_user","to_domain","to_tag","via","contact_user"]
+# LogDbg          = "hep,sql,loki"
+# LogLvl          = "warning"
+# ConfigHTTPAddr  = "0.0.0.0:9876"
+# -------------------------------------
+# To hot reload PromTargetIP and PromTargetName run:
+# killall -HUP heplify-server
