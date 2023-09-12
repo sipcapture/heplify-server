@@ -29,7 +29,7 @@ func New(name string) *Remotelog {
 func (r *Remotelog) Run() error {
 	err := r.H.setup()
 	if err != nil {
-		return err
+		logp.Err("loki couldn't establish connection on start... anyway continue")
 	}
 
 	go func() {
