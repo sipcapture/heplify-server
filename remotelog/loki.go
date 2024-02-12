@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -106,7 +107,26 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			lastPktTime = curPktTime
 
 			pktMeta.Reset()
-			pktMeta.WriteString(pkt.Payload)
+
+			if pkt.ProtoString == "rtcp" {
+				var document map[string]interface{}
+				err := json.Unmarshal([]byte(pkt.Payload), &document)
+				if err != nil {
+					logp.Err("Unable to decode rtcp json: %v", err)
+					pktMeta.WriteString(pkt.Payload)
+				} else {
+					document["cid"] = pkt.CID
+					documentJson, err := json.Marshal(document)
+					if err != nil {
+						logp.Err("Unable to re-generate rtcp json: %v", err)
+						pktMeta.WriteString(pkt.Payload)
+					} else {
+						pktMeta.Write(documentJson)
+					}
+				}
+			} else {
+				pktMeta.WriteString(pkt.Payload)
+			}
 			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			switch {
@@ -121,6 +141,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					protocol = "sip"
 				}
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
+
 			}
 
 			l.entry.labels["job"] = jobName
