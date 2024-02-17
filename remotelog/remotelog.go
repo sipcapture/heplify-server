@@ -19,6 +19,7 @@ func New(name string) *Remotelog {
 	var register = map[string]RemoteHandler{
 		"elasticsearch": new(Elasticsearch),
 		"loki":          new(Loki),
+		"kafka":         new(Kafka),
 	}
 
 	return &Remotelog{
