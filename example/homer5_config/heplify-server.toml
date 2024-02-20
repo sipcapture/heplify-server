@@ -8,6 +8,7 @@ LokiBulk              = 200
 LokiTimer             = 4
 LokiBuffer            = 100000
 LokiHEPFilter         = [1,5,100]
+LokiAllowOutOfOrder   = false
 PromAddr              = ""
 PromTargetIP          = ""
 PromTargetName        = ""

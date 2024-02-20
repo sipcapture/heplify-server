@@ -38,9 +38,10 @@ type entry struct {
 }
 
 type Loki struct {
-	URL       string
-	BatchWait time.Duration
-	BatchSize int
+	URL             string
+	BatchWait       time.Duration
+	BatchSize       int
+	AllowOutOfOrder bool
 	entry
 }
 
@@ -48,6 +49,7 @@ func (l *Loki) setup() error {
 	l.BatchSize = config.Setting.LokiBulk * 1024
 	l.BatchWait = time.Duration(config.Setting.LokiTimer) * time.Second
 	l.URL = config.Setting.LokiURL
+	l.AllowOutOfOrder = config.Setting.LokiAllowOutOfOrder
 
 	u, err := url.Parse(l.URL)
 	if err != nil {
@@ -100,11 +102,13 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				return
 			}
 			curPktTime = pkt.Timestamp
-			// guard against entry out of order errors
-			if lastPktTime.After(curPktTime) {
-				curPktTime = time.Now()
+			if !l.AllowOutOfOrder {
+				// guard against entry out of order errors
+				if lastPktTime.After(curPktTime) {
+					curPktTime = time.Now()
+				}
+				lastPktTime = curPktTime
 			}
-			lastPktTime = curPktTime
 
 			pktMeta.Reset()
 
