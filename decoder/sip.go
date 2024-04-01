@@ -22,7 +22,7 @@ func (h *HEP) parseSIP() error {
 	}
 
 	switch h.SIP.CseqMethod {
-	case "INVITE", "ACK", "BYE", "CANCEL", "UPDATE", "PRACK", "REFER", "INFO":
+	case "INVITE", "ACK", "BYE", "CANCEL", "UPDATE", "PRACK", "REFER", "INFO", "NOTIFY":
 		h.SIP.Profile = "call"
 	case "REGISTER":
 		h.SIP.Profile = "registration"
