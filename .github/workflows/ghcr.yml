@@ -33,7 +33,9 @@ jobs:
       run: git clone https://luajit.org/git/luajit-2.0.git && cd luajit-2.0 && make CCOPT="-static -fPIC" BUILDMODE="static" && sudo make install
       
     - name: Build
-      run: make all
+      run: |
+         go mod tidy
+         make all
 
     - name: Retrieve version
       run: |
