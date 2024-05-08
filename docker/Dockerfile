@@ -5,6 +5,7 @@ FROM golang:alpine as builder
 RUN apk update && apk add --no-cache git build-base 
 RUN git clone https://luajit.org/git/luajit-2.0.git \
  && cd luajit-2.0 \
+ && git checkout v2.1 \
  && make CCOPT="-static -fPIC" BUILDMODE="static" && make install
 COPY . /heplify-server
 WORKDIR /heplify-server/cmd/heplify-server
