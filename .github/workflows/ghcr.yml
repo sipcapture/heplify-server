@@ -16,6 +16,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    outputs:
+      HEPLIFY_VERSION: ${{ steps.version.outputs.HEPLIFY_VERSION }}
     steps:
     - uses: actions/checkout@v3
 
@@ -51,7 +53,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Version Check
       run: |
-         echo "${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION }}"
+         echo "${{ needs.build.outputs.HEPLIFY_VERSION }}"
     - name: Set up Docker QEMU
       uses: docker/setup-qemu-action@v3.0.0
       with:
@@ -75,7 +77,7 @@ jobs:
         push: true
         tags: |
             ghcr.io/sipcapture/heplify-server:latest
-            ghcr.io/sipcapture/heplify-server:${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
+            ghcr.io/sipcapture/heplify-server:${{ needs.build.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
         labels: |
             dev.heplify-server.image.title=heplify-server
-            dev.heplify-server.image.version=${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
+            dev.heplify-server.image.version=${{needs.build.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
