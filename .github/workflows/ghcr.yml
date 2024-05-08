@@ -1,4 +1,4 @@
-name: Go CI + Docker CD
+name: Multi-Arch CI + CD
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.17
+        go-version: 1.20
         
     - name: Libraries
       run: sudo apt-get install -y libpcap-dev libluajit-5.1-dev
@@ -36,7 +36,6 @@ jobs:
     - name: Retrieve version
       run: |
         echo "HEPLIFY_VERSION=$(cat config/config.go | sed -n 's/^.*heplify-server \([0-9.]*\).*/\1/p')" >> $GITHUB_OUTPUT
-        echo "${{ env.HEPLIFY_VERSION }}"
       id: version
 
         
@@ -50,6 +49,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+    - name: Version Check
+      run: |
+         echo "${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION }}"
     - name: Set up Docker QEMU
       uses: docker/setup-qemu-action@v3.0.0
       with:
@@ -73,7 +75,7 @@ jobs:
         push: true
         tags: |
             ghcr.io/sipcapture/heplify-server:latest
-            ghcr.io/sipcapture/heplify-server:${{ env.HEPLIFY_VERSION }}
+            ghcr.io/sipcapture/heplify-server:${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
         labels: |
             dev.heplify-server.image.title=heplify-server
-            dev.heplify-server.image.version=${{ env.HEPLIFY_VERSION }}
+            dev.heplify-server.image.version=${{ jobs.build.steps.version.outputs.HEPLIFY_VERSION || github.event.release.tag_name }}
