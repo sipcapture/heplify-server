@@ -137,6 +137,13 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
 				l.entry.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
 				l.entry.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
+				protocol := ""
+				if pkt.Protocol == 6 {
+					protocol = "tcp"
+				} else if pkt.Protocol == 17 {
+					protocol = "udp"
+				} 
+				l.entry.labels["protocol"] = model.LabelValue(protocol)
 			case pkt.ProtoType == 100:
 				protocol := "udp"
 				if strings.Contains(pkt.Payload, "Fax") || strings.Contains(pkt.Payload, "T38") {
