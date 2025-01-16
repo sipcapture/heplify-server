@@ -189,7 +189,7 @@ func (s *SipMsg) addHdr(str string) {
 			s.parseVia(s.hdrv)
 		case s.hdr == "From" || s.hdr == "FROM" || s.hdr == "from":
 			s.parseFrom(s.hdrv)
-		case s.hdr == "Call-ID" || s.hdr == "CALL-ID" || s.hdr == "Call-Id" || s.hdr == "Call-id" || s.hdr == "call-id":
+		case s.hdr == "Call-ID" || s.hdr == "CALL-ID" || s.hdr == "Call-Id" || s.hdr == "Call-id" || s.hdr == "call-id" || s.hdr == "i":
 			s.CallID = s.hdrv
 		case s.hdr == "CSeq" || s.hdr == "CSEQ" || s.hdr == "Cseq" || s.hdr == "cseq":
 			s.CseqVal = s.hdrv
