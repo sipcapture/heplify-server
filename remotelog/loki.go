@@ -122,8 +122,10 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					pktMeta.WriteString(pkt.Payload)
 				} else {
 					document["cid"] = pkt.CID
-					l.entry.labels["call_id"] = model.LabelValue(pkt.CID)
 					documentJson, err := json.Marshal(document)
+					if config.Setting.LokiCallIDLabels {
+						l.entry.labels["call_id"] = model.LabelValue(pkt.CID)
+					}
 					if err != nil {
 						logp.Err("Unable to re-generate rtcp json: %v", err)
 						pktMeta.WriteString(pkt.Payload)
@@ -138,9 +140,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
 				l.entry.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
-				l.entry.labels["call_id"] = model.LabelValue(pkt.SIP.CallID)
-				l.entry.labels["from"] = model.LabelValue(pkt.SIP.From.Val)
-				l.entry.labels["to"] = model.LabelValue(pkt.SIP.To.Val)
 				l.entry.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
 				protocol := ""
 				if pkt.Protocol == 6 {
@@ -149,6 +148,13 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					protocol = "udp"
 				}
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
+				if config.Setting.LokiCallIDLabels {
+					l.entry.labels["call_id"] = model.LabelValue(pkt.SIP.CallID)
+				}
+				if config.Setting.LokiFromToLabels {
+					l.entry.labels["from"] = model.LabelValue(pkt.SIP.From.Val)
+					l.entry.labels["to"] = model.LabelValue(pkt.SIP.To.Val)
+				}
 			case pkt.ProtoType == 100:
 				protocol := "udp"
 				if strings.Contains(pkt.Payload, "Fax") || strings.Contains(pkt.Payload, "T38") {
