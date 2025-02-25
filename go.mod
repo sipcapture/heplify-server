@@ -21,15 +21,14 @@ require (
 	github.com/negbie/multiconfig v1.0.0
 	github.com/olivere/elastic v6.2.33+incompatible
 	github.com/pelletier/go-toml v1.8.0
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.7.0
-	github.com/prometheus/common v0.10.0
+	github.com/prometheus/client_golang v1.11.1
+	github.com/prometheus/common v0.26.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sipcapture/golua v0.0.0-20200610090950-538d24098d76
 	github.com/stretchr/testify v1.7.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.1
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/genproto v0.0.0-20200619004808-3e7fca5c55db // indirect
 	google.golang.org/grpc v1.29.1
 )
