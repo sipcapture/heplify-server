@@ -14,7 +14,7 @@ require (
 	github.com/gobwas/ws v1.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
-	github.com/lib/pq v1.7.0
+	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
