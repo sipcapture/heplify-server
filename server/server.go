@@ -48,6 +48,7 @@ type HEPStats struct {
 }
 
 const maxPktLen = 65507
+const minPktLen = 6
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
