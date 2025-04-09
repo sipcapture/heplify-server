@@ -1,4 +1,5 @@
 package decoder
+import "math"
 
 import (
 	"fmt"
@@ -102,24 +103,32 @@ func (d *LuaEngine) SetHEPField(field string, value string) {
 
 	switch field {
 	case "ProtoType":
-		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.ProtoType = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				hepPkt.ProtoType = uint32(i)
+			}
 		}
 	case "SrcIP":
 		hepPkt.SrcIP = value
 	case "SrcPort":
-		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.SrcPort = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				hepPkt.SrcPort = uint32(i)
+			}
 		}
 	case "DstIP":
 		hepPkt.DstIP = value
 	case "DstPort":
-		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.DstPort = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				hepPkt.DstPort = uint32(i)
+			}
 		}
 	case "NodeID":
-		if i, err := strconv.Atoi(value); err == nil {
-			hepPkt.NodeID = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				hepPkt.NodeID = uint32(i)
+			}
 		}
 	case "CID":
 		hepPkt.CID = value
