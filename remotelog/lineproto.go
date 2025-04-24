@@ -27,19 +27,17 @@ type LineProto struct {
 }
 
 func (l *LineProto) setup() error {
-	l.BatchSize = config.Setting.LokiBulk * 1024 // Reuse existing config
+	l.BatchSize = config.Setting.LineProtoiBulk
 	l.BatchWait = time.Duration(config.Setting.LineProtoTimer) * time.Second
-	l.URL = config.Setting.LineProtoURL // Use the correct URL config for Line Protocol
-
+	l.URL = config.Setting.LineProtoURL 
 	u, err := url.Parse(l.URL)
 	if err != nil {
 		return err
 	}
 	
-	// Convert Loki URL to InfluxDB URL
 	u.Path = postPath
 	q := u.Query()
-	q.Set("db", "hep") // Default database name
+	q.Set("db", "hep")
 	u.RawQuery = q.Encode()
 	l.URL = u.String()
 
