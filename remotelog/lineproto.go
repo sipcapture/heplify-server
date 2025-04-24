@@ -52,7 +52,7 @@ func (l *LineProto) setup() error {
 func (l *LineProto) start(hCh chan *decoder.HEP) {
 	var (
 		batch     strings.Builder
-		batchSize = 0
+		lineCount = 0
 		maxWait   = time.NewTimer(l.BatchWait)
 		hostname  string
 	)
@@ -125,25 +125,25 @@ func (l *LineProto) start(hCh chan *decoder.HEP) {
 				pkt.Timestamp.UnixNano(),
 			)
 
-			if batchSize+len(line) > l.BatchSize {
+			if lineCount >= l.BatchSize {
 				if err := l.sendBatch(batch.String()); err != nil {
 					logp.Err("send size batch: %v", err)
 				}
 				batch.Reset()
-				batchSize = 0
+				lineCount = 0
 				maxWait.Reset(l.BatchWait)
 			}
 
 			batch.WriteString(line)
-			batchSize += len(line)
+			lineCount++
 
 		case <-maxWait.C:
-			if batchSize > 0 {
+			if lineCount > 0 {
 				if err := l.sendBatch(batch.String()); err != nil {
 					logp.Err("send time batch: %v", err)
 				}
 				batch.Reset()
-				batchSize = 0
+				lineCount = 0
 			}
 			maxWait.Reset(l.BatchWait)
 		}
