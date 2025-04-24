@@ -27,7 +27,7 @@ type LineProto struct {
 }
 
 func (l *LineProto) setup() error {
-	l.BatchSize = config.Setting.LineProtoiBulk
+	l.BatchSize = config.Setting.LineProtoBulk
 	l.BatchWait = time.Duration(config.Setting.LineProtoTimer) * time.Second
 	l.URL = config.Setting.LineProtoURL 
 	u, err := url.Parse(l.URL)
