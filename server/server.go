@@ -24,6 +24,7 @@ type HEPInput struct {
 	promCh     chan *decoder.HEP
 	esCh       chan *decoder.HEP
 	lokiCh     chan *decoder.HEP
+	lineCh     chan *decoder.HEP
 	wg         *sync.WaitGroup
 	buffer     *sync.Pool
 	exitUDP    chan bool
@@ -38,6 +39,7 @@ type HEPInput struct {
 	usePM      bool
 	useES      bool
 	useLK      bool
+	useLP      bool
 }
 
 type HEPStats struct {
@@ -77,6 +79,10 @@ func NewHEPInput() *HEPInput {
 	if len(config.Setting.LokiURL) > 2 {
 		h.useLK = true
 		h.lokiCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
+	}
+	if len(config.Setting.LineProtoURL) > 2 {
+		h.useLP = true
+		h.lineCh = make(chan *decoder.HEP, config.Setting.LineProtoBuffer)
 	}
 
 	return h
@@ -131,6 +137,16 @@ func (h *HEPInput) Run() {
 	if h.useLK {
 		l := remotelog.New("loki")
 		l.Chan = h.lokiCh
+
+		if err := l.Run(); err != nil {
+			logp.Err("%v", err)
+		}
+		defer l.End()
+	}
+
+	if h.useLP {
+		l := remotelog.New("lineproto")
+		l.Chan = h.lineCh
 
 		if err := l.Run(); err != nil {
 			logp.Err("%v", err)
@@ -278,6 +294,22 @@ func (h *HEPInput) worker() {
 						default:
 							if time.Since(lastWarn) > 1e9 {
 								logp.Warn("overflowing loki channel")
+							}
+							lastWarn = time.Now()
+						}
+						break
+					}
+				}
+			}
+
+			if h.useLP {
+				for _, v := range config.Setting.LineProtoHEPFilter {
+					if hepPkt.ProtoType == uint32(v) {
+						select {
+						case h.lineCh <- hepPkt:
+						default:
+							if time.Since(lastWarn) > 1e9 {
+								logp.Warn("overflowing lineproto channel")
 							}
 							lastWarn = time.Now()
 						}
