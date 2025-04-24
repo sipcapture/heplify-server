@@ -28,7 +28,7 @@ type LineProto struct {
 
 func (l *LineProto) setup() error {
 	l.BatchSize = config.Setting.LokiBulk * 1024 // Reuse existing config
-	l.BatchWait = time.Duration(config.Setting.LokiTimer) * time.Second
+	l.BatchWait = time.Duration(config.Setting.LineProtoTimer) * time.Second
 	l.URL = config.Setting.LokiURL // We'll reuse the URL config but modify it for InfluxDB
 
 	u, err := url.Parse(l.URL)
