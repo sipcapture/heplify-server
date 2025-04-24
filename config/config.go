@@ -21,6 +21,11 @@ type HeplifyServer struct {
 	LokiHEPFilter       []int    `default:"1,5,100"`
 	LokiIPPortLabels    bool     `default:"false"`
 	LokiAllowOutOfOrder bool     `default:"false"`
+	LineProtoURL        string   `default:""`
+	LineProtoBulk       int      `default:"400"`
+	LineProtoTimer      int      `default:"4"`
+	LineProtoBuffer     int      `default:"100000"`
+	LineProtoHEPFilter  []int    `default:"1,5,100"`
 	ForceHEPPayload     []int    `default:""`
 	PromAddr            string   `default:":9096"`
 	PromTargetIP        string   `default:""`

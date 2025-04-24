@@ -41,6 +41,16 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	if webSetting.LokiBuffer, err = strconv.Atoi(r.FormValue("LokiBuffer")); err != nil {
 		return nil, err
 	}
+	webSetting.LineProtoURL = r.FormValue("LineProtoURL")
+	if webSetting.LineProtoBulk, err = strconv.Atoi(r.FormValue("LineProtoBulk")); err != nil {
+		return nil, err
+	}
+	if webSetting.LineProtoTimer, err = strconv.Atoi(r.FormValue("LineProtoTimer")); err != nil {
+		return nil, err
+	}
+	if webSetting.LineProtoBuffer, err = strconv.Atoi(r.FormValue("LineProtoBuffer")); err != nil {
+		return nil, err
+	}
 	DBShema := r.FormValue("DBShema")
 	if DBShema == "homer5" {
 		webSetting.DBShema = DBShema
@@ -221,6 +231,22 @@ var WebForm = `
 		<div>
 			<label>LokiBuffer</label>
 			<input  type="number" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}" min="100" max="10000000">
+		</div>
+		<div>
+			<label>LineProtoURL</label>
+			<input  type="text" name="LineProtoURL" placeholder="{{.LineProtoURL}}" value="{{.LineProtoURL}}">
+		</div>
+		<div>
+			<label>LineProtoBulk</label>
+			<input  type="number" name="LineProtoBulk" placeholder="{{.LineProtoBulk}}" value="{{.LineProtoBulk}}" min="50" max="20000">
+		</div>
+		<div>
+			<label>LineProtoTimer</label>
+			<input  type="number" name="LineProtoTimer" placeholder="{{.LineProtoTimer}}" value="{{.LineProtoTimer}}" min="2" max="300">
+		</div>
+		<div>
+			<label>LineProtoBuffer</label>
+			<input  type="number" name="LineProtoBuffer" placeholder="{{.LineProtoBuffer}}" value="{{.LineProtoBuffer}}" min="100" max="10000000">
 		</div>
 		<div>
 			<label>DBShema</label>
