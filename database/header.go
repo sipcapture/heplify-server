@@ -52,7 +52,8 @@ func makeSIPDataHeader(h *decoder.HEP, bb *bytebufferpool.ByteBuffer, t *fasttem
 	if len(h.SIP.CHeader) > 0 || h.SIP.CustomHeader != nil {
 		for k, v := range h.SIP.CustomHeader {
 			bb.WriteString(`,"` + k + `":"`)
-			bb.WriteString(v + `"`)
+			decoder.WriteJSONString(bb, v)
+			bb.WriteString(`"`)
 		}
 	}
 
