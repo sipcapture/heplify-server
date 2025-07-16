@@ -231,8 +231,13 @@ func (l *Lineproto) encodeBatch(batch []LineprotoEntry) ([]byte, error) {
 			escapedKey := l.escapeField(k)
 			switch val := v.(type) {
 			case string:
-				escapedValue := l.escapeString(val)
-				fieldPairs = append(fieldPairs, fmt.Sprintf("%s=\"%s\"", escapedKey, escapedValue))
+				// Use WriteJSONString for proper escaping of payload and other string fields
+				var fieldBuf strings.Builder
+				fieldBuf.WriteString(escapedKey)
+				fieldBuf.WriteString("=\"")
+				decoder.WriteJSONString(&fieldBuf, val)
+				fieldBuf.WriteString("\"")
+				fieldPairs = append(fieldPairs, fieldBuf.String())
 			case int, int32, int64, uint, uint32, uint64:
 				fieldPairs = append(fieldPairs, fmt.Sprintf("%s=%di", escapedKey, val))
 			case float32, float64:
@@ -241,8 +246,12 @@ func (l *Lineproto) encodeBatch(batch []LineprotoEntry) ([]byte, error) {
 				fieldPairs = append(fieldPairs, fmt.Sprintf("%s=%t", escapedKey, val))
 			default:
 				// Convert to string for unknown types
-				escapedValue := l.escapeString(fmt.Sprintf("%v", val))
-				fieldPairs = append(fieldPairs, fmt.Sprintf("%s=\"%s\"", escapedKey, escapedValue))
+				var fieldBuf strings.Builder
+				fieldBuf.WriteString(escapedKey)
+				fieldBuf.WriteString("=\"")
+				decoder.WriteJSONString(&fieldBuf, fmt.Sprintf("%v", val))
+				fieldBuf.WriteString("\"")
+				fieldPairs = append(fieldPairs, fieldBuf.String())
 			}
 		}
 		buf.WriteString(strings.Join(fieldPairs, ","))

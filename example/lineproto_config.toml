@@ -24,7 +24,7 @@ PromAddr = ":9096"
 
 # Line Protocol Output Configuration
 # URL for InfluxDB compatible backend (e.g., InfluxDB 2.x, InfluxDB Cloud, etc.)
-LineprotoURL = "http://localhost:8086/api/v2/write?org=myorg&bucket=heplify"
+LineprotoURL = "http://localhost:7971/write?db=hep"
 LineprotoBulk = 400
 LineprotoTimer = 4
 LineprotoBuffer = 100000

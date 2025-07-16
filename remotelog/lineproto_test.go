@@ -178,3 +178,89 @@ func TestLineprotoEscapeFunctions(t *testing.T) {
 		}
 	}
 } 
+
+func TestLineprotoPayloadEscaping(t *testing.T) {
+	// Create a test HEP packet with a SIP payload containing newlines
+	sipPayload := `ACK sip:149@61.116.17.18:7070 SIP/2.0
+Max-Forwards: 10
+Record-Route: <sip:231.149.214.224;r2=on;lr=on;ftag=06DE7CEB-56E458BB000864AD-B855F700;lb=yes>
+Record-Route: <sip:127.0.0.1;r2=on;lr=on;ftag=06DE7CEB-56E458BB000864AD-B855F700;lb=yes>
+Via: SIP/2.0/UDP 231.149.214.224;branch=z9hG4bK3365.4e589db6a3d69d4d4ee211444d6d8d29.0
+Via: SIP/2.0/UDP 127.0.0.1:5080;branch=z9hG4bKarC4XaNK;rport=5080
+From: <sip:+9555163504@sipcapture.org>;tag=06DE7CEB-56E458BB000864AD-B855F700
+To: <sip:149@61.116.17.18>;tag=as6db2fc4d
+CSeq: 10 ACK
+Call-ID: jwl9i6@127.0.0.1_b2b-1
+Route: <sip:61.116.17.18;lr;ftag=06DE7CEB-56E458BB000864AD-B855F700>
+Supported: replaces, path, timer, eventlist
+User-Agent: HEPGEN.JS@sipcapture.org
+Allow: INVITE, ACK, OPTIONS, CANCEL, BYE, SUBSCRIBE, NOTIFY, INFO, REFER, UPDATE, MESSAGE
+Content-Length: 0
+Contact: <sip:lb@231.149.214.224:5060;ngcpct=c2lwOjEyNy4wLjAuMTo1MDgw>`
+
+	hep := &decoder.HEP{
+		Version:    2,
+		Protocol:   17, // UDP
+		SrcIP:      "231.149.214.224",
+		DstIP:      "61.116.17.18",
+		SrcPort:    5060,
+		DstPort:    5060,
+		ProtoType:  1, // SIP
+		NodeID:     2001,
+		CID:        "jwl9i6@127.0.0.1",
+		Timestamp:  time.Unix(1752653760, 207000000),
+		Payload:    sipPayload,
+		SIP: &sipparser.SipMsg{
+			CseqMethod: "ACK",
+		},
+	}
+
+	lp := &Lineproto{}
+	entry := lp.createEntry(hep, hep.Timestamp, hep.Payload, "test-host")
+
+	// Test that the payload field contains the raw payload
+	if entry.fields["payload"] != sipPayload {
+		t.Errorf("Expected payload to match input, got: %s", entry.fields["payload"])
+	}
+
+	// Test encoding to ensure newlines are properly escaped
+	entries := []LineprotoEntry{entry}
+	buf, err := lp.encodeBatch(entries)
+	if err != nil {
+		t.Fatalf("Failed to encode batch: %v", err)
+	}
+
+	output := string(buf)
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+
+	if len(lines) != 1 {
+		t.Errorf("Expected 1 line, got %d", len(lines))
+	}
+
+	line := lines[0]
+
+	// Check that the line contains the measurement and tags
+	if !strings.Contains(line, "hep_1,dst_ip=61.116.17.18,dst_port=5060,src_ip=231.149.214.224,src_port=5060") {
+		t.Errorf("Line missing expected tags: %s", line)
+	}
+
+	// Check that the payload field is present and properly escaped
+	if !strings.Contains(line, "payload=\"") {
+		t.Errorf("Line missing payload field: %s", line)
+	}
+
+	// Check that newlines are escaped as \n
+	if !strings.Contains(line, "\\n") {
+		t.Errorf("Line should contain escaped newlines: %s", line)
+	}
+
+	// Check that the line doesn't contain actual newlines (which would break line protocol)
+	if strings.Contains(line, "\n") {
+		t.Errorf("Line should not contain actual newlines: %s", line)
+	}
+
+	// Verify the timestamp
+	if !strings.HasSuffix(line, " 1752653760207000000") {
+		t.Errorf("Line missing expected timestamp: %s", line)
+	}
+} 
