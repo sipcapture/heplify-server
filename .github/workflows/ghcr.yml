@@ -61,14 +61,6 @@ jobs:
         ARCH: ${{ matrix.arch == 'aarch64' && 'arm64' || 'amd64' }}
         RELEASE:  ${{ steps.version.outputs.HEPLIFY_VERSION }}
 
-    - name: Upload Artifacts for ${{ matrix.arch }}
-      if: ${{ github.event_name != 'workflow_dispatch' }}
-      uses: skx/github-action-publish-binaries@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        args: 'heplify-server*'
-
     - name: Check PACKAGECLOUD secret presence
       id: checkpackagecloud
       shell: bash
