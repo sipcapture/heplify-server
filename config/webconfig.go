@@ -48,8 +48,9 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	if webSetting.LineprotoTimer, err = strconv.Atoi(r.FormValue("LineprotoTimer")); err != nil {
 		return nil, err
 	}
-	if webSetting.LineprotoBuffer, err = strconv.Atoi(r.FormValue("LineprotoBuffer")); err != nil {
-		return nil, err
+	const maxLineprotoBuffer = 10000 // Define a reasonable maximum value
+	if webSetting.LineprotoBuffer, err = strconv.Atoi(r.FormValue("LineprotoBuffer")); err != nil || webSetting.LineprotoBuffer < 0 || webSetting.LineprotoBuffer > maxLineprotoBuffer {
+		return nil, fmt.Errorf("Invalid LineprotoBuffer value")
 	}
 	DBShema := r.FormValue("DBShema")
 	if DBShema == "homer5" {
