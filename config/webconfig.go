@@ -48,7 +48,7 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	if webSetting.LineprotoTimer, err = strconv.Atoi(r.FormValue("LineprotoTimer")); err != nil {
 		return nil, err
 	}
-	const maxLineprotoBuffer = 10000 // Define a reasonable maximum value
+	const maxLineprotoBuffer = 65536 // Define a reasonable maximum value
 	if webSetting.LineprotoBuffer, err = strconv.Atoi(r.FormValue("LineprotoBuffer")); err != nil || webSetting.LineprotoBuffer < 0 || webSetting.LineprotoBuffer > maxLineprotoBuffer {
 		return nil, fmt.Errorf("Invalid LineprotoBuffer value")
 	}
@@ -60,6 +60,10 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	} else if DBShema == "homer7" {
 		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "postgres"
+		webSetting.DBConfTable = "homer_config"
+	} else if DBShema == "homer11" {
+		webSetting.DBShema = "mock"
+		webSetting.DBDriver = "mock"
 		webSetting.DBConfTable = "homer_config"
 	}
 	webSetting.DBAddr = r.FormValue("DBAddr")
