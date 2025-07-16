@@ -22,7 +22,7 @@ import (
 
 const (
 	lineprotoContentType = "application/octet-stream"
-	lineprotoPostPath    = "/api/v2/write"
+	lineprotoPostPath    = "/write"
 	lineprotoJobName     = "heplify-server"
 	lineprotoMaxErrMsgLen = 1024
 )
