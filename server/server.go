@@ -82,12 +82,7 @@ func NewHEPInput() *HEPInput {
 	}
 	if len(config.Setting.LineprotoURL) > 2 {
 		h.useLP = true
-		const maxLineprotoBuffer = 65536 // Define a reasonable maximum value
-		lineprotoBuffer := config.Setting.LineprotoBuffer
-		if lineprotoBuffer < 0 || lineprotoBuffer > maxLineprotoBuffer {
-			lineprotoBuffer = maxLineprotoBuffer // Fallback to maximum value
-		}
-		h.lineprotoCh = make(chan *decoder.HEP, lineprotoBuffer)
+		h.lineprotoCh = make(chan *decoder.HEP, config.Setting.LineprotoBuffer)
 	}
 
 	return h

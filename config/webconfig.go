@@ -49,9 +49,12 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		return nil, err
 	}
 	const maxLineprotoBuffer = 65536 // Define a reasonable maximum value
-	if webSetting.LineprotoBuffer, err = strconv.Atoi(r.FormValue("LineprotoBuffer")); err != nil || webSetting.LineprotoBuffer < 0 || webSetting.LineprotoBuffer > maxLineprotoBuffer {
-		return nil, fmt.Errorf("Invalid LineprotoBuffer value")
+	lineprotoBufferStr := r.FormValue("LineprotoBuffer")
+	lineprotoBuffer, err := strconv.Atoi(lineprotoBufferStr)
+	if err != nil || lineprotoBuffer < 0 || lineprotoBuffer > maxLineprotoBuffer {
+	    return nil, fmt.Errorf("Invalid LineprotoBuffer value: must be between 0 and %d", maxLineprotoBuffer)
 	}
+	webSetting.LineprotoBuffer = lineprotoBuffer
 	DBShema := r.FormValue("DBShema")
 	if DBShema == "homer5" {
 		webSetting.DBShema = DBShema
