@@ -23,6 +23,18 @@ func TestStartLine(t *testing.T) {
 	if s.RespText != "Request Cancelled" {
 		t.Error("[TestStartLine] Error parsing startline: SIP/2.0 487 Request Cancelled.  s.RespText should be \"Request Cancelled\".")
 	}
+	str = "SIP/2.0 500"
+	s = &StartLine{Val: str}
+	s.run()
+	if s.Type != SIP_RESPONSE {
+		t.Error("[TestStartLine] Error parsing startline: SIP/2.0 500.  s.Type should be \"RESPONSE\".")
+	}
+	if s.Resp != "500" {
+		t.Error("[TestStartLine] Error parsing startline: SIP/2.0 500.  s.Resp should be \"500\".")
+	}
+	if s.RespText != "" {
+		t.Error("[TestStartLine] Error parsing startline: SIP/2.0 500.  s.RespText should be \"\".")
+	}
 	str = "1412@34922@336312786@1.2.3.4:5061;transport=tcp;user=phone@home1.2.3.4                                            111111111"
 	s = ParseStartLine(str)
 	if s.Error == nil {
