@@ -20,3 +20,4 @@ RUN apk upgrade
 WORKDIR /root/
 COPY --from=builder /heplify-server/cmd/heplify-server/heplify-server .
 COPY --from=builder /heplify-server/scripts ./scripts
+CMD ["./heplify-server"]

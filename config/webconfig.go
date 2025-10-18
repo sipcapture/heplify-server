@@ -41,6 +41,20 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	if webSetting.LokiBuffer, err = strconv.Atoi(r.FormValue("LokiBuffer")); err != nil {
 		return nil, err
 	}
+	webSetting.LineprotoURL = r.FormValue("LineprotoURL")
+	if webSetting.LineprotoBulk, err = strconv.Atoi(r.FormValue("LineprotoBulk")); err != nil {
+		return nil, err
+	}
+	if webSetting.LineprotoTimer, err = strconv.Atoi(r.FormValue("LineprotoTimer")); err != nil {
+		return nil, err
+	}
+	const maxLineprotoBuffer = 65536 // Define a reasonable maximum value
+	lineprotoBufferStr := r.FormValue("LineprotoBuffer")
+	lineprotoBuffer, err := strconv.Atoi(lineprotoBufferStr)
+	if err != nil || lineprotoBuffer < 0 || lineprotoBuffer > maxLineprotoBuffer {
+	    return nil, fmt.Errorf("Invalid LineprotoBuffer value: must be between 0 and %d", maxLineprotoBuffer)
+	}
+	webSetting.LineprotoBuffer = lineprotoBuffer
 	DBShema := r.FormValue("DBShema")
 	if DBShema == "homer5" {
 		webSetting.DBShema = DBShema
@@ -49,6 +63,10 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	} else if DBShema == "homer7" {
 		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "postgres"
+		webSetting.DBConfTable = "homer_config"
+	} else if DBShema == "homer11" {
+		webSetting.DBShema = "mock"
+		webSetting.DBDriver = "mock"
 		webSetting.DBConfTable = "homer_config"
 	}
 	webSetting.DBAddr = r.FormValue("DBAddr")
@@ -221,6 +239,22 @@ var WebForm = `
 		<div>
 			<label>LokiBuffer</label>
 			<input  type="number" name="LokiBuffer" placeholder="{{.LokiBuffer}}" value="{{.LokiBuffer}}" min="100" max="10000000">
+		</div>
+		<div>
+			<label>LineprotoURL</label>
+			<input  type="text" name="LineprotoURL" placeholder="{{.LineprotoURL}}" value="{{.LineprotoURL}}">
+		</div>
+		<div>
+			<label>LineprotoBulk</label>
+			<input  type="number" name="LineprotoBulk" placeholder="{{.LineprotoBulk}}" value="{{.LineprotoBulk}}" min="50" max="20000">
+		</div>
+		<div>
+			<label>LineprotoTimer</label>
+			<input  type="number" name="LineprotoTimer" placeholder="{{.LineprotoTimer}}" value="{{.LineprotoTimer}}" min="2" max="300">
+		</div>
+		<div>
+			<label>LineprotoBuffer</label>
+			<input  type="number" name="LineprotoBuffer" placeholder="{{.LineprotoBuffer}}" value="{{.LineprotoBuffer}}" min="100" max="10000000">
 		</div>
 		<div>
 			<label>DBShema</label>

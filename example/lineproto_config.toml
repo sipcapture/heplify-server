@@ -1,0 +1,62 @@
+# Example configuration for heplify-server with lineproto output
+# This configuration sends HEP objects to an InfluxDB compatible backend using line protocol
+
+# HEP Input Configuration
+HEPAddr = "0.0.0.0:9060"
+HEPTCPAddr = ""
+HEPTLSAddr = ""
+HEPWSAddr = ""
+
+# Database Configuration (optional - can be used alongside lineproto)
+DBDriver = "mysql"
+DBAddr = "localhost:3306"
+DBUser = "root"
+DBPass = ""
+DBDataTable = "homer_data"
+DBConfTable = "homer_configuration"
+DBBulk = 400
+DBTimer = 4
+DBBuffer = 400000
+DBWorker = 8
+
+# Prometheus Metrics (optional)
+PromAddr = ":9096"
+
+# Line Protocol Output Configuration
+# URL for InfluxDB compatible backend (e.g., InfluxDB 2.x, InfluxDB Cloud, etc.)
+LineprotoURL = "http://localhost:7971/write?db=hep"
+LineprotoBulk = 400
+LineprotoTimer = 4
+LineprotoBuffer = 100000
+LineprotoHEPFilter = [1, 5, 100]  # Filter HEP protocol types: 1=SIP, 5=RTCP, 100=LOG
+LineprotoIPPortLabels = false     # Set to true to include src_ip, src_port, dst_ip, dst_port as tags
+
+# Elasticsearch Output (optional - can be used alongside lineproto)
+ESAddr = ""
+ESUser = ""
+ESPass = ""
+
+# Loki Output (optional - can be used alongside lineproto)
+LokiURL = ""
+LokiBulk = 400
+LokiTimer = 4
+LokiBuffer = 100000
+LokiHEPFilter = [1, 5, 100]
+LokiIPPortLabels = false
+LokiAllowOutOfOrder = false
+
+# General Settings
+LogLvl = "info"
+LogStd = true
+LogSys = false
+Dedup = false
+
+# Script Engine (optional)
+ScriptEnable = false
+ScriptEngine = "lua"
+ScriptFolder = ""
+ScriptHEPFilter = [1, 5, 100]
+
+# TLS Configuration
+TLSCertFolder = "."
+TLSMinVersion = "1.2" 
