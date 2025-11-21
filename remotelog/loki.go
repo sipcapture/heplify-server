@@ -112,6 +112,8 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 			pktMeta.Reset()
 
+			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
+
 			if pkt.ProtoString == "rtcp" {
 				var document map[string]interface{}
 				err := json.Unmarshal([]byte(pkt.Payload), &document)
@@ -121,6 +123,9 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				} else {
 					document["cid"] = pkt.CID
 					documentJson, err := json.Marshal(document)
+					if config.Setting.LokiCallIDLabels {
+						l.entry.labels["call_id"] = model.LabelValue(pkt.CID)
+					}
 					if err != nil {
 						logp.Err("Unable to re-generate rtcp json: %v", err)
 						pktMeta.WriteString(pkt.Payload)
@@ -131,7 +136,6 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			} else {
 				pktMeta.WriteString(pkt.Payload)
 			}
-			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
@@ -142,8 +146,15 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					protocol = "tcp"
 				} else if pkt.Protocol == 17 {
 					protocol = "udp"
-				} 
+				}
 				l.entry.labels["protocol"] = model.LabelValue(protocol)
+				if config.Setting.LokiCallIDLabels {
+					l.entry.labels["call_id"] = model.LabelValue(pkt.SIP.CallID)
+				}
+				if config.Setting.LokiFromToLabels {
+					l.entry.labels["from"] = model.LabelValue(pkt.SIP.From.Val)
+					l.entry.labels["to"] = model.LabelValue(pkt.SIP.To.Val)
+				}
 			case pkt.ProtoType == 100:
 				protocol := "udp"
 				if strings.Contains(pkt.Payload, "Fax") || strings.Contains(pkt.Payload, "T38") {
