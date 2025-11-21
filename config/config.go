@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.59.9"
+const Version = "heplify-server 1.60.1"
 
 var Setting HeplifyServer
 
@@ -21,6 +21,12 @@ type HeplifyServer struct {
 	LokiHEPFilter       []int    `default:"1,5,100"`
 	LokiIPPortLabels    bool     `default:"false"`
 	LokiAllowOutOfOrder bool     `default:"false"`
+	LineprotoURL        string   `default:""`
+	LineprotoBulk       int      `default:"400"`
+	LineprotoTimer      int      `default:"4"`
+	LineprotoBuffer     int      `default:"100000"`
+	LineprotoHEPFilter  []int    `default:"1,5,100"`
+	LineprotoIPPortLabels bool   `default:"false"`
 	ForceHEPPayload     []int    `default:""`
 	PromAddr            string   `default:":9096"`
 	PromTargetIP        string   `default:""`
@@ -59,7 +65,7 @@ type HeplifyServer struct {
 	ForceALegID         bool     `default:"false"`
 	CustomHeader        []string `default:""`
 	IgnoreCaseCH        bool     `default:"false"`
-	SIPHeader           []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,callid,cseq,method,user_agent"`
+	SIPHeader           []string `default:"ruri_user,ruri_domain,from_user,from_tag,to_user,to_tag,callid,cseq,method,user_agent"`
 	LogDbg              string   `default:""`
 	LogLvl              string   `default:"info"`
 	LogStd              bool     `default:"false"`

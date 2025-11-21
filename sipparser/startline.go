@@ -71,7 +71,7 @@ func parseStartLine(s *StartLine) parseStartLineStateFn {
 
 func parseStartLineResponse(s *StartLine) parseStartLineStateFn {
 	parts := strings.SplitN(s.Val, " ", 3)
-	if len(parts) != 3 {
+	if len(parts) < 2 || len(parts) > 3 {
 		s.Error = errors.New("parseStartLineRespone err: err getting parts from LWS")
 		return nil
 	}
@@ -87,7 +87,9 @@ func parseStartLineResponse(s *StartLine) parseStartLineStateFn {
 	}
 	s.Version = parts[0][charPos+1:]
 	s.Resp = parts[1]
-	s.RespText = parts[2]
+	if len(parts) > 2 {
+		s.RespText = parts[2]
+	}
 	return nil
 }
 

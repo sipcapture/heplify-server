@@ -22,7 +22,7 @@ func init() {
 	config.Setting.DBBulk = 10000
 	config.Setting.DBDriver = "mock"
 	config.Setting.DBShema = "mock"
-	config.Setting.SIPHeader = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "to_user", "callid", "method", "user_agent"}
+	config.Setting.SIPHeader = []string{"ruri_user", "ruri_domain", "from_user", "from_domain", "from_tag", "to_user", "to_tag", "callid", "method", "user_agent"}
 
 	hep, err = decoder.DecodeHEP(hepPacket)
 	if err != nil {
