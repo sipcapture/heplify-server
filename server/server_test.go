@@ -48,7 +48,10 @@ func TestInput(t *testing.T) {
 	buf := hi.buffer.Get().([]byte)
 	copy(buf, hepPacket)
 	hi.inputCh <- buf[:len(hepPacket)]
-	d := <-hi.dbCh
+	if len(hi.dbChs) == 0 {
+		t.FailNow()
+	}
+	d := <-hi.dbChs[0]
 	if d == nil || p == nil {
 		t.FailNow()
 	}

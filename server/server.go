@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -19,27 +20,29 @@ import (
 )
 
 type HEPInput struct {
-	inputCh      chan []byte
-	dbCh         chan *decoder.HEP
-	promCh       chan *decoder.HEP
-	esCh         chan *decoder.HEP
-	lokiCh       chan *decoder.HEP
-	lineprotoCh  chan *decoder.HEP
-	wg           *sync.WaitGroup
-	buffer       *sync.Pool
-	exitUDP      chan bool
-	exitTCP      chan bool
-	exitTLS      chan bool
-	exitWS       chan bool
-	exitWorker   chan bool
-	quit         chan bool
-	stopped      uint32
-	stats        HEPStats
-	useDB        bool
-	usePM        bool
-	useES        bool
-	useLK        bool
-	useLP        bool
+	inputCh     chan []byte
+	dbChs       []chan *decoder.HEP
+	dbAddrs     []string
+	dbIndex     uint32
+	promCh      chan *decoder.HEP
+	esCh        chan *decoder.HEP
+	lokiCh      chan *decoder.HEP
+	lineprotoCh chan *decoder.HEP
+	wg          *sync.WaitGroup
+	buffer      *sync.Pool
+	exitUDP     chan bool
+	exitTCP     chan bool
+	exitTLS     chan bool
+	exitWS      chan bool
+	exitWorker  chan bool
+	quit        chan bool
+	stopped     uint32
+	stats       HEPStats
+	useDB       bool
+	usePM       bool
+	useES       bool
+	useLK       bool
+	useLP       bool
 }
 
 type HEPStats struct {
@@ -64,9 +67,17 @@ func NewHEPInput() *HEPInput {
 		exitWS:     make(chan bool),
 		exitWorker: make(chan bool),
 	}
-	if len(config.Setting.DBAddr) > 2 {
+	if len(config.Setting.DBAddrs) > 0 {
+		h.dbAddrs = normalizeDBAddrs(config.Setting.DBAddrs)
+	} else if len(config.Setting.DBAddr) > 2 {
+		h.dbAddrs = []string{config.Setting.DBAddr}
+	}
+	if len(h.dbAddrs) > 0 {
 		h.useDB = true
-		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
+		h.dbChs = make([]chan *decoder.HEP, 0, len(h.dbAddrs))
+		for range h.dbAddrs {
+			h.dbChs = append(h.dbChs, make(chan *decoder.HEP, config.Setting.DBBuffer))
+		}
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
@@ -86,6 +97,17 @@ func NewHEPInput() *HEPInput {
 	}
 
 	return h
+}
+
+func normalizeDBAddrs(addrs []string) []string {
+	normalized := make([]string, 0, len(addrs))
+	for _, addr := range addrs {
+		trimmed := strings.TrimSpace(addr)
+		if trimmed != "" {
+			normalized = append(normalized, trimmed)
+		}
+	}
+	return normalized
 }
 
 func (h *HEPInput) Run() {
@@ -156,19 +178,23 @@ func (h *HEPInput) Run() {
 
 	if h.useDB && config.Setting.DBRotate &&
 		(config.Setting.DBDriver == "mysql" || config.Setting.DBDriver == "postgres") {
-		r := rotator.Setup(h.quit)
-		r.Rotate()
-		defer r.End()
+		for _, addr := range h.dbAddrs {
+			r := rotator.SetupWithAddr(h.quit, addr)
+			r.Rotate()
+			defer r.End()
+		}
 	}
 
 	if h.useDB {
-		d := database.New(config.Setting.DBDriver)
-		d.Chan = h.dbCh
+		for i, addr := range h.dbAddrs {
+			d := database.NewWithAddr(config.Setting.DBDriver, addr)
+			d.Chan = h.dbChs[i]
 
-		if err := d.Run(); err != nil {
-			logp.Err("%v", err)
+			if err := d.Run(); err != nil {
+				logp.Err("%v", err)
+			}
+			defer d.End()
 		}
-		defer d.End()
 	}
 
 	h.wg.Wait()
@@ -265,8 +291,9 @@ func (h *HEPInput) worker() {
 			}
 
 			if h.useDB {
+				dbChan := h.dbChs[int(atomic.AddUint32(&h.dbIndex, 1))%len(h.dbChs)]
 				select {
-				case h.dbCh <- hepPkt:
+				case dbChan <- hepPkt:
 				default:
 					if time.Since(lastWarn) > 1e9 {
 						logp.Warn("overflowing db channel, please adjust DBWorker or DBBuffer setting")

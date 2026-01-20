@@ -53,6 +53,10 @@ type Rotator struct {
 }
 
 func Setup(quit chan bool) *Rotator {
+	return SetupWithAddr(quit, config.Setting.DBAddr)
+}
+
+func SetupWithAddr(quit chan bool, dbAddr string) *Rotator {
 	r := &Rotator{
 		quit:            quit,
 		user:            config.Setting.DBUser,
@@ -75,9 +79,9 @@ func Setup(quit chan bool) *Rotator {
 		dropJob:         cron.New(),
 	}
 
-	r.rootDBAddr, _ = database.ConnectString("")
-	r.confDBAddr, _ = database.ConnectString(config.Setting.DBConfTable)
-	r.dataDBAddr, _ = database.ConnectString(config.Setting.DBDataTable)
+	r.rootDBAddr, _ = database.ConnectString("", dbAddr)
+	r.confDBAddr, _ = database.ConnectString(config.Setting.DBConfTable, dbAddr)
+	r.dataDBAddr, _ = database.ConnectString(config.Setting.DBDataTable, dbAddr)
 	if r.dropDaysCall == 0 {
 		r.dropDaysCall = r.dropDays
 	}

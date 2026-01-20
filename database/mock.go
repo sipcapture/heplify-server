@@ -15,7 +15,7 @@ type Mock struct {
 	bulkCnt int
 }
 
-func (m *Mock) setup() error {
+func (m *Mock) setup(_ string) error {
 	m.db = new(syncmap.Map)
 	m.bulkCnt = 200
 	return nil

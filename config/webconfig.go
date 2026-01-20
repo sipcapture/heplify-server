@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	toml "github.com/pelletier/go-toml"
 )
@@ -52,7 +53,7 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	lineprotoBufferStr := r.FormValue("LineprotoBuffer")
 	lineprotoBuffer, err := strconv.Atoi(lineprotoBufferStr)
 	if err != nil || lineprotoBuffer < 0 || lineprotoBuffer > maxLineprotoBuffer {
-	    return nil, fmt.Errorf("Invalid LineprotoBuffer value: must be between 0 and %d", maxLineprotoBuffer)
+		return nil, fmt.Errorf("Invalid LineprotoBuffer value: must be between 0 and %d", maxLineprotoBuffer)
 	}
 	webSetting.LineprotoBuffer = lineprotoBuffer
 	DBShema := r.FormValue("DBShema")
@@ -70,6 +71,7 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		webSetting.DBConfTable = "homer_config"
 	}
 	webSetting.DBAddr = r.FormValue("DBAddr")
+	webSetting.DBAddrs = parseDBAddrs(r.FormValue("DBAddrs"))
 	webSetting.DBSSLMode = r.FormValue("DBSSLMode")
 	webSetting.DBUser = r.FormValue("DBUser")
 	DBPass := r.FormValue("DBPass")
@@ -131,6 +133,22 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	e := toml.NewEncoder(f)
 	e.Encode(webSetting)
 	return &webSetting, nil
+}
+
+func parseDBAddrs(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	addrs := make([]string, 0, len(parts))
+	for _, part := range parts {
+		addr := strings.TrimSpace(part)
+		if addr != "" {
+			addrs = append(addrs, addr)
+		}
+	}
+	return addrs
 }
 
 var WebForm = `
@@ -267,6 +285,10 @@ var WebForm = `
 		<div>
 			<label>DBAddr</label>
 			<input  type="text" name="DBAddr" placeholder="{{.DBAddr}}" value="{{.DBAddr}}">
+		</div>
+		<div>
+			<label>DBAddrs</label>
+			<input  type="text" name="DBAddrs" placeholder="{{.DBAddrs}}" value="{{.DBAddrs}}">
 		</div>
 		<div>
 			<label>DBSSLMode</label>

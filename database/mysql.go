@@ -90,8 +90,8 @@ type MySQL struct {
 	rtcBulkVal []byte
 }
 
-func (m *MySQL) setup() error {
-	cs, err := ConnectString(config.Setting.DBDataTable)
+func (m *MySQL) setup(dbAddr string) error {
+	cs, err := ConnectString(config.Setting.DBDataTable, dbAddr)
 	if err != nil {
 		return err
 	}

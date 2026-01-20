@@ -29,8 +29,8 @@ const (
 	logCopy      = "COPY hep_proto_100_default(sid,create_date,protocol_header,data_header,raw) FROM STDIN"
 )
 
-func (p *Postgres) setup() error {
-	cs, err := ConnectString(config.Setting.DBDataTable)
+func (p *Postgres) setup(dbAddr string) error {
+	cs, err := ConnectString(config.Setting.DBDataTable, dbAddr)
 	if err != nil {
 		return err
 	}

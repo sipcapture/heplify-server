@@ -14,10 +14,11 @@ import (
 type Database struct {
 	H    DBHandler
 	Chan chan *decoder.HEP
+	Addr string
 }
 
 type DBHandler interface {
-	setup() error
+	setup(dbAddr string) error
 	insert(chan *decoder.HEP)
 }
 
@@ -29,8 +30,15 @@ func New(name string) *Database {
 	}
 
 	return &Database{
-		H: register[name],
+		H:    register[name],
+		Addr: config.Setting.DBAddr,
 	}
+}
+
+func NewWithAddr(name string, dbAddr string) *Database {
+	db := New(name)
+	db.Addr = dbAddr
+	return db
 }
 
 func (d *Database) Run() error {
@@ -53,7 +61,12 @@ func (d *Database) Run() error {
 		}
 	}
 
-	err := d.H.setup()
+	addr := d.Addr
+	if addr == "" {
+		addr = config.Setting.DBAddr
+	}
+
+	err := d.H.setup(addr)
 	if err != nil {
 		return err
 	}
@@ -75,12 +88,15 @@ func (d *Database) End() {
 	logp.Info("close %s channel", config.Setting.DBDriver)
 }
 
-func ConnectString(dbName string) (string, error) {
+func ConnectString(dbName string, dbAddr string) (string, error) {
 	var dsn string
 	driver := config.Setting.DBDriver
-	addr := strings.Split(config.Setting.DBAddr, ":")
+	if dbAddr == "" {
+		dbAddr = config.Setting.DBAddr
+	}
+	addr := strings.Split(dbAddr, ":")
 	if len(addr) != 2 {
-		return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", config.Setting.DBAddr)
+		return "", fmt.Errorf("wrong database connection format: %v, it should be localhost:3306", dbAddr)
 	}
 	if (addr[1] == "3306" && driver == "postgres") ||
 		addr[1] == "5432" && driver == "mysql" {
