@@ -81,6 +81,9 @@ type HeplifyServer struct {
 	ScriptEngine        string   `default:"lua"`
 	ScriptFolder        string   `default:""`
 	ScriptHEPFilter     []int    `default:"1,5,100"`
-	TLSCertFolder       string   `default:"."`
-	TLSMinVersion       string   `default:"1.2"`
+	TLSCertFile           string   `default:""`
+	TLSKeyFile            string   `default:""`
+	TLSClientCAFile       string   `default:""`
+	TLSRequireClientCert  bool     `default:"false"`
+	TLSMinVersion         string   `default:"1.2"`
 }

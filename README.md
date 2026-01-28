@@ -48,6 +48,16 @@ These depend on which features you want to use and on whether you use homer5 or 
 
 ![image](https://user-images.githubusercontent.com/20154956/54483281-ef3f5700-4850-11e9-8da1-9b8bed6186e3.png)
 
+#### HEP input listeners
+Configure the bind address for each listener in your config (flags/env/file/web):
+
+* `HEPAddr` - UDP HEP listener (default `0.0.0.0:9060`)
+* `HEPTCPAddr` - TCP HEP listener (disabled when empty)
+* `HEPTLSAddr` - TLS HEP listener (disabled when empty)
+* `HEPWSAddr` - WebSocket HEP listener (disabled when empty)
+
+When enabling TLS, also set `TLSCertFile` and `TLSKeyFile` (and optional `TLSClientCAFile`, `TLSRequireClientCert`, `TLSMinVersion`) in the same configuration source.
+
 To set up a systemd service, use the sample [service file](https://github.com/sipcapture/heplify-server/blob/master/example/) 
 and follow the instructions found at the top of the file.
 

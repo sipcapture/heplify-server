@@ -16,7 +16,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.1 // indirect
-	github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f
 	github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846
 	github.com/negbie/multiconfig v1.0.0
 	github.com/olivere/elastic v6.2.33+incompatible

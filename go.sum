@@ -878,8 +878,6 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
-github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f h1:M55iH2PERd3rI05upU5PUVeKIRHaNkjJgFtrIE0G2gU=
-github.com/negbie/cert v0.0.0-20190324145947-d1018a8fb00f/go.mod h1:gu8czYryxJq/ecHYWjTXLbVSiAkxUwSNgzfPTrKEJ2k=
 github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846 h1:PAr5hcOgvc2m71W4SlbUsAbUnea5lNjB5/DfIHW9f8Q=
 github.com/negbie/logp v0.0.0-20190313141056-04cebff7f846/go.mod h1:xTKf9aKLuVL0r9wxWouR+/4ctK2ywm0rTPFY2klrnOg=
 github.com/negbie/multiconfig v1.0.0 h1:JXrB+RYMhGS/xlXGJab/4g7AoAIo3tFrwHr8LN3i0fg=

@@ -2,13 +2,14 @@ package input
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"net"
-	"path/filepath"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/negbie/cert"
 	"github.com/negbie/logp"
 	"github.com/sipcapture/heplify-server/config"
 )
@@ -46,13 +47,11 @@ func (h *HEPInput) serveTLS(addr string) {
 		return
 	}
 
-	// get path for certificate/key storage
-	cPath := config.Setting.TLSCertFolder
 	minTLSVersion := parseTLSVersion(config.Setting.TLSMinVersion)
-	// load any existing certs, otherwise generate a new one
-	ca, err := cert.NewCertificateAuthority(filepath.Join(cPath, "heplify-server"))
+
+	tlsConfig, err := loadTLSConfig(minTLSVersion)
 	if err != nil {
-		logp.Err("%v", err)
+		logp.Err("TLS configuration error: %v", err)
 		return
 	}
 
@@ -81,7 +80,7 @@ func (h *HEPInput) serveTLS(addr string) {
 		logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
 		wg.Add(1)
 		go func() {
-			h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate, MinVersion: minTLSVersion}))
+			h.handleTLS(tls.Server(conn, tlsConfig))
 			wg.Done()
 		}()
 	}
@@ -89,4 +88,43 @@ func (h *HEPInput) serveTLS(addr string) {
 
 func (h *HEPInput) handleTLS(c net.Conn) {
 	h.handleStream(c, "TLS")
+}
+
+func loadTLSConfig(minTLSVersion uint16) (*tls.Config, error) {
+	certFile := config.Setting.TLSCertFile
+	keyFile := config.Setting.TLSKeyFile
+	if certFile == "" || keyFile == "" {
+		return nil, fmt.Errorf("TLSCertFile and TLSKeyFile must be set for TLS termination")
+	}
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("load TLS certificate/key: %w", err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   minTLSVersion,
+	}
+
+	if config.Setting.TLSClientCAFile != "" {
+		caPEM, err := os.ReadFile(config.Setting.TLSClientCAFile)
+		if err != nil {
+			return nil, fmt.Errorf("read TLSClientCAFile: %w", err)
+		}
+		caPool := x509.NewCertPool()
+		if ok := caPool.AppendCertsFromPEM(caPEM); !ok {
+			return nil, fmt.Errorf("TLSClientCAFile did not contain any valid certificates")
+		}
+		tlsConfig.ClientCAs = caPool
+		if config.Setting.TLSRequireClientCert {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		} else {
+			tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
+		}
+	} else if config.Setting.TLSRequireClientCert {
+		return nil, fmt.Errorf("TLSClientCAFile must be set when TLSRequireClientCert is enabled")
+	}
+
+	return tlsConfig, nil
 }
