@@ -42,7 +42,8 @@ LokiBulk = 400
 LokiTimer = 4
 LokiBuffer = 100000
 LokiHEPFilter = [1, 5, 100]
-LokiIPPortLabels = false
+LokiIPPortLabels = false          # Set to true to include src_ip, src_port, dst_ip, dst_port as labels
+LokiSkipTCPPortLabels = true      # Skip port labels for TCP to reduce cardinality (only applies when LokiIPPortLabels is true)
 LokiAllowOutOfOrder = false
 
 # General Settings
