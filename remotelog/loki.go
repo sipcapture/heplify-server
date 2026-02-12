@@ -193,9 +193,14 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 			if config.Setting.LokiIPPortLabels {
 				l.entry.labels["src_ip"] = model.LabelValue(pkt.SrcIP)
-				l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
 				l.entry.labels["dst_ip"] = model.LabelValue(pkt.DstIP)
-				l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
+				// Skip port labels for TCP if LokiSkipTCPPortLabels is enabled (default: true)
+				// This reduces cardinality since TCP source ports are typically dynamic
+				skipPortLabels := config.Setting.LokiSkipTCPPortLabels && pkt.Protocol == 6
+				if !skipPortLabels {
+					l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
+					l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
+				}
 			}
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {
