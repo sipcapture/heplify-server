@@ -198,7 +198,7 @@ func (r *Rotator) GetDatabaseSize(db *sql.DB, schema string) (float64, error) {
 	var err error
 	switch schema {
 	case "maxusage":
-		rows, err := db.Query(fmt.Sprintf("select pg_database_size('%s');", r.dataDB))
+		rows, err := db.Query("select pg_database_size($1);", r.dataDB)
 		checkDBErr(err)
 		if err == nil {
 			if rows.Next() {
