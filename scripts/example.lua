@@ -66,11 +66,35 @@ end
 
 -- this function will be executed fourth
 function sha1SumToCID()
-	
+
 	local sum = HashString("md5", "673187ceafc579fab78cc84cb1077a3f@0.0.0.0")
 	SetHEPField("CID", sum)
 
-	return 
+	return
+
+end
+
+-- this function will be executed fifth
+-- SetLokiLabel requires keys to be listed in LokiCustomLabels config option.
+-- Use sparingly: each unique label value combination creates a new Loki stream.
+function setLokiLabels()
+
+	local protoType = GetHEPProtoType()
+
+	-- Only label SIP traffic
+	if protoType ~= 1 then
+		return
+	end
+
+	local sip = GetSIPStruct()
+	if (sip == nil or sip == '') then
+		return
+	end
+
+	-- Tag with the originating domain
+	SetLokiLabel("from_host", sip.FromHost)
+
+	return
 
 end
 
