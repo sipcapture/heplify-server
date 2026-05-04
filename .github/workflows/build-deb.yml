@@ -1,0 +1,73 @@
+name: Build Debian Package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from git
+        id: version
+        run: |
+          if git describe --tags --match 'v*' HEAD 2>/dev/null; then
+            VERSION=$(git describe --tags --match 'v*' HEAD)
+            VERSION=${VERSION#v}
+          else
+            VERSION="0.0.1-$(git rev-parse --short HEAD)"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+
+      - name: Create debian symlink
+        run: ln -s packaging/debian debian
+
+      - name: Update debian changelog
+        run: |
+          cat > debian/changelog << EOF
+          heplify-server (${{ steps.version.outputs.VERSION }}) unstable; urgency=medium
+
+            * Release ${{ steps.version.outputs.VERSION }}
+
+           -- Dave Horton <daveh@drachtio.org>  $(date -R)
+          EOF
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper
+
+      - name: Build Debian package
+        run: dpkg-buildpackage -us -uc -b -d
+
+      - name: Prepare artifacts
+        run: |
+          cp ../heplify-server*.deb .
+          sha256sum heplify-server*.deb > heplify-server_${{ steps.version.outputs.VERSION }}_amd64.deb.sha256
+          ls -la heplify-server*
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_S3_REGION }}
+
+      - name: Copy to S3
+        run: |
+          aws s3 cp heplify-server*.deb s3://${{ secrets.AWS_S3_BUCKET }}/heplify-server/
+          aws s3 cp heplify-server*.sha256 s3://${{ secrets.AWS_S3_BUCKET }}/heplify-server/

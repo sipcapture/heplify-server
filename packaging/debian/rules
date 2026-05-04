@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export GOCACHE = $(CURDIR)/.gocache
+export GOFLAGS = -buildmode=pie
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	go build -ldflags "-s -w" -o heplify-server cmd/heplify-server/*.go
+
+override_dh_auto_test:
+	# Skip tests during package build
+
+override_dh_auto_install:
+	install -D -m 0755 heplify-server debian/heplify-server/usr/bin/heplify-server
+	install -D -m 0644 packaging/debian/heplify-server.toml debian/heplify-server/etc/heplify-server.toml
+	install -D -m 0644 packaging/debian/heplify-server.service debian/heplify-server/lib/systemd/system/heplify-server.service
+
+override_dh_auto_clean:
+	rm -f heplify-server
+	rm -rf .gocache
+
+override_dh_dwz:
+	# Skip dwz - incompatible with Go binaries

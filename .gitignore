@@ -2,3 +2,6 @@ heplify-server
 heplify-server.*
 fuzz-workdir
 sipparser-fuzz.zip
+
+# Debian packaging (symlink created during build)
+/debian

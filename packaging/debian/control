@@ -1,0 +1,15 @@
+Source: heplify-server
+Section: net
+Priority: optional
+Maintainer: Dave Horton <daveh@drachtio.org>
+Build-Depends: debhelper (>= 10), golang-go (>= 2:1.20~)
+Standards-Version: 4.1.4
+
+Package: heplify-server
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: luajit
+Description: HEP Capture Server for HOMER/SIPCAPTURE
+ heplify-server is a high-performance HEP capture server that receives
+ HEP (Homer Encapsulation Protocol) packets and stores them in PostgreSQL,
+ Elasticsearch, or Loki for analysis with HOMER/SIPCAPTURE.
