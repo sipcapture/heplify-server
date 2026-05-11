@@ -198,6 +198,10 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
 			}
 
+			for k, v := range pkt.CustomLokiLabels {
+				l.entry.labels[model.LabelName(k)] = model.LabelValue(v)
+			}
+
 			if batchSize+len(l.entry.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {
 					logp.Err("send size batch: %v", err)

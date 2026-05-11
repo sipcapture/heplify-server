@@ -1,15 +1,32 @@
 package decoder
-import "math"
 
 import (
 	"fmt"
+	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/negbie/logp"
 	"github.com/sipcapture/golua/lua"
+	"github.com/sipcapture/heplify-server/config"
 	"github.com/sipcapture/heplify-server/decoder/luar"
 )
+
+const (
+	lokiLabelMaxCount  = 5
+	lokiLabelMaxKeyLen = 64
+	lokiLabelMaxValLen = 1024
+)
+
+var lokiLabelKeyRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+var lokiReservedLabels = map[string]struct{}{
+	"job": {}, "hostname": {}, "node": {}, "type": {},
+	"method": {}, "response": {}, "protocol": {},
+	"call_id": {}, "from": {}, "to": {},
+	"src_ip": {}, "src_port": {}, "dst_ip": {}, "dst_port": {},
+}
 
 // LuaEngine
 type LuaEngine struct {
@@ -206,6 +223,65 @@ func (d *LuaEngine) SetSIPHeader(header string, value string) {
 	}
 }
 
+func (d *LuaEngine) SetLokiLabel(key string, value string) {
+	if (*d.hepPkt) == nil {
+		logp.Err("can't set Loki label if HEP struct is nil, please check for nil in lua script")
+		return
+	}
+
+	reject := func(reason string) {
+		logp.Debug("script", "SetLokiLabel: rejected key %q: %s", key, reason)
+	}
+
+	if key == "" {
+		reject("empty_key")
+		return
+	}
+	if value == "" {
+		reject("empty_value")
+		return
+	}
+	if len(key) > lokiLabelMaxKeyLen {
+		reject("key_too_long")
+		return
+	}
+	if len(value) > lokiLabelMaxValLen {
+		reject("value_too_long")
+		return
+	}
+	if !lokiLabelKeyRe.MatchString(key) {
+		reject("invalid_key")
+		return
+	}
+	if _, reserved := lokiReservedLabels[key]; reserved {
+		reject("reserved_key")
+		return
+	}
+
+	allowed := false
+	for _, k := range config.Setting.LokiCustomLabels {
+		if k == key {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		reject("not_allowlisted")
+		return
+	}
+
+	hepPkt := *d.hepPkt
+	if hepPkt.CustomLokiLabels == nil {
+		hepPkt.CustomLokiLabels = make(map[string]string)
+	}
+	if len(hepPkt.CustomLokiLabels) >= lokiLabelMaxCount {
+		reject("max_labels_exceeded")
+		return
+	}
+
+	hepPkt.CustomLokiLabels[key] = value
+}
+
 func (d *LuaEngine) Logp(level string, message string, data interface{}) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
@@ -243,6 +319,7 @@ func NewLuaEngine() (*LuaEngine, error) {
 		"SetHEPField":        d.SetHEPField,
 		"SetSIPProfile":      d.SetSIPProfile,
 		"SetSIPHeader":       d.SetSIPHeader,
+		"SetLokiLabel":       d.SetLokiLabel,
 		"HashTable":          HashTable,
 		"HashString":         HashString,
 		"Logp":               d.Logp,

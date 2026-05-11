@@ -44,6 +44,7 @@ LokiBuffer = 100000
 LokiHEPFilter = [1, 5, 100]
 LokiIPPortLabels = false
 LokiAllowOutOfOrder = false
+LokiCustomLabels = []
 
 # General Settings
 LogLvl = "info"

@@ -660,6 +660,8 @@ func getBody(s *SipMsg) sipParserStateFn {
 }
 
 func ParseMsg(str string, xcid, cheader []string) (s *SipMsg) {
+	// RFC 3261 §7.5: implementations MUST ignore leading CRLFs
+	str = strings.TrimLeft(str, "\r\n")
 	headersEnd := strings.Index(str, "\r\n\r\n")
 	if headersEnd == -1 {
 		headersEnd = strings.LastIndex(str, "\r\n")

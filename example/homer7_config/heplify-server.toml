@@ -10,6 +10,7 @@ LokiTimer             = 4
 LokiBuffer            = 100000
 LokiHEPFilter         = [1,5,100]
 LokiAllowOutOfOrder   = false
+LokiCustomLabels      = []
 ForceHEPPayload	      = []
 PromAddr              = ""
 PromTargetIP          = ""
