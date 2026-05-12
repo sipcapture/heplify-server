@@ -49,7 +49,7 @@ func (r *Reason) parse() {
 	if len(pos) == 1 {
 		r.Proto = cleanWs(r.Val[0:pos[0]])
 		if len(r.Val)-1 > pos[0] {
-			r.addParam(strings.Replace(r.Val[pos[0]+1:], "\"", "", -1))
+			r.addParam(strings.ReplaceAll(r.Val[pos[0]+1:], "\"", ""))
 		}
 		return
 	}
@@ -58,11 +58,11 @@ func (r *Reason) parse() {
 		for i := range pos {
 			if len(pos)-1 == i {
 				if len(r.Val)-1 > pos[i] {
-					r.addParam(strings.Replace(r.Val[pos[i]+1:], "\"", "", -1))
+					r.addParam(strings.ReplaceAll(r.Val[pos[i]+1:], "\"", ""))
 				}
 				return
 			}
-			r.addParam(strings.Replace(r.Val[pos[i]+1:pos[i+1]], "\"", "", -1))
+			r.addParam(strings.ReplaceAll(r.Val[pos[i]+1:pos[i+1]], "\"", ""))
 		}
 		return
 	}

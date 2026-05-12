@@ -65,11 +65,11 @@ func getQuoteChars(s string) (one int, two int, chk bool) {
 	ct := 0
 	for i := range s {
 		if s[i] == '"' {
-			switch {
-			case ct == 0:
+			switch ct {
+			case 0:
 				one = i
 				ct = 1
-			case ct == 1:
+			case 1:
 				two = i
 				return one, two, true
 			default:
@@ -100,7 +100,7 @@ func getName(s string) (name string, end int) {
 		return "", 0
 	}
 	posOne, posTwo, chk := getQuoteChars(s)
-	if chk == true {
+	if chk {
 		if len(s)-1 > posTwo {
 			return cleanWs(s[posOne+1 : posTwo]), posTwo
 		}

@@ -64,9 +64,9 @@ func TestGetCommaSeperated(t *testing.T) {
 		t.Errorf("[TestGetCommaSeperated] Error with string: \"foo , bar\".  Returned list but length should be 2.")
 	}
 	if cs[0] != "foo" {
-		t.Errorf("[TestGetCommaSeperated] Error with string: \"foo , bar\".  Returned list pos[0] should be \"foo\" but received: " + cs[0])
+		t.Errorf("[TestGetCommaSeperated] Error with string: \"foo , bar\".  Returned list pos[0] should be \"foo\" but received: %s", cs[0])
 	}
 	if cs[1] != "bar" {
-		t.Errorf("[TestGetCommaSeperated] Error with string: \"foo , bar\".  Returned list pos[1] should be \"bar\" but received: " + cs[1])
+		t.Errorf("[TestGetCommaSeperated] Error with string: \"foo , bar\".  Returned list pos[1] should be \"bar\" but received: %s", cs[1])
 	}
 }

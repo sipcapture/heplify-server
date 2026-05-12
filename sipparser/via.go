@@ -59,12 +59,12 @@ func (v *Via) addParam(s string) {
 		v.Params = make([]*Param, 0)
 	}
 	p := getParam(s)
-	switch {
-	case p.Param == "branch":
+	switch p.Param {
+	case "branch":
 		v.Branch = p.Val
-	case p.Param == "rport":
+	case "rport":
 		v.RPort = p.Val
-	case p.Param == "received":
+	case "received":
 		v.Received = p.Val
 	default:
 		v.Params = append(v.Params, p)

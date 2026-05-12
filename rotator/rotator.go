@@ -107,7 +107,8 @@ func (r *Rotator) CreateDatabases() (err error) {
 				logp.Err("%v", err)
 				break
 			}
-			if r.driver == "mysql" {
+			switch r.driver {
+			case "mysql":
 				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+r.dataDB+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
 				r.dbExec(db, "CREATE DATABASE IF NOT EXISTS "+r.confDB+` DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_unicode_ci';`)
 				r.dbExec(db, `CREATE USER IF NOT EXISTS 'homer_user'@'%' IDENTIFIED BY 'homer_password';`)
@@ -115,7 +116,7 @@ func (r *Rotator) CreateDatabases() (err error) {
 				r.dbExec(db, "GRANT ALL ON "+r.confDB+`.* TO 'homer_user'@'%';`)
 				db.Close()
 				return nil
-			} else if r.driver == "postgres" {
+			case "postgres":
 				r.dbExec(db, "CREATE DATABASE "+r.dataDB)
 				r.dbExec(db, `CREATE USER homer_user WITH PASSWORD 'homer_password';`)
 				r.dbExec(db, "GRANT postgres to homer_user;")
@@ -144,7 +145,8 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 	}
 
 	suffix := replaceDay(duration)
-	if r.driver == "mysql" {
+	switch r.driver {
+	case "mysql":
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET time_zone = \"+00:00\";")
 		if err := r.dbExecFile(db, tbldatalogmaria, suffix, duration, r.partLog); err == nil {
@@ -157,7 +159,7 @@ func (r *Rotator) CreateDataTables(duration int) (err error) {
 			r.dbExecFileLoop(db, parsipmaria, suffix, duration, r.partSip)
 		}
 		//r.dbExecFile(db, parmaxmaria, suffix, 0, 0)
-	} else if r.driver == "postgres" {
+	case "postgres":
 		// Set this connection to UTC time and create the partitions with it.
 		r.dbExec(db, "SET timezone = \"UTC\";")
 		r.dbExecFile(db, tbldatapg, suffix, 0, 0)
@@ -307,14 +309,15 @@ func (r *Rotator) DropTables() (err error) {
 		return err
 	}
 
-	if r.driver == "mysql" {
+	switch r.driver {
+	case "mysql":
 		r.dbExecDropTables(db, selectlogmaria, droplogmaria, r.dropDays)
 		r.dbExecDropTables(db, selectreportmaria, dropreportmaria, r.dropDays)
 		r.dbExecDropTables(db, selectrtcpmaria, droprtcpmaria, r.dropDays)
 		r.dbExecDropTables(db, selectcallmaria, dropcallmaria, r.dropDaysCall)
 		r.dbExecDropTables(db, selectregistermaria, dropregistermaria, r.dropDaysRegister)
 		r.dbExecDropTables(db, selectdefaultmaria, dropdefaultmaria, r.dropDaysDefault)
-	} else if r.driver == "postgres" {
+	case "postgres":
 		r.dbExecDropTables(db, selectlogpg, droplogpg, r.dropDays)
 		r.dbExecDropTables(db, selectisuppg, dropisuppg, r.dropDays)
 		r.dbExecDropTables(db, selectreportpg, dropreportpg, r.dropDays)
@@ -331,8 +334,8 @@ func (r *Rotator) dbExecDropTables(db *sql.DB, listfile, dropfile string, d int)
 	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	partDate := t.Format("20060102")
 	partTime := t.Format("1504")
-	listquery := strings.Replace(listfile, partitionDate, partDate, -1)
-	listquery = strings.Replace(listquery, partitionTime, partTime, -1)
+	listquery := strings.ReplaceAll(listfile, partitionDate, partDate)
+	listquery = strings.ReplaceAll(listquery, partitionTime, partTime)
 	var partName string
 
 	rows, err := db.Query(listquery)
@@ -349,7 +352,7 @@ func (r *Rotator) dbExecDropTables(db *sql.DB, listfile, dropfile string, d int)
 			return err
 		}
 
-		dropquery := strings.Replace(dropfile, partitionName, partName, -1)
+		dropquery := strings.ReplaceAll(dropfile, partitionName, partName)
 		logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
 		_, err = db.Exec(dropquery)
 		checkDBErr(err)
@@ -369,8 +372,8 @@ func (r *Rotator) dbExecDropTablesForFreeSpace(db *sql.DB, listfile, dropfile st
 	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	partDate := t.Format("20060102")
 	partTime := t.Format("1504")
-	listquery := strings.Replace(listfile, partitionDate, partDate, -1)
-	listquery = strings.Replace(listquery, partitionTime, partTime, -1)
+	listquery := strings.ReplaceAll(listfile, partitionDate, partDate)
+	listquery = strings.ReplaceAll(listquery, partitionTime, partTime)
 	var partName string
 
 	rows, err := db.Query(listquery)
@@ -387,7 +390,7 @@ func (r *Rotator) dbExecDropTablesForFreeSpace(db *sql.DB, listfile, dropfile st
 			logp.Err("%v", err)
 			return err
 		}
-		dropquery := strings.Replace(dropfile, partitionName, partName, -1)
+		dropquery := strings.ReplaceAll(dropfile, partitionName, partName)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", dropquery)
 		_, err = db.Exec(dropquery)
@@ -422,8 +425,8 @@ func (r *Rotator) dbExecFile(db *sql.DB, file []string, pattern *strings.Replace
 	for _, query := range file {
 		query = pattern.Replace(query)
 		if p != 0 {
-			query = strings.Replace(query, partitionMinTime, newMinTime, -1)
-			query = strings.Replace(query, partitionEndTime, newEndTime, -1)
+			query = strings.ReplaceAll(query, partitionMinTime, newMinTime)
+			query = strings.ReplaceAll(query, partitionEndTime, newEndTime)
 		}
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
@@ -455,9 +458,9 @@ func fileLoop(db *sql.DB, query string, d, p int) {
 		newStartTime = startTime.Add(time.Minute * time.Duration(i*p)).Format("2006-01-02 15:04:05")
 		newEndTime = endTime.Add(time.Minute * time.Duration(i*p+p)).Format("2006-01-02 15:04:05")
 
-		query = strings.Replace(query, partitionTime, newPartTime, -1)
-		query = strings.Replace(query, partitionStartTime, newStartTime, -1)
-		query = strings.Replace(query, partitionEndTime, newEndTime, -1)
+		query = strings.ReplaceAll(query, partitionTime, newPartTime)
+		query = strings.ReplaceAll(query, partitionStartTime, newStartTime)
+		query = strings.ReplaceAll(query, partitionEndTime, newEndTime)
 
 		logp.Debug("rotator", "db query:\n%s\n\n", query)
 		_, err := db.Exec(query)

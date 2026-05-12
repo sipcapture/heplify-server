@@ -186,8 +186,8 @@ func parseUriHost(u *URI) uriStateFn {
 				}
 			}
 		}
-		switch {
-		case colon == 0:
+		switch colon {
+		case 0:
 			if u.atPos != 0 {
 				u.Host = u.Raw[u.atPos+1 : u.atPos+firstSemi]
 			} else {
@@ -218,8 +218,8 @@ func parseUriHost(u *URI) uriStateFn {
 				}
 			}
 		}
-		switch {
-		case colon == 0:
+		switch colon {
+		case 0:
 			if u.atPos != 0 {
 				u.Host = u.Raw[u.atPos+1:]
 			} else {

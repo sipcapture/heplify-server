@@ -61,7 +61,7 @@ func (l *Lineproto) setup() error {
 
 	// Test connection by making a simple GET request to the base URL
 	baseURL := u.String()
-	baseURL = strings.Replace(baseURL, lineprotoPostPath, "/ping", -1)
+	baseURL = strings.ReplaceAll(baseURL, lineprotoPostPath, "/ping")
 	_, err = http.Get(baseURL)
 	if err != nil {
 		return err
@@ -257,7 +257,7 @@ func (l *Lineproto) encodeBatch(batch []LineprotoEntry) ([]byte, error) {
 		buf.WriteString(strings.Join(fieldPairs, ","))
 
 		// Add timestamp (nanoseconds)
-		buf.WriteString(fmt.Sprintf(" %d\n", entry.timestamp.UnixNano()))
+		fmt.Fprintf(&buf, " %d\n", entry.timestamp.UnixNano())
 	}
 
 	return []byte(buf.String()), nil

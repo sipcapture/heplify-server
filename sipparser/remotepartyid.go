@@ -26,16 +26,16 @@ type RemotePartyId struct {
 
 func (r *RemotePartyId) addParam(s string) {
 	p := getParam(s)
-	switch {
-	case p.Param == "screen":
+	switch p.Param {
+	case "screen":
 		r.Screen = p.Val
-	case p.Param == "party":
+	case "party":
 		r.Party = p.Val
-	case p.Param == "privacy":
+	case "privacy":
 		r.Privacy = p.Val
 	default:
-		switch {
-		case r.Params == nil:
+		switch r.Params {
+		case nil:
 			r.Params = []*Param{p}
 		default:
 			r.Params = append(r.Params, p)

@@ -71,7 +71,7 @@ func parseFromState(f *From) parseFromStateFn {
 
 func parseFromGetURI(f *From) parseFromStateFn {
 	f.leftBrack, f.rightBrack, f.brackChk = getBracks(f.Val)
-	if f.brackChk == false {
+	if !f.brackChk {
 		f.URI = ParseURI(f.Val)
 		if f.URI.Error != nil {
 			f.Error = fmt.Errorf("parseFromGetURI err: rcvd err parsing uri: %v", f.URI.Error)
@@ -88,7 +88,7 @@ func parseFromGetURI(f *From) parseFromStateFn {
 		*/
 		return nil
 	}
-	if f.brackChk == true {
+	if f.brackChk {
 		f.URI = ParseURI(f.Val[f.leftBrack+1 : f.rightBrack])
 		if f.URI.Error != nil {
 			f.Error = fmt.Errorf("parseFromGetURI err: rcvd err parsing uri: %v", f.URI.Error)

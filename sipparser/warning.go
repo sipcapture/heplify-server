@@ -32,6 +32,6 @@ func (w *Warning) parse() error {
 	w.Code = parts[0]
 	w.CodeInt = c
 	w.Agent = parts[1]
-	w.Text = strings.Replace(parts[2], "\"", "", -1)
+	w.Text = strings.ReplaceAll(parts[2], "\"", "")
 	return nil
 }

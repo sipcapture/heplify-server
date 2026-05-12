@@ -139,7 +139,7 @@ func printStats(e *elastic.BulkProcessor) {
 		if i > 0 {
 			buf.WriteString(" ")
 		}
-		buf.WriteString(fmt.Sprintf("%d=[%04d]", i, w.Queued))
+		fmt.Fprintf(&buf, "%d=[%04d]", i, w.Queued)
 	}
 
 	logp.Info("Indexed: %05d, Succeeded: %05d, Failed: %05d, Worker Queues: %v",

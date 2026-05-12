@@ -26,16 +26,16 @@ type Diversion struct {
 
 func (r *Diversion) addParam(s string) {
 	p := getParam(s)
-	switch {
-	case p.Param == "reason":
+	switch p.Param {
+	case "reason":
 		r.Reason = p.Val
-	case p.Param == "privacy":
+	case "privacy":
 		r.Privacy = p.Val
-	case p.Param == "counter":
+	case "counter":
 		r.Counter = p.Val
 	default:
-		switch {
-		case r.Params == nil:
+		switch r.Params {
+		case nil:
 			r.Params = []*Param{p}
 		default:
 			r.Params = append(r.Params, p)

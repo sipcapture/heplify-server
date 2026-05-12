@@ -57,15 +57,16 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	}
 	webSetting.LineprotoBuffer = lineprotoBuffer
 	DBShema := r.FormValue("DBShema")
-	if DBShema == "homer5" {
+	switch DBShema {
+	case "homer5":
 		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "mysql"
 		webSetting.DBConfTable = "homer_configuration"
-	} else if DBShema == "homer7" {
+	case "homer7":
 		webSetting.DBShema = DBShema
 		webSetting.DBDriver = "postgres"
 		webSetting.DBConfTable = "homer_config"
-	} else if DBShema == "homer11" {
+	case "homer11":
 		webSetting.DBShema = "mock"
 		webSetting.DBDriver = "mock"
 		webSetting.DBConfTable = "homer_config"

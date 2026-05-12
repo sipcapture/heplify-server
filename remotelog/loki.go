@@ -67,7 +67,7 @@ func (l *Loki) setup() error {
 		u.RawQuery = q.Encode()
 		l.URL = u.String()
 	}
-	l.URL = strings.Replace(l.URL, postPath, postPathOne, -1)
+	l.URL = strings.ReplaceAll(l.URL, postPath, postPathOne)
 	u.Path = getPath
 	q := u.Query()
 	u.RawQuery = q.Encode()
@@ -143,7 +143,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					document["cid"] = pkt.CID
 					documentJson, err := json.Marshal(document)
 					if config.Setting.LokiCallIDLabels {
-						l.entry.labels["call_id"] = model.LabelValue(pkt.CID)
+						l.labels["call_id"] = model.LabelValue(pkt.CID)
 					}
 					if err != nil {
 						logp.Err("Unable to re-generate rtcp json: %v", err)
@@ -158,21 +158,22 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 
 			switch {
 			case pkt.SIP != nil && pkt.ProtoType == 1:
-				l.entry.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
-				l.entry.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
+				l.labels["method"] = model.LabelValue(pkt.SIP.CseqMethod)
+				l.labels["response"] = model.LabelValue(pkt.SIP.FirstMethod)
 				protocol := ""
-				if pkt.Protocol == 6 {
+				switch pkt.Protocol {
+				case 6:
 					protocol = "tcp"
-				} else if pkt.Protocol == 17 {
+				case 17:
 					protocol = "udp"
 				}
-				l.entry.labels["protocol"] = model.LabelValue(protocol)
+				l.labels["protocol"] = model.LabelValue(protocol)
 				if config.Setting.LokiCallIDLabels {
-					l.entry.labels["call_id"] = model.LabelValue(pkt.SIP.CallID)
+					l.labels["call_id"] = model.LabelValue(pkt.SIP.CallID)
 				}
 				if config.Setting.LokiFromToLabels {
-					l.entry.labels["from"] = model.LabelValue(pkt.SIP.From.Val)
-					l.entry.labels["to"] = model.LabelValue(pkt.SIP.To.Val)
+					l.labels["from"] = model.LabelValue(pkt.SIP.From.Val)
+					l.labels["to"] = model.LabelValue(pkt.SIP.To.Val)
 				}
 			case pkt.ProtoType == 100:
 				protocol := "udp"
@@ -181,28 +182,28 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				} else if strings.Contains(pkt.Payload, "sip") {
 					protocol = "sip"
 				}
-				l.entry.labels["protocol"] = model.LabelValue(protocol)
+				l.labels["protocol"] = model.LabelValue(protocol)
 
 			}
 
-			l.entry.labels["job"] = jobName
-			l.entry.labels["hostname"] = model.LabelValue(hostname)
-			l.entry.labels["node"] = model.LabelValue(pkt.NodeName)
-			l.entry.labels["type"] = model.LabelValue(pkt.ProtoString)
-			l.entry.Entry.Line = pktMeta.String()
+			l.labels["job"] = jobName
+			l.labels["hostname"] = model.LabelValue(hostname)
+			l.labels["node"] = model.LabelValue(pkt.NodeName)
+			l.labels["type"] = model.LabelValue(pkt.ProtoString)
+			l.Line = pktMeta.String()
 
 			if config.Setting.LokiIPPortLabels {
-				l.entry.labels["src_ip"] = model.LabelValue(pkt.SrcIP)
-				l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
-				l.entry.labels["dst_ip"] = model.LabelValue(pkt.DstIP)
-				l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
+				l.labels["src_ip"] = model.LabelValue(pkt.SrcIP)
+				l.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
+				l.labels["dst_ip"] = model.LabelValue(pkt.DstIP)
+				l.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
 			}
 
 			for k, v := range pkt.CustomLokiLabels {
-				l.entry.labels[model.LabelName(k)] = model.LabelValue(v)
+				l.labels[model.LabelName(k)] = model.LabelValue(v)
 			}
 
-			if batchSize+len(l.entry.Line) > l.BatchSize {
+			if batchSize+len(l.Line) > l.BatchSize {
 				if err := l.sendBatch(batch); err != nil {
 					logp.Err("send size batch: %v", err)
 				}
@@ -211,12 +212,12 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 				maxWait.Reset(l.BatchWait)
 			}
 
-			batchSize += len(l.entry.Line)
-			fp := l.entry.labels.FastFingerprint()
+			batchSize += len(l.Line)
+			fp := l.labels.FastFingerprint()
 			stream, ok := batch[fp]
 			if !ok {
 				stream = &logproto.Stream{
-					Labels: l.entry.labels.String(),
+					Labels: l.labels.String(),
 				}
 				batch[fp] = stream
 			}

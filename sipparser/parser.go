@@ -162,94 +162,94 @@ func (s *SipMsg) addHdr(str string) {
 	}
 
 	if len(s.hdr) == 1 {
-		switch {
-		case s.hdr == "I" || s.hdr == "i":
+		switch s.hdr {
+		case "I", "i":
 			s.CallID = s.hdrv
-		case s.hdr == "F" || s.hdr == "f":
+		case "F", "f":
 			s.parseFrom(s.hdrv)
-		case s.hdr == "T" || s.hdr == "t":
+		case "T", "t":
 			s.parseTo(s.hdrv)
-		case s.hdr == "M" || s.hdr == "m":
+		case "M", "m":
 			s.ContactVal = s.hdrv
 			s.parseContact(str)
-		case s.hdr == "V" || s.hdr == "v":
+		case "V", "v":
 			s.parseVia(s.hdrv)
-		case s.hdr == "C" || s.hdr == "c":
+		case "C", "c":
 			s.ContentType = s.hdrv
-		case s.hdr == "L" || s.hdr == "l":
+		case "L", "l":
 			s.ContentLength = s.hdrv
-		case s.hdr == "u":
+		case "u":
 		}
 	} else if len(s.hdr) == 2 {
 		// To header
 		s.parseTo(s.hdrv)
 	} else {
-		switch {
-		case s.hdr == "Via" || s.hdr == "VIA" || s.hdr == "via":
+		switch s.hdr {
+		case "Via", "VIA", "via":
 			s.parseVia(s.hdrv)
-		case s.hdr == "From" || s.hdr == "FROM" || s.hdr == "from":
+		case "From", "FROM", "from":
 			s.parseFrom(s.hdrv)
-		case s.hdr == "Call-ID" || s.hdr == "CALL-ID" || s.hdr == "Call-Id" || s.hdr == "Call-id" || s.hdr == "call-id" || s.hdr == "i":
+		case "Call-ID", "CALL-ID", "Call-Id", "Call-id", "call-id", "i":
 			s.CallID = s.hdrv
-		case s.hdr == "CSeq" || s.hdr == "CSEQ" || s.hdr == "Cseq" || s.hdr == "cseq":
+		case "CSeq", "CSEQ", "Cseq", "cseq":
 			s.CseqVal = s.hdrv
 			s.parseCseq(s.hdrv)
-		case s.hdr == "Contact" || s.hdr == "CONTACT" || s.hdr == "contact":
+		case "Contact", "CONTACT", "contact":
 			s.ContactVal = s.hdrv
 			s.parseContact(str)
-		case s.hdr == "User-Agent" || s.hdr == "USER-AGENT" || s.hdr == "user-agent":
+		case "User-Agent", "USER-AGENT", "user-agent":
 			s.UserAgent = s.hdrv
-		case s.hdr == "Server" || s.hdr == "server":
+		case "Server", "server":
 			s.Server = s.hdrv
-		case s.hdr == "Content-Type" || s.hdr == "CONTENT-TYPE" || s.hdr == "content-type":
+		case "Content-Type", "CONTENT-TYPE", "content-type":
 			s.ContentType = s.hdrv
-		case s.hdr == "Content-Length" || s.hdr == "CONTENT-LENGTH" || s.hdr == "content-length":
+		case "Content-Length", "CONTENT-LENGTH", "content-length":
 			s.ContentLength = s.hdrv
-		case s.hdr == "Accept" || s.hdr == "Accept-Encoding" || s.hdr == "Accept-Language":
+		case "Accept", "Accept-Encoding", "Accept-Language":
 			//s.parseAccept(s.hdrv)
-		case s.hdr == "Allow":
+		case "Allow":
 			//s.parseAllow(s.hdrv)
-		case s.hdr == "Allow‑Events":
+		case "Allow‑Events":
 			//s.parseAllowEvents(s.hdrv)
-		case s.hdr == "Authorization" || s.hdr == "authorization" || s.hdr == "Proxy-Authorization" || s.hdr == "proxy-authorization":
+		case "Authorization", "authorization", "Proxy-Authorization", "proxy-authorization":
 			s.parseAuthorization(s.hdrv)
-		case s.hdr == "Content-Disposition":
+		case "Content-Disposition":
 			//s.parseContentDisposition(s.hdrv)
-		case s.hdr == "Route":
+		case "Route":
 			//s.parseRoute(s.hdrv)
-		case s.hdr == "Record-Route":
+		case "Record-Route":
 			//s.parseRecordRoute(s.hdrv)
-		case s.hdr == "Max-Forwards" || s.hdr == "MAX-FORWARDS" || s.hdr == "max-forwards":
+		case "Max-Forwards", "MAX-FORWARDS", "max-forwards":
 			s.MaxForwards = s.hdrv
-		case s.hdr == "Organization" || s.hdr == "organization":
+		case "Organization", "organization":
 			s.Organization = s.hdrv
-		case s.hdr == "P-Asserted-Identity" || s.hdr == "p-asserted-identity":
+		case "P-Asserted-Identity", "p-asserted-identity":
 			s.PAssertedIdVal = s.hdrv
 			s.parsePAssertedId(s.hdrv)
-		case s.hdr == "Proxy-Authenticate" || s.hdr == "proxy-authenticate":
+		case "Proxy-Authenticate", "proxy-authenticate":
 			//s.parseProxyAuthenticate(s.hdrv)
-		case s.hdr == "RAck":
+		case "RAck":
 			//s.parseRack(s.hdrv)
-		case s.hdr == "Reason" || s.hdr == "reason":
+		case "Reason", "reason":
 			s.ReasonVal = s.hdrv
 			//s.parseReason(s.hdrv)
-		case s.hdr == "Remote-Party-Id" || s.hdr == "remote-party-id":
+		case "Remote-Party-Id", "remote-party-id":
 			s.RemotePartyIdVal = s.hdrv
-		case s.hdr == "Diversion" || s.hdr == "diversion":
+		case "Diversion", "diversion":
 			s.DiversionVal = s.hdrv
-		case s.hdr == "Supported":
+		case "Supported":
 			//s.parseSupported(s.hdrv)
-		case s.hdr == "Unsupported":
+		case "Unsupported":
 			//s.parseUnsupported(s.hdrv)
-		case s.hdr == "Warning":
+		case "Warning":
 			//s.parseWarning(s.hdrv)
-		case s.hdr == "WWW-Authenticate":
+		case "WWW-Authenticate":
 			//s.parseWWWAuthenticate(s.hdrv)
-		case s.hdr == "Privacy" || s.hdr == "privacy":
+		case "Privacy", "privacy":
 			s.Privacy = s.hdrv
-		case s.hdr == "X-RTP-Stat":
+		case "X-RTP-Stat":
 			s.parseRTPStat(s.hdrv)
-		case s.hdr == "Expires":
+		case "Expires":
 			s.Expires = s.hdrv
 		default:
 			if len(s.XHeader) > 0 {
@@ -305,10 +305,10 @@ func GetSIPHeaderVal(header string, data string) (val string) {
 }
 
 func (s *SipMsg) GetCallingParty(str string) error {
-	switch {
-	case str == CALLING_PARTY_RPID:
+	switch str {
+	case CALLING_PARTY_RPID:
 		return s.getCallingPartyRpid()
-	case str == CALLING_PARTY_PAID:
+	case CALLING_PARTY_PAID:
 		return s.getCallingPartyPaid()
 	}
 	return s.getCallingPartyDefault()
