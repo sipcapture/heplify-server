@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	reflect "reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -148,11 +149,9 @@ func (h *HEP) parse(packet []byte) error {
 		}
 
 		if len(config.Setting.DiscardMethod) > 0 {
-			for k := range config.Setting.DiscardMethod {
-				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.ProtoType = 0
-					return nil
-				}
+			if slices.Contains(config.Setting.DiscardMethod, h.SIP.CseqMethod) {
+				h.ProtoType = 0
+				return nil
 			}
 		}
 	}
@@ -254,7 +253,7 @@ func WriteJSONString(w io.Writer, s string) (int, error) {
 		// Hint the compiler to remove bounds checks in the loop below.
 		_ = b[n-1]
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		switch b[i] {
 		case '"':
 			write(b[j:i])

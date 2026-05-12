@@ -21,25 +21,25 @@ import (
 )
 
 const (
-	lineprotoContentType = "application/octet-stream"
-	lineprotoPostPath    = "/write"
-	lineprotoJobName     = "heplify-server"
+	lineprotoContentType  = "application/octet-stream"
+	lineprotoPostPath     = "/write"
+	lineprotoJobName      = "heplify-server"
 	lineprotoMaxErrMsgLen = 1024
 )
 
 type LineprotoEntry struct {
 	measurement string
 	tags        map[string]string
-	fields      map[string]interface{}
+	fields      map[string]any
 	timestamp   time.Time
 }
 
 type Lineproto struct {
-	URL             string
-	BatchWait       time.Duration
-	BatchSize       int
-	IPPortLabels    bool
-	entries         []LineprotoEntry
+	URL          string
+	BatchWait    time.Duration
+	BatchSize    int
+	IPPortLabels bool
+	entries      []LineprotoEntry
 }
 
 func (l *Lineproto) setup() error {
@@ -71,12 +71,12 @@ func (l *Lineproto) setup() error {
 
 func (l *Lineproto) start(hCh chan *decoder.HEP) {
 	var (
-		pktMeta     strings.Builder
-		curPktTime  time.Time
-		batch       []LineprotoEntry
-		batchSize   = 0
-		maxWait     = time.NewTimer(l.BatchWait)
-		hostname    string
+		pktMeta    strings.Builder
+		curPktTime time.Time
+		batch      []LineprotoEntry
+		batchSize  = 0
+		maxWait    = time.NewTimer(l.BatchWait)
+		hostname   string
 	)
 
 	defer func() {
@@ -101,7 +101,7 @@ func (l *Lineproto) start(hCh chan *decoder.HEP) {
 			pktMeta.Reset()
 
 			if pkt.ProtoString == "rtcp" {
-				var document map[string]interface{}
+				var document map[string]any
 				err := json.Unmarshal([]byte(pkt.Payload), &document)
 				if err != nil {
 					logp.Err("Unable to decode rtcp json: %v", err)
@@ -151,7 +151,7 @@ func (l *Lineproto) createEntry(pkt *decoder.HEP, timestamp time.Time, payload s
 	entry := LineprotoEntry{
 		measurement: fmt.Sprintf("hep_%d", pkt.ProtoType),
 		tags:        make(map[string]string),
-		fields:      make(map[string]interface{}),
+		fields:      make(map[string]any),
 		timestamp:   timestamp,
 	}
 
@@ -312,4 +312,4 @@ func (l *Lineproto) send(ctx context.Context, buf []byte) (int, error) {
 		err = fmt.Errorf("server returned HTTP status %s (%d): %s", resp.Status, resp.StatusCode, line)
 	}
 	return resp.StatusCode, err
-} 
+}

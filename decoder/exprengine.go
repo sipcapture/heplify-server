@@ -14,7 +14,7 @@ import (
 type ExprEngine struct {
 	hepPkt *HEP
 	prog   []*vm.Program
-	env    map[string]interface{}
+	env    map[string]any
 	v      vm.VM
 }
 
@@ -165,7 +165,7 @@ func NewExprEngine() (*ExprEngine, error) {
 	logp.Debug("script", "register expr engine")
 
 	e := &ExprEngine{}
-	e.env = map[string]interface{}{
+	e.env = map[string]any{
 		"GetHEPStruct":       e.GetHEPStruct,
 		"GetHEPProtoType":    e.GetHEPProtoType,
 		"GetHEPSrcIP":        e.GetHEPSrcIP,

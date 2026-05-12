@@ -95,7 +95,7 @@ func (e *Elasticsearch) start(hCh chan *decoder.HEP) {
 func (e *Elasticsearch) createIndex(ctx context.Context, client *elastic.Client) error {
 	var idx string
 	// Use the IndexExists service to check if a specified index exists.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		t := time.Now().Add(time.Hour * time.Duration(24*i)).Format("2006-01-02")
 		idx = "heplify-server-" + t
 		exists, err := client.IndexExists(idx).Do(ctx)

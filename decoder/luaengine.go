@@ -2,8 +2,10 @@ package decoder
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -36,14 +38,14 @@ type LuaEngine struct {
 	LuaEngine *lua.State
 }
 
-func (d *LuaEngine) GetHEPStruct() interface{} {
+func (d *LuaEngine) GetHEPStruct() any {
 	if (*d.hepPkt) == nil {
 		return ""
 	}
 	return (*d.hepPkt)
 }
 
-func (d *LuaEngine) GetSIPStruct() interface{} {
+func (d *LuaEngine) GetSIPStruct() any {
 	if (*d.hepPkt).SIP == nil {
 		return ""
 	}
@@ -106,9 +108,7 @@ func (d *LuaEngine) SetCustomSIPHeader(m *map[string]string) {
 		hepPkt.SIP.CustomHeader = make(map[string]string)
 	}
 
-	for k, v := range *m {
-		hepPkt.SIP.CustomHeader[k] = v
-	}
+	maps.Copy(hepPkt.SIP.CustomHeader, *m)
 }
 
 func (d *LuaEngine) SetHEPField(field string, value string) {
@@ -258,13 +258,7 @@ func (d *LuaEngine) SetLokiLabel(key string, value string) {
 		return
 	}
 
-	allowed := false
-	for _, k := range config.Setting.LokiCustomLabels {
-		if k == key {
-			allowed = true
-			break
-		}
-	}
+	allowed := slices.Contains(config.Setting.LokiCustomLabels, key)
 	if !allowed {
 		reject("not_allowlisted")
 		return
@@ -282,7 +276,7 @@ func (d *LuaEngine) SetLokiLabel(key string, value string) {
 	hepPkt.CustomLokiLabels[key] = value
 }
 
-func (d *LuaEngine) Logp(level string, message string, data interface{}) {
+func (d *LuaEngine) Logp(level string, message string, data any) {
 	if level == "ERROR" {
 		logp.Err("[script] %s: %v", message, data)
 	} else {
