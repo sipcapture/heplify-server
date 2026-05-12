@@ -1,7 +1,7 @@
 # mv dockerfile-arm Dockerfile
 # docker buildx build --load --platform=linux/arm64 .
 
-FROM --platform=$BUILDPLATFORM golang:alpine as builder
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
 
 RUN apk update && apk add --no-cache git build-base
 
@@ -17,6 +17,6 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a --ldflags '-linkmode external -extldfla
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-WORKDIR /root/
+WORKDIR /app/
 COPY --from=builder /go/src/github.com/sipcapture/heplify-server/cmd/heplify-server/heplify-server .
 COPY --from=builder /go/src/github.com/sipcapture/heplify-server/scripts ./scripts
