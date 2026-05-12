@@ -134,7 +134,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			if pkt.ProtoString == "rtcp" {
-				var document map[string]interface{}
+				var document map[string]any
 				err := json.Unmarshal([]byte(pkt.Payload), &document)
 				if err != nil {
 					logp.Err("Unable to decode rtcp json: %v", err)

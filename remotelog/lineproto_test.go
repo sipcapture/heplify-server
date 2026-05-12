@@ -12,17 +12,17 @@ import (
 func TestLineprotoCreateEntry(t *testing.T) {
 	// Create a test HEP packet
 	hep := &decoder.HEP{
-		Version:    3,
-		Protocol:   17, // UDP
-		SrcIP:      "192.168.1.1",
-		DstIP:      "192.168.1.2",
-		SrcPort:    5060,
-		DstPort:    5060,
-		ProtoType:  1, // SIP
-		NodeID:     1,
-		CID:        "a84b4c76e66710@example.com",
-		Timestamp:  time.Unix(1618426800, 0),
-		Payload:    "INVITE sip:user@example.com SIP/2.0\r\nVia: SIP/2.0/UDP 192.168.1.1:5060\r\n\r\n",
+		Version:   3,
+		Protocol:  17, // UDP
+		SrcIP:     "192.168.1.1",
+		DstIP:     "192.168.1.2",
+		SrcPort:   5060,
+		DstPort:   5060,
+		ProtoType: 1, // SIP
+		NodeID:    1,
+		CID:       "a84b4c76e66710@example.com",
+		Timestamp: time.Unix(1618426800, 0),
+		Payload:   "INVITE sip:user@example.com SIP/2.0\r\nVia: SIP/2.0/UDP 192.168.1.1:5060\r\n\r\n",
 		SIP: &sipparser.SipMsg{
 			CseqMethod: "INVITE",
 		},
@@ -84,12 +84,12 @@ func TestLineprotoEncodeBatch(t *testing.T) {
 				"src_port": "5060",
 				"dst_port": "5060",
 			},
-			fields: map[string]interface{}{
-				"create_date":   int64(1618426800000),
-				"sip_method":    "INVITE",
-				"call_id":       "a84b4c76e66710@example.com",
-				"payload_size":  int64(245),
-				"payload":       "INVITE sip:user@example.com SIP/2.0...",
+			fields: map[string]any{
+				"create_date":  int64(1618426800000),
+				"sip_method":   "INVITE",
+				"call_id":      "a84b4c76e66710@example.com",
+				"payload_size": int64(245),
+				"payload":      "INVITE sip:user@example.com SIP/2.0...",
 			},
 			timestamp: time.Unix(1618426800, 0),
 		},
@@ -110,7 +110,7 @@ func TestLineprotoEncodeBatch(t *testing.T) {
 	}
 
 	line := lines[0]
-	
+
 	// Check that the line contains expected components
 	if !strings.Contains(line, "hep_1,dst_ip=192.168.1.2,dst_port=5060,src_ip=192.168.1.1,src_port=5060") {
 		t.Errorf("Line missing expected tags: %s", line)
@@ -177,7 +177,7 @@ func TestLineprotoEscapeFunctions(t *testing.T) {
 			t.Errorf("escapeString(%s) = %s, expected %s", tc.input, result, tc.expected)
 		}
 	}
-} 
+}
 
 func TestLineprotoPayloadEscaping(t *testing.T) {
 	// Create a test HEP packet with a SIP payload containing newlines
@@ -199,17 +199,17 @@ Content-Length: 0
 Contact: <sip:lb@231.149.214.224:5060;ngcpct=c2lwOjEyNy4wLjAuMTo1MDgw>`
 
 	hep := &decoder.HEP{
-		Version:    2,
-		Protocol:   17, // UDP
-		SrcIP:      "231.149.214.224",
-		DstIP:      "61.116.17.18",
-		SrcPort:    5060,
-		DstPort:    5060,
-		ProtoType:  1, // SIP
-		NodeID:     2001,
-		CID:        "jwl9i6@127.0.0.1",
-		Timestamp:  time.Unix(1752653760, 207000000),
-		Payload:    sipPayload,
+		Version:   2,
+		Protocol:  17, // UDP
+		SrcIP:     "231.149.214.224",
+		DstIP:     "61.116.17.18",
+		SrcPort:   5060,
+		DstPort:   5060,
+		ProtoType: 1, // SIP
+		NodeID:    2001,
+		CID:       "jwl9i6@127.0.0.1",
+		Timestamp: time.Unix(1752653760, 207000000),
+		Payload:   sipPayload,
 		SIP: &sipparser.SipMsg{
 			CseqMethod: "ACK",
 		},
@@ -263,4 +263,4 @@ Contact: <sip:lb@231.149.214.224:5060;ngcpct=c2lwOjEyNy4wLjAuMTo1MDgw>`
 	if !strings.HasSuffix(line, " 1752653760207000000") {
 		t.Errorf("Line missing expected timestamp: %s", line)
 	}
-} 
+}

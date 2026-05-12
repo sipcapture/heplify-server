@@ -20,8 +20,8 @@ type vias struct {
 }
 
 func (vs *vias) parse() {
-	parts := strings.Split(vs.via, ",")
-	for _, p := range parts {
+	parts := strings.SplitSeq(vs.via, ",")
+	for p := range parts {
 		v := &Via{Via: p}
 		v.parse()
 		if v.Error != nil {
@@ -113,7 +113,7 @@ func parseViaGetParams(v *Via) viaStateFn {
 			v.addParam(parts[0])
 			return parseViaGetHostPort
 		}
-		for i := 0; i < len(parts); i++ {
+		for i := range parts {
 			v.addParam(parts[i])
 		}
 	}
