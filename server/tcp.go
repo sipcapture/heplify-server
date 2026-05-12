@@ -50,11 +50,9 @@ func (h *HEPInput) serveTCP(addr string) {
 			continue
 		}
 		logp.Info("new TCP connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			h.handleTCP(conn)
-			wg.Done()
-		}()
+		})
 	}
 }
 

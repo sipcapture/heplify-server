@@ -48,11 +48,11 @@ func commonKind(v1, v2 reflect.Value) reflect.Kind {
 }
 
 func isPointerToPrimitive(v reflect.Value) bool {
-	return v.Kind() == reflect.Ptr && v.Elem().IsValid() && v.Elem().Type() != nil
+	return v.Kind() == reflect.Pointer && v.Elem().IsValid() && v.Elem().Type() != nil
 }
 
 func isPredeclaredType(t reflect.Type) bool {
-	return t == reflect.TypeOf(0.0) || t == reflect.TypeOf("")
+	return t == reflect.TypeFor[float64]() || t == reflect.TypeFor[string]()
 }
 
 func isValueProxy(L *lua.State, idx int) bool {
@@ -70,7 +70,7 @@ func isValueProxy(L *lua.State, idx int) bool {
 }
 
 func luaToGoValue(L *lua.State, idx int) (reflect.Value, reflect.Type) {
-	var a interface{}
+	var a any
 	err := LuaToGo(L, idx, &a)
 	if err != nil {
 		L.RaiseError(err.Error())
@@ -163,7 +163,7 @@ func makeValueProxy(L *lua.State, v reflect.Value, proxyMT string) {
 	proxymu.Unlock()
 
 	L.Pop(1)
-	rawptr := L.NewUserdata(reflect.TypeOf(id).Size())
+	rawptr := L.NewUserdata(reflect.TypeFor[uintptr]().Size())
 	*(*uintptr)(rawptr) = id
 	L.LGetMetaTable(proxyMT)
 	L.SetMetaTable(-2)
@@ -174,7 +174,7 @@ func pushGoMethod(L *lua.State, name string, v reflect.Value) {
 	if !method.IsValid() {
 		t := v.Type()
 		// Could not resolve this method. Perhaps it's defined on the pointer?
-		if t.Kind() != reflect.Ptr {
+		if t.Kind() != reflect.Pointer {
 			if v.CanAddr() {
 				// If we can get a pointer directly.
 				v = v.Addr()
@@ -198,7 +198,7 @@ func pushGoMethod(L *lua.State, name string, v reflect.Value) {
 //
 // At least one operand must be a proxy for this function to be called. See the
 // main documentation for the conversion rules.
-func pushNumberValue(L *lua.State, a interface{}, t1, t2 reflect.Type) {
+func pushNumberValue(L *lua.State, a any, t1, t2 reflect.Type) {
 	v := reflect.ValueOf(a)
 	isComplex := unsizedKind(v) == reflect.Complex128
 	mt := cNumberMeta
@@ -210,7 +210,7 @@ func pushNumberValue(L *lua.State, a interface{}, t1, t2 reflect.Type) {
 	} else if isPredeclaredType(t1) {
 		makeValueProxy(L, v.Convert(t2), mt)
 	} else if isComplex {
-		complexType := reflect.TypeOf(0i)
+		complexType := reflect.TypeFor[complex128]()
 		makeValueProxy(L, v.Convert(complexType), cComplexMeta)
 	} else {
 		L.PushNumber(valueToNumber(L, v))

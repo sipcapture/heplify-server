@@ -175,7 +175,7 @@ func map__pairs(L *lua.State) int {
 func number__add(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = v1.Uint() + v2.Uint()
@@ -193,7 +193,7 @@ func number__add(L *lua.State) int {
 func number__div(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = v1.Uint() / v2.Uint()
@@ -225,7 +225,7 @@ func number__lt(L *lua.State) int {
 func number__mod(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = v1.Uint() % v2.Uint()
@@ -241,7 +241,7 @@ func number__mod(L *lua.State) int {
 func number__mul(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = v1.Uint() * v2.Uint()
@@ -259,7 +259,7 @@ func number__mul(L *lua.State) int {
 func number__pow(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = math.Pow(float64(v1.Uint()), float64(v2.Uint()))
@@ -277,7 +277,7 @@ func number__pow(L *lua.State) int {
 func number__sub(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
 	v2, t2 := luaToGoValue(L, 2)
-	var result interface{}
+	var result any
 	switch commonKind(v1, v2) {
 	case reflect.Uint64:
 		result = v1.Uint() - v2.Uint()
@@ -294,7 +294,7 @@ func number__sub(L *lua.State) int {
 
 func number__unm(L *lua.State) int {
 	v1, t1 := luaToGoValue(L, 1)
-	var result interface{}
+	var result any
 	switch unsizedKind(v1) {
 	case reflect.Uint64:
 		result = -v1.Uint()
@@ -322,9 +322,9 @@ func number__unm(L *lua.State) int {
 // called. No need to check for type equality: Go's "==" operator will do it for
 // us.
 func proxy__eq(L *lua.State) int {
-	var a1 interface{}
+	var a1 any
 	_ = LuaToGo(L, 1, &a1)
-	var a2 interface{}
+	var a2 any
 	_ = LuaToGo(L, 2, &a2)
 	L.PushBoolean(a1 == a2)
 	return 1
@@ -346,7 +346,7 @@ func proxy__tostring(L *lua.State) int {
 
 func slice__index(L *lua.State) int {
 	v, _ := valueOfProxy(L, 1)
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		// For arrays.
 		v = v.Elem()
 	}
@@ -397,7 +397,7 @@ func slice__index(L *lua.State) int {
 
 func slice__ipairs(L *lua.State) int {
 	v, _ := valueOfProxy(L, 1)
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	n := v.Len()
@@ -418,7 +418,7 @@ func slice__ipairs(L *lua.State) int {
 
 func slice__newindex(L *lua.State) int {
 	v, t := valueOfProxy(L, 1)
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		// For arrays.
 		v = v.Elem()
 		t = t.Elem()
@@ -439,7 +439,7 @@ func slice__newindex(L *lua.State) int {
 
 func slicemap__len(L *lua.State) int {
 	v, _ := valueOfProxy(L, 1)
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		// For arrays.
 		v = v.Elem()
 	}
@@ -475,7 +475,7 @@ func string__index(L *lua.State) int {
 		if idx < 1 || idx > v.Len() {
 			L.RaiseError("index out of range")
 		}
-		v := v.Index(idx - 1).Convert(reflect.TypeOf(""))
+		v := v.Index(idx - 1).Convert(reflect.TypeFor[string]())
 		GoToLuaProxy(L, v)
 	} else if L.IsString(2) {
 		name := L.ToString(2)
@@ -492,7 +492,7 @@ func string__index(L *lua.State) int {
 
 func string__ipairs(L *lua.State) int {
 	v, _ := valueOfProxy(L, 1)
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	r := []rune(v.String())
@@ -528,7 +528,7 @@ func struct__index(L *lua.State) int {
 	v, t := valueOfProxy(L, 1)
 	name := L.ToString(2)
 	vp := v
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	field := v.FieldByName(name)
@@ -544,7 +544,7 @@ func struct__index(L *lua.State) int {
 func struct__newindex(L *lua.State) int {
 	v, t := valueOfProxy(L, 1)
 	name := L.ToString(2)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	field := v.FieldByName(name)

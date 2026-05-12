@@ -134,7 +134,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			l.entry = entry{model.LabelSet{}, logproto.Entry{Timestamp: curPktTime}}
 
 			if pkt.ProtoString == "rtcp" {
-				var document map[string]interface{}
+				var document map[string]any
 				err := json.Unmarshal([]byte(pkt.Payload), &document)
 				if err != nil {
 					logp.Err("Unable to decode rtcp json: %v", err)
@@ -201,6 +201,10 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 					l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
 					l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
 				}
+			}
+
+			for k, v := range pkt.CustomLokiLabels {
+				l.entry.labels[model.LabelName(k)] = model.LabelValue(v)
 			}
 
 			if batchSize+len(l.entry.Line) > l.BatchSize {

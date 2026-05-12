@@ -32,7 +32,7 @@ func NewLuaObject(L *lua.State, idx int) *LuaObject {
 
 // NewLuaObjectFromName creates a new LuaObject from the object designated by
 // the sequence of 'subfields'.
-func NewLuaObjectFromName(L *lua.State, subfields ...interface{}) *LuaObject {
+func NewLuaObjectFromName(L *lua.State, subfields ...any) *LuaObject {
 	L.GetGlobal("_G")
 	defer L.Pop(1)
 	err := get(L, subfields...)
@@ -46,7 +46,7 @@ func NewLuaObjectFromName(L *lua.State, subfields ...interface{}) *LuaObject {
 
 // NewLuaObjectFromValue creates a new LuaObject from a Go value.
 // Note that this will convert any slices or maps into Lua tables.
-func NewLuaObjectFromValue(L *lua.State, val interface{}) *LuaObject {
+func NewLuaObjectFromValue(L *lua.State, val any) *LuaObject {
 	GoToLua(L, val)
 	return NewLuaObject(L, -1)
 }
@@ -64,7 +64,7 @@ func NewLuaObjectFromValue(L *lua.State, val interface{}) *LuaObject {
 // argument, they will be ignored.
 //
 // If 'results' is nil, results will be discarded.
-func (lo *LuaObject) Call(results interface{}, args ...interface{}) error {
+func (lo *LuaObject) Call(results any, args ...any) error {
 	L := lo.l
 	// Push the callable value.
 	lo.Push()
@@ -93,13 +93,13 @@ func (lo *LuaObject) Call(results interface{}, args ...interface{}) error {
 	}
 
 	resptr := reflect.ValueOf(results)
-	if resptr.Kind() != reflect.Ptr {
+	if resptr.Kind() != reflect.Pointer {
 		return ErrLuaObjectCallResults
 	}
 	res := resptr.Elem()
 
 	switch res.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		err := L.Call(len(args), 1)
 		defer L.Pop(1)
 		if err != nil {
@@ -127,7 +127,7 @@ func (lo *LuaObject) Call(results interface{}, args ...interface{}) error {
 			res.SetLen(nresults)
 		}
 
-		for i := 0; i < nresults; i++ {
+		for i := range nresults {
 			err = LuaToGo(L, residx+i, res.Index(i).Addr().Interface())
 			if err != nil {
 				return err
@@ -150,7 +150,7 @@ func (lo *LuaObject) Call(results interface{}, args ...interface{}) error {
 		defer L.Pop(nresults)
 		residx := L.GetTop() - nresults + 1
 
-		for i := 0; i < nresults; i++ {
+		for i := range nresults {
 			err = LuaToGo(L, residx+i, exportedFields[i].Interface())
 			if err != nil {
 				return err
@@ -175,7 +175,7 @@ func (lo *LuaObject) Close() {
 // It pushes nothing on error.
 //
 // Numeric indices start from 1: see Set().
-func get(L *lua.State, subfields ...interface{}) error {
+func get(L *lua.State, subfields ...any) error {
 	// TODO: See if worth exporting.
 
 	// Duplicate iterable since the following loop removes the last table on stack
@@ -206,7 +206,7 @@ func get(L *lua.State, subfields ...interface{}) error {
 
 // Get stores in 'a' the Lua value indexed at the sequence of 'subfields'.
 // 'a' must be a pointer as in LuaToGo.
-func (lo *LuaObject) Get(a interface{}, subfields ...interface{}) error {
+func (lo *LuaObject) Get(a any, subfields ...any) error {
 	lo.Push()
 	defer lo.l.Pop(1)
 	err := get(lo.l, subfields...)
@@ -218,7 +218,7 @@ func (lo *LuaObject) Get(a interface{}, subfields ...interface{}) error {
 }
 
 // GetObject returns the LuaObject indexed at the sequence of 'subfields'.
-func (lo *LuaObject) GetObject(subfields ...interface{}) (*LuaObject, error) {
+func (lo *LuaObject) GetObject(subfields ...any) (*LuaObject, error) {
 	lo.Push()
 	defer lo.l.Pop(1)
 	err := get(lo.l, subfields...)
@@ -238,7 +238,7 @@ func (lo *LuaObject) Push() {
 // Set sets the value at the sequence of 'subfields' with the value 'a'.
 // Numeric indices start from 1, as in Lua: if we started from zero, access to
 // index 0 or negative indices would be shifted awkwardly.
-func (lo *LuaObject) Set(a interface{}, subfields ...interface{}) error {
+func (lo *LuaObject) Set(a any, subfields ...any) error {
 	parentKeys := subfields[:len(subfields)-1]
 	parent, err := lo.GetObject(parentKeys...)
 	if err != nil {
@@ -371,7 +371,7 @@ func (lo *LuaObject) Iter() (*LuaTableIter, error) {
 // 'value' must be a valid argument for LuaToGo. As a special case, 'value' can
 // be nil to make it possible to loop over keys without caring about associated
 // values.
-func (ti *LuaTableIter) Next(key, value interface{}) bool {
+func (ti *LuaTableIter) Next(key, value any) bool {
 	if ti.lo == nil {
 		ti.err = errors.New("empty iterator")
 		return false

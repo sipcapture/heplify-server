@@ -55,11 +55,9 @@ func (h *HEPInput) serveWS(addr string) {
 		}
 
 		logp.Info("new WS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			h.handleWS(conn)
-			wg.Done()
-		}()
+		})
 	}
 }
 

@@ -11,6 +11,7 @@ LokiHEPFilter         = [1,5,100]
 LokiIPPortLabels      = false
 LokiSkipTCPPortLabels = true
 LokiAllowOutOfOrder   = false
+LokiCustomLabels      = []
 PromAddr              = ""
 PromTargetIP          = ""
 PromTargetName        = ""

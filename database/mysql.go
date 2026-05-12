@@ -109,10 +109,7 @@ func (m *MySQL) setup() error {
 	m.db.SetMaxOpenConns(config.Setting.DBWorker * 4)
 	m.db.SetMaxIdleConns(config.Setting.DBWorker)
 
-	m.bulkCnt = config.Setting.DBBulk
-	if m.bulkCnt < 1 {
-		m.bulkCnt = 1
-	}
+	m.bulkCnt = max(config.Setting.DBBulk, 1)
 	m.dbTimer = time.Duration(config.Setting.DBTimer) * time.Second
 
 	m.sipBulkVal = sipQueryVal(m.bulkCnt)
@@ -128,13 +125,13 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 
 		pkt        *decoder.HEP
 		ok         bool
-		callRows   = make([]interface{}, 0, m.bulkCnt)
-		regRows    = make([]interface{}, 0, m.bulkCnt)
-		restRows   = make([]interface{}, 0, m.bulkCnt)
-		dnsRows    = make([]interface{}, 0, m.bulkCnt)
-		logRows    = make([]interface{}, 0, m.bulkCnt)
-		rtcpRows   = make([]interface{}, 0, m.bulkCnt)
-		reportRows = make([]interface{}, 0, m.bulkCnt)
+		callRows   = make([]any, 0, m.bulkCnt)
+		regRows    = make([]any, 0, m.bulkCnt)
+		restRows   = make([]any, 0, m.bulkCnt)
+		dnsRows    = make([]any, 0, m.bulkCnt)
+		logRows    = make([]any, 0, m.bulkCnt)
+		rtcpRows   = make([]any, 0, m.bulkCnt)
+		reportRows = make([]any, 0, m.bulkCnt)
 		maxWait    = m.dbTimer
 	)
 
@@ -149,8 +146,8 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 	}
 	defer stop()
 
-	addSIPRow := func(r []interface{}) []interface{} {
-		r = append(r, []interface{}{
+	addSIPRow := func(r []any) []any {
+		r = append(r, []any{
 			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
 			pkt.Timestamp.UnixNano() / 1000,
 			short(pkt.SIP.FirstMethod, 50),
@@ -193,8 +190,8 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 		return r
 	}
 
-	addRTCRow := func(r []interface{}) []interface{} {
-		r = append(r, []interface{}{
+	addRTCRow := func(r []any) []any {
+		r = append(r, []any{
 			pkt.Timestamp.Format("2006-01-02 15:04:05.999999"),
 			pkt.Timestamp.UnixNano() / 1000,
 			pkt.CID,
@@ -220,7 +217,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					callCnt++
 					if callCnt == m.bulkCnt {
 						m.bulkInsert(callQuery, m.sipBulkVal, callRows)
-						callRows = []interface{}{}
+						callRows = []any{}
 						callCnt = 0
 					}
 				case "REGISTER":
@@ -228,7 +225,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					regCnt++
 					if regCnt == m.bulkCnt {
 						m.bulkInsert(registerQuery, m.sipBulkVal, regRows)
-						regRows = []interface{}{}
+						regRows = []any{}
 						regCnt = 0
 					}
 				default:
@@ -236,7 +233,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					restCnt++
 					if restCnt == m.bulkCnt {
 						m.bulkInsert(restQuery, m.sipBulkVal, restRows)
-						restRows = []interface{}{}
+						restRows = []any{}
 						restCnt = 0
 					}
 
@@ -248,7 +245,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					rtcpCnt++
 					if rtcpCnt == m.bulkCnt {
 						m.bulkInsert(rtcpQuery, m.rtcBulkVal, rtcpRows)
-						rtcpRows = []interface{}{}
+						rtcpRows = []any{}
 						rtcpCnt = 0
 					}
 				case 53:
@@ -256,7 +253,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					dnsCnt++
 					if dnsCnt == m.bulkCnt {
 						m.bulkInsert(dnsQuery, m.rtcBulkVal, dnsRows)
-						dnsRows = []interface{}{}
+						dnsRows = []any{}
 						dnsCnt = 0
 					}
 				case 100:
@@ -264,7 +261,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					logCnt++
 					if logCnt == m.bulkCnt {
 						m.bulkInsert(logQuery, m.rtcBulkVal, logRows)
-						logRows = []interface{}{}
+						logRows = []any{}
 						logCnt = 0
 					}
 				default:
@@ -274,7 +271,7 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 					reportCnt++
 					if reportCnt == m.bulkCnt {
 						m.bulkInsert(reportQuery, m.rtcBulkVal, reportRows)
-						reportRows = []interface{}{}
+						reportRows = []any{}
 						reportCnt = 0
 					}
 				}
@@ -284,50 +281,50 @@ func (m *MySQL) insert(hCh chan *decoder.HEP) {
 			if callCnt > 0 {
 				l := len(callRows)
 				m.bulkInsert(callQuery, sipQueryVal(l/sipValCnt), callRows[:l])
-				callRows = []interface{}{}
+				callRows = []any{}
 				callCnt = 0
 			}
 			if regCnt > 0 {
 				l := len(regRows)
 				m.bulkInsert(registerQuery, sipQueryVal(l/sipValCnt), regRows[:l])
-				regRows = []interface{}{}
+				regRows = []any{}
 				regCnt = 0
 			}
 			if restCnt > 0 {
 				l := len(restRows)
 				m.bulkInsert(restQuery, sipQueryVal(l/sipValCnt), restRows[:l])
-				restRows = []interface{}{}
+				restRows = []any{}
 				restCnt = 0
 			}
 			if rtcpCnt > 0 {
 				l := len(rtcpRows)
 				m.bulkInsert(rtcpQuery, rtcQueryVal(l/rtcValCnt), rtcpRows[:l])
-				rtcpRows = []interface{}{}
+				rtcpRows = []any{}
 				rtcpCnt = 0
 			}
 			if reportCnt > 0 {
 				l := len(reportRows)
 				m.bulkInsert(reportQuery, rtcQueryVal(l/rtcValCnt), reportRows[:l])
-				reportRows = []interface{}{}
+				reportRows = []any{}
 				reportCnt = 0
 			}
 			if dnsCnt > 0 {
 				l := len(dnsRows)
 				m.bulkInsert(dnsQuery, rtcQueryVal(l/rtcValCnt), dnsRows[:l])
-				dnsRows = []interface{}{}
+				dnsRows = []any{}
 				dnsCnt = 0
 			}
 			if logCnt > 0 {
 				l := len(logRows)
 				m.bulkInsert(logQuery, rtcQueryVal(l/rtcValCnt), logRows[:l])
-				logRows = []interface{}{}
+				logRows = []any{}
 				logCnt = 0
 			}
 		}
 	}
 }
 
-func (m *MySQL) bulkInsert(q, v []byte, rows []interface{}) {
+func (m *MySQL) bulkInsert(q, v []byte, rows []any) {
 	tblDate := time.Now().In(time.UTC).AppendFormat(q, "20060102")
 	query := make([]byte, len(tblDate)+len(v))
 	tdl := copy(query, tblDate)
@@ -348,7 +345,7 @@ func short(s string, i int) string {
 func sipQueryVal(c int) []byte {
 	out := make([]byte, c*len(sipPlaceholder)+len(sipVal)-1)
 	bs := copy(out, sipVal)
-	for i := 0; i < c; i++ {
+	for i := range c {
 		bp := i * len(sipPlaceholder)
 		copy(out[bs+bp:], sipPlaceholder)
 	}
@@ -358,7 +355,7 @@ func sipQueryVal(c int) []byte {
 func rtcQueryVal(c int) []byte {
 	out := make([]byte, c*len(rtcPlaceholder)+len(rtcVal)-1)
 	bs := copy(out, rtcVal)
-	for i := 0; i < c; i++ {
+	for i := range c {
 		bp := i * len(rtcPlaceholder)
 		copy(out[bs+bp:], rtcPlaceholder)
 	}

@@ -12,8 +12,8 @@ import (
 
 // ConvError records a conversion error from value 'From' to value 'To'.
 type ConvError struct {
-	From interface{}
-	To   interface{}
+	From any
+	To   any
 }
 
 // ErrTableConv arises when some table entries could not be converted.
@@ -57,7 +57,7 @@ func luaDesc(L *lua.State, idx int) string {
 type NullT int
 
 // Map is an alias for map of strings.
-type Map map[string]interface{}
+type Map map[string]any
 
 var (
 	// Null is the definition of 'luar.null' which is used in place of 'nil' when
@@ -66,8 +66,8 @@ var (
 )
 
 var (
-	tslice = typeof((*[]interface{})(nil))
-	tmap   = typeof((*map[string]interface{})(nil))
+	tslice = typeof((*[]any)(nil))
+	tmap   = typeof((*map[string]any)(nil))
 	nullv  = reflect.ValueOf(Null)
 )
 
@@ -127,15 +127,15 @@ func (v *visitor) push(val reflect.Value) bool {
 //
 // It populates the 'luar' table with some helper functions/values:
 //
-//   method: ProxyMethod
-//   unproxify: Unproxify
+//	method: ProxyMethod
+//	unproxify: Unproxify
 //
-//   chan: MakeChan
-//   complex: MakeComplex
-//   map: MakeMap
-//   slice: MakeSlice
+//	chan: MakeChan
+//	complex: MakeComplex
+//	map: MakeMap
+//	slice: MakeSlice
 //
-//   null: Null
+//	null: Null
 //
 // It replaces the 'pairs'/'ipairs' functions with ProxyPairs/ProxyIpairs
 // respectively, so that __pairs/__ipairs can be used, Lua 5.2 style. It allows
@@ -176,7 +176,7 @@ func isNil(v reflect.Value) bool {
 		reflect.Func:      true,
 		reflect.Interface: true,
 		reflect.Map:       true,
-		reflect.Ptr:       true,
+		reflect.Pointer:   true,
 		reflect.Slice:     true,
 	}
 
@@ -205,7 +205,7 @@ func copyMapToTable(L *lua.State, v reflect.Value, visited visitor) {
 // Also for arrays.
 func copySliceToTable(L *lua.State, v reflect.Value, visited visitor) {
 	vp := v
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		// For arrays.
 		v = v.Elem()
 	}
@@ -214,11 +214,11 @@ func copySliceToTable(L *lua.State, v reflect.Value, visited visitor) {
 	L.CreateTable(n, 0)
 	if v.Kind() == reflect.Slice {
 		visited.mark(v)
-	} else if vp.Kind() == reflect.Ptr {
+	} else if vp.Kind() == reflect.Pointer {
 		visited.mark(vp)
 	}
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		L.PushInteger(int64(i + 1))
 		val := v.Index(i)
 		if isNil(val) {
@@ -232,17 +232,17 @@ func copySliceToTable(L *lua.State, v reflect.Value, visited visitor) {
 func copyStructToTable(L *lua.State, v reflect.Value, visited visitor) {
 	// If 'vstruct' is a pointer to struct, use the pointer to mark as visited.
 	vp := v
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
 	n := v.NumField()
 	L.CreateTable(n, 0)
-	if vp.Kind() == reflect.Ptr {
+	if vp.Kind() == reflect.Pointer {
 		visited.mark(vp)
 	}
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		st := v.Type()
 		field := st.Field(i)
 		key := field.Name
@@ -324,7 +324,7 @@ func goToLuaFunction(L *lua.State, v reflect.Value) lua.LuaGoFunction {
 // It unboxes interfaces.
 //
 // Pointers are followed recursively. Slices, structs and maps are copied over as tables.
-func GoToLua(L *lua.State, a interface{}) {
+func GoToLua(L *lua.State, a any) {
 	visited := newVisitor(L)
 	goToLua(L, a, false, visited)
 	visited.close()
@@ -365,13 +365,13 @@ func GoToLua(L *lua.State, a interface{}) {
 // of indirections, the arguments will be converted automatically. Since proxies
 // can only wrap around one level of indirection, functions modifying the value
 // of the pointers after one level of indirection will have no effect.
-func GoToLuaProxy(L *lua.State, a interface{}) {
+func GoToLuaProxy(L *lua.State, a any) {
 	visited := newVisitor(L)
 	goToLua(L, a, true, visited)
 	visited.close()
 }
 
-func goToLua(L *lua.State, a interface{}, proxify bool, visited visitor) {
+func goToLua(L *lua.State, a any, proxify bool, visited visitor) {
 	var v reflect.Value
 	v, ok := a.(reflect.Value)
 	if !ok {
@@ -392,7 +392,7 @@ func goToLua(L *lua.State, a interface{}, proxify bool, visited visitor) {
 	// multiple-level references, while single references are useful for method
 	// calls functions that make use of one level of indirection.
 	vp := v
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		vp = v
 		v = v.Elem()
 	}
@@ -459,7 +459,7 @@ func goToLua(L *lua.State, a interface{}, proxify bool, visited visitor) {
 			// Else don't proxify.
 		}
 		// See the case of struct.
-		if vp.Kind() == reflect.Ptr && visited.push(vp) {
+		if vp.Kind() == reflect.Pointer && visited.push(vp) {
 			return
 		}
 		copySliceToTable(L, vp, visited)
@@ -513,7 +513,7 @@ func goToLua(L *lua.State, a interface{}, proxify bool, visited visitor) {
 			makeValueProxy(L, vp, cStructMeta)
 		} else {
 			// Use vp instead of v to detect cycles from the very first element, if a pointer.
-			if vp.Kind() == reflect.Ptr && visited.push(vp) {
+			if vp.Kind() == reflect.Pointer && visited.push(vp) {
 				return
 			}
 			copyStructToTable(L, vp, visited)
@@ -723,14 +723,14 @@ func copyTableToStruct(L *lua.State, idx int, v reflect.Value, visited map[uintp
 // pointer.
 // Userdata that is not a proxy will be converted to a LuaObject if the Go value
 // is an interface or a LuaObject.
-func LuaToGo(L *lua.State, idx int, a interface{}) error {
+func LuaToGo(L *lua.State, idx int, a any) error {
 	// LuaToGo should not pop the Lua stack to be consistent with L.ToString(), etc.
 	// It is also easier in practice when we want to keep working with the value on stack.
 
 	v := reflect.ValueOf(a)
 	// TODO: Test interfaces with methods.
 	// TODO: Allow unreferenced map? encoding/json does not do it.
-	if v.Kind() != reflect.Ptr {
+	if v.Kind() != reflect.Pointer {
 		return errors.New("not a pointer")
 	}
 	if v.IsNil() {
@@ -739,7 +739,7 @@ func LuaToGo(L *lua.State, idx int, a interface{}) error {
 
 	v = v.Elem()
 	// If the Lua value is 'nil' and the Go value is a pointer, nullify the pointer.
-	if v.Kind() == reflect.Ptr && L.IsNil(idx) {
+	if v.Kind() == reflect.Pointer && L.IsNil(idx) {
 		v.Set(reflect.Zero(v.Type()))
 		return nil
 	}
@@ -754,7 +754,7 @@ func luaToGo(L *lua.State, idx int, v reflect.Value, visited map[uintptr]reflect
 	// This must be done here and not in LuaToGo so that the copyTable* functions
 	// can also call luaToGo on pointers.
 	vp := v
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
@@ -804,7 +804,7 @@ func luaToGo(L *lua.State, idx int, v reflect.Value, visited map[uintptr]reflect
 			}
 
 			// Otherwise dereference.
-			for !typ.ConvertibleTo(v.Type()) && val.Kind() == reflect.Ptr {
+			for !typ.ConvertibleTo(v.Type()) && val.Kind() == reflect.Pointer {
 				val = val.Elem()
 				typ = typ.Elem()
 			}
@@ -815,7 +815,7 @@ func luaToGo(L *lua.State, idx int, v reflect.Value, visited map[uintptr]reflect
 			// with LuaToGo conversions elsewhere.
 			v.Set(val.Convert(v.Type()))
 			return nil
-		} else if kind != reflect.Interface || v.Type() != reflect.TypeOf(LuaObject{}) {
+		} else if kind != reflect.Interface || v.Type() != reflect.TypeFor[LuaObject]() {
 			return ConvError{From: luaDesc(L, idx), To: v.Type()}
 		}
 		// Wrap the userdata into a LuaObject.
@@ -880,7 +880,7 @@ func luaToGo(L *lua.State, idx int, v reflect.Value, visited map[uintptr]reflect
 	case lua.LUA_TFUNCTION:
 		if kind == reflect.Interface {
 			v.Set(reflect.ValueOf(NewLuaObject(L, idx)))
-		} else if vp.Type() == reflect.TypeOf(&LuaObject{}) {
+		} else if vp.Type() == reflect.TypeFor[*LuaObject]() {
 			vp.Set(reflect.ValueOf(NewLuaObject(L, idx)))
 		} else {
 			return ConvError{From: luaDesc(L, idx), To: v.Type()}
@@ -924,7 +924,7 @@ func isNewType(t reflect.Type) bool {
 // - If table is non-nil, then create or reuse a global table of that name and
 // put the values in it.
 //
-// - If table is '' then put the values in the global table (_G).
+// - If table is "" then put the values in the global table (_G).
 //
 // - If table is '*' then assume that the table is already on the stack.
 //
@@ -954,6 +954,6 @@ func Register(L *lua.State, table string, values Map) {
 }
 
 // Closest we'll get to a typeof operator.
-func typeof(a interface{}) reflect.Type {
+func typeof(a any) reflect.Type {
 	return reflect.TypeOf(a).Elem()
 }

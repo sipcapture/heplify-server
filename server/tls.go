@@ -79,11 +79,9 @@ func (h *HEPInput) serveTLS(addr string) {
 			continue
 		}
 		logp.Info("new TLS connection %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			h.handleTLS(tls.Server(conn, &tls.Config{GetCertificate: ca.GetCertificate, MinVersion: minTLSVersion}))
-			wg.Done()
-		}()
+		})
 	}
 }
 

@@ -19,27 +19,27 @@ import (
 )
 
 type HEPInput struct {
-	inputCh      chan []byte
-	dbCh         chan *decoder.HEP
-	promCh       chan *decoder.HEP
-	esCh         chan *decoder.HEP
-	lokiCh       chan *decoder.HEP
-	lineprotoCh  chan *decoder.HEP
-	wg           *sync.WaitGroup
-	buffer       *sync.Pool
-	exitUDP      chan bool
-	exitTCP      chan bool
-	exitTLS      chan bool
-	exitWS       chan bool
-	exitWorker   chan bool
-	quit         chan bool
-	stopped      uint32
-	stats        HEPStats
-	useDB        bool
-	usePM        bool
-	useES        bool
-	useLK        bool
-	useLP        bool
+	inputCh     chan []byte
+	dbCh        chan *decoder.HEP
+	promCh      chan *decoder.HEP
+	esCh        chan *decoder.HEP
+	lokiCh      chan *decoder.HEP
+	lineprotoCh chan *decoder.HEP
+	wg          *sync.WaitGroup
+	buffer      *sync.Pool
+	exitUDP     chan bool
+	exitTCP     chan bool
+	exitTLS     chan bool
+	exitWS      chan bool
+	exitWorker  chan bool
+	quit        chan bool
+	stopped     uint32
+	stats       HEPStats
+	useDB       bool
+	usePM       bool
+	useES       bool
+	useLK       bool
+	useLP       bool
 }
 
 type HEPStats struct {
@@ -55,7 +55,7 @@ const minPktLen = 6
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
 		inputCh:    make(chan []byte, 40000),
-		buffer:     &sync.Pool{New: func() interface{} { return make([]byte, maxPktLen) }},
+		buffer:     &sync.Pool{New: func() any { return make([]byte, maxPktLen) }},
 		wg:         &sync.WaitGroup{},
 		quit:       make(chan bool),
 		exitUDP:    make(chan bool),

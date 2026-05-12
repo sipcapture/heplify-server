@@ -4,6 +4,7 @@ package luar
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/sipcapture/golua/lua"
 )
@@ -28,7 +29,7 @@ func Complex(L *lua.State) int {
 // Returns: proxy (chan interface{})
 func MakeChan(L *lua.State) int {
 	n := L.OptInteger(1, 0)
-	ch := make(chan interface{}, n)
+	ch := make(chan any, n)
 	makeValueProxy(L, reflect.ValueOf(ch), cChannelMeta)
 	return 1
 }
@@ -166,9 +167,9 @@ func ProxyType(L *lua.State) int {
 	}
 	v, _ := valueOfProxy(L, 1)
 
-	pointerLevel := ""
-	for v.Kind() == reflect.Ptr {
-		pointerLevel += "*"
+	var pointerLevel strings.Builder
+	for v.Kind() == reflect.Pointer {
+		pointerLevel.WriteString("*")
 		v = v.Elem()
 	}
 
@@ -182,7 +183,7 @@ func ProxyType(L *lua.State) int {
 		prefix = "number"
 	}
 
-	L.PushString(prefix + "<" + pointerLevel + v.Type().String() + ">")
+	L.PushString(prefix + "<" + pointerLevel.String() + v.Type().String() + ">")
 	return 1
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	reflect "reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -65,26 +66,27 @@ const (
 
 // HEP represents HEP packet
 type HEP struct {
-	Version     uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
-	Protocol    uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
-	SrcIP       string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
-	DstIP       string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
-	SrcPort     uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
-	DstPort     uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
-	Tsec        uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
-	Tmsec       uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
-	ProtoType   uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
-	NodeID      uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
-	NodePW      string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
-	Payload     string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
-	CID         string `protobuf:"bytes,13,req,name=CID" json:"CID"`
-	Vlan        uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
-	ProtoString string
-	Timestamp   time.Time
-	SIP         *sipparser.SipMsg
-	NodeName    string
-	TargetName  string
-	SID         string
+	Version          uint32 `protobuf:"varint,1,req,name=Version" json:"Version"`
+	Protocol         uint32 `protobuf:"varint,2,req,name=Protocol" json:"Protocol"`
+	SrcIP            string `protobuf:"bytes,3,req,name=SrcIP" json:"SrcIP"`
+	DstIP            string `protobuf:"bytes,4,req,name=DstIP" json:"DstIP"`
+	SrcPort          uint32 `protobuf:"varint,5,req,name=SrcPort" json:"SrcPort"`
+	DstPort          uint32 `protobuf:"varint,6,req,name=DstPort" json:"DstPort"`
+	Tsec             uint32 `protobuf:"varint,7,req,name=Tsec" json:"Tsec"`
+	Tmsec            uint32 `protobuf:"varint,8,req,name=Tmsec" json:"Tmsec"`
+	ProtoType        uint32 `protobuf:"varint,9,req,name=ProtoType" json:"ProtoType"`
+	NodeID           uint32 `protobuf:"varint,10,req,name=NodeID" json:"NodeID"`
+	NodePW           string `protobuf:"bytes,11,req,name=NodePW" json:"NodePW"`
+	Payload          string `protobuf:"bytes,12,req,name=Payload" json:"Payload"`
+	CID              string `protobuf:"bytes,13,req,name=CID" json:"CID"`
+	Vlan             uint32 `protobuf:"varint,14,req,name=Vlan" json:"Vlan"`
+	ProtoString      string
+	Timestamp        time.Time
+	SIP              *sipparser.SipMsg
+	NodeName         string
+	TargetName       string
+	SID              string
+	CustomLokiLabels map[string]string
 }
 
 // DecodeHEP returns a parsed HEP message
@@ -147,11 +149,9 @@ func (h *HEP) parse(packet []byte) error {
 		}
 
 		if len(config.Setting.DiscardMethod) > 0 {
-			for k := range config.Setting.DiscardMethod {
-				if config.Setting.DiscardMethod[k] == h.SIP.CseqMethod {
-					h.ProtoType = 0
-					return nil
-				}
+			if slices.Contains(config.Setting.DiscardMethod, h.SIP.CseqMethod) {
+				h.ProtoType = 0
+				return nil
 			}
 		}
 	}
@@ -253,7 +253,7 @@ func WriteJSONString(w io.Writer, s string) (int, error) {
 		// Hint the compiler to remove bounds checks in the loop below.
 		_ = b[n-1]
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		switch b[i] {
 		case '"':
 			write(b[j:i])
