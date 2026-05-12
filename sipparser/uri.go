@@ -35,7 +35,8 @@ type uriStateFn func(*URI) uriStateFn
 // -- UriParams are the uri's parameters
 // -- Secure is if the scheme is "sips"
 // -- atPos is just used by the parser to identify where the
-//   "@" char is in the .Raw field (or 0 if not present)
+//
+//	"@" char is in the .Raw field (or 0 if not present)
 type URI struct {
 	Error    error  // error if any
 	Scheme   string // scheme .. i.e. tel, sip, sips,etc.
