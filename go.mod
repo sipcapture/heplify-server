@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/antonmedv/expr v1.8.8
-	github.com/buger/jsonparser v1.1.1
-	github.com/cespare/xxhash/v2 v2.2.0
+	github.com/buger/jsonparser v1.1.2
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/ws v1.0.3
 	github.com/gogo/protobuf v1.3.2
@@ -24,8 +24,8 @@ require (
 	github.com/stretchr/testify v1.8.3
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasttemplate v1.1.1
-	golang.org/x/sync v0.1.0
-	google.golang.org/grpc v1.56.3
+	golang.org/x/sync v0.19.0
+	google.golang.org/grpc v1.79.3
 )
 
 require (
@@ -37,18 +37,18 @@ require (
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
