@@ -21,17 +21,17 @@ type Authorization struct {
 }
 
 /*
-func (a *Authorization) GetParam(param string) *Param {
-	if a.Params == nil {
+	func (a *Authorization) GetParam(param string) *Param {
+		if a.Params == nil {
+			return nil
+		}
+		for i := range a.Params {
+			if a.Params[i].Param == param {
+				return a.Params[i]
+			}
+		}
 		return nil
 	}
-	for i := range a.Params {
-		if a.Params[i].Param == param {
-			return a.Params[i]
-		}
-	}
-	return nil
-}
 */
 func (a *Authorization) parse() error {
 	pos := strings.IndexRune(a.Val, ' ')

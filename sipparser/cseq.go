@@ -12,9 +12,10 @@ import (
 )
 
 // Cseq is a struct that holds the values for a cseq header:
-//  -- Val is the raw string value of the cseq hdr
-//  -- Method is the SIP method
-//  -- Digit is the numeric indicator for the method
+//
+//	-- Val is the raw string value of the cseq hdr
+//	-- Method is the SIP method
+//	-- Digit is the numeric indicator for the method
 type Cseq struct {
 	Val    string
 	Method string
