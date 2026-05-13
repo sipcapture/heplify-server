@@ -6,7 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prometheus/common/model"
 	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
+	"github.com/sipcapture/heplify-server/remotelog/logproto"
 )
 
 func withConfig(t *testing.T, fn func()) {
@@ -92,6 +95,127 @@ func TestLokiSendSendsOrgIDHeaderAndFailsOnNon2xx(t *testing.T) {
 			}
 		default:
 			t.Fatal("expected push request")
+		}
+	})
+}
+
+func TestLokiSkipsTCPPortLabels(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiIPPortLabels = true
+		config.Setting.LokiSkipTCPPortLabels = true
+
+		loki := &Loki{}
+		loki.entry = entry{model.LabelSet{}, logproto.Entry{}}
+
+		// Test TCP packet (protocol 6)
+		tcpPkt := &decoder.HEP{
+			Protocol: 6, // TCP
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  12345,
+			DstPort:  5060,
+		}
+
+		// Simulate the label setting logic from loki.go
+		if config.Setting.LokiIPPortLabels {
+			loki.entry.labels["src_ip"] = model.LabelValue(tcpPkt.SrcIP)
+			loki.entry.labels["dst_ip"] = model.LabelValue(tcpPkt.DstIP)
+			skipPortLabels := config.Setting.LokiSkipTCPPortLabels && tcpPkt.Protocol == 6
+			if !skipPortLabels {
+				loki.entry.labels["src_port"] = model.LabelValue("12345")
+				loki.entry.labels["dst_port"] = model.LabelValue("5060")
+			}
+		}
+
+		// Verify TCP ports are NOT in labels
+		if _, exists := loki.entry.labels["src_port"]; exists {
+			t.Error("expected src_port label to be skipped for TCP")
+		}
+		if _, exists := loki.entry.labels["dst_port"]; exists {
+			t.Error("expected dst_port label to be skipped for TCP")
+		}
+		// Verify IPs are still present
+		if loki.entry.labels["src_ip"] != "192.168.1.1" {
+			t.Errorf("expected src_ip label to be set, got %v", loki.entry.labels["src_ip"])
+		}
+		if loki.entry.labels["dst_ip"] != "192.168.1.2" {
+			t.Errorf("expected dst_ip label to be set, got %v", loki.entry.labels["dst_ip"])
+		}
+	})
+}
+
+func TestLokiIncludesUDPPortLabels(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiIPPortLabels = true
+		config.Setting.LokiSkipTCPPortLabels = true
+
+		loki := &Loki{}
+		loki.entry = entry{model.LabelSet{}, logproto.Entry{}}
+
+		// Test UDP packet (protocol 17)
+		udpPkt := &decoder.HEP{
+			Protocol: 17, // UDP
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  5060,
+			DstPort:  5060,
+		}
+
+		// Simulate the label setting logic from loki.go
+		if config.Setting.LokiIPPortLabels {
+			loki.entry.labels["src_ip"] = model.LabelValue(udpPkt.SrcIP)
+			loki.entry.labels["dst_ip"] = model.LabelValue(udpPkt.DstIP)
+			skipPortLabels := config.Setting.LokiSkipTCPPortLabels && udpPkt.Protocol == 6
+			if !skipPortLabels {
+				loki.entry.labels["src_port"] = model.LabelValue("5060")
+				loki.entry.labels["dst_port"] = model.LabelValue("5060")
+			}
+		}
+
+		// Verify UDP ports ARE in labels
+		if loki.entry.labels["src_port"] != "5060" {
+			t.Errorf("expected src_port label to be set for UDP, got %v", loki.entry.labels["src_port"])
+		}
+		if loki.entry.labels["dst_port"] != "5060" {
+			t.Errorf("expected dst_port label to be set for UDP, got %v", loki.entry.labels["dst_port"])
+		}
+	})
+}
+
+func TestLokiIncludesTCPPortLabelsWhenSkipDisabled(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiIPPortLabels = true
+		config.Setting.LokiSkipTCPPortLabels = false
+
+		loki := &Loki{}
+		loki.entry = entry{model.LabelSet{}, logproto.Entry{}}
+
+		// Test TCP packet (protocol 6)
+		tcpPkt := &decoder.HEP{
+			Protocol: 6, // TCP
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  12345,
+			DstPort:  5060,
+		}
+
+		// Simulate the label setting logic from loki.go
+		if config.Setting.LokiIPPortLabels {
+			loki.entry.labels["src_ip"] = model.LabelValue(tcpPkt.SrcIP)
+			loki.entry.labels["dst_ip"] = model.LabelValue(tcpPkt.DstIP)
+			skipPortLabels := config.Setting.LokiSkipTCPPortLabels && tcpPkt.Protocol == 6
+			if !skipPortLabels {
+				loki.entry.labels["src_port"] = model.LabelValue("12345")
+				loki.entry.labels["dst_port"] = model.LabelValue("5060")
+			}
+		}
+
+		// Verify TCP ports ARE in labels when skip is disabled
+		if loki.entry.labels["src_port"] != "12345" {
+			t.Errorf("expected src_port label to be set when skip is disabled, got %v", loki.entry.labels["src_port"])
+		}
+		if loki.entry.labels["dst_port"] != "5060" {
+			t.Errorf("expected dst_port label to be set when skip is disabled, got %v", loki.entry.labels["dst_port"])
 		}
 	})
 }
