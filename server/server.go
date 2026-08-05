@@ -211,6 +211,11 @@ func (h *HEPInput) End() {
 
 func (h *HEPInput) worker() {
 	defer h.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			logp.Err("HEP worker panic recovered: %v", r)
+		}
+	}()
 
 	var ok bool
 	var err error

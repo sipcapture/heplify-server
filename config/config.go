@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.60.6"
+const Version = "heplify-server 1.60.7"
 
 var Setting HeplifyServer
 
@@ -79,6 +79,8 @@ type HeplifyServer struct {
 	LogLvl                string   `default:"info"`
 	LogStd                bool     `default:"false"`
 	LogSys                bool     `default:"false"`
+	LogDir                string   `default:"./"`
+	LogName               string   `default:"heplify-server.log"`
 	Config                string   `default:"./heplify-server.toml"`
 	ConfigHTTPAddr        string   `default:""`
 	ConfigHTTPPW          string   `default:""`

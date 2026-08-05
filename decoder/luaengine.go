@@ -39,14 +39,14 @@ type LuaEngine struct {
 }
 
 func (d *LuaEngine) GetHEPStruct() any {
-	if (*d.hepPkt) == nil {
+	if d.hepPkt == nil || (*d.hepPkt) == nil {
 		return ""
 	}
 	return (*d.hepPkt)
 }
 
 func (d *LuaEngine) GetSIPStruct() any {
-	if (*d.hepPkt).SIP == nil {
+	if d.hepPkt == nil || (*d.hepPkt) == nil || (*d.hepPkt).SIP == nil {
 		return ""
 	}
 	return (*d.hepPkt).SIP
@@ -285,7 +285,11 @@ func (d *LuaEngine) Logp(level string, message string, data any) {
 }
 
 func (d *LuaEngine) Close() {
+	if d == nil || d.LuaEngine == nil {
+		return
+	}
 	d.LuaEngine.Close()
+	d.LuaEngine = nil
 }
 
 // NewLuaEngine returns the script engine struct
@@ -339,13 +343,18 @@ func NewLuaEngine() (*LuaEngine, error) {
 }
 
 // Run will execute the script
-func (d *LuaEngine) Run(hep *HEP) error {
+func (d *LuaEngine) Run(hep *HEP) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("lua script panic: %v", r)
+		}
+	}()
+
 	/* preload */
 	d.hepPkt = &hep
 
 	for _, v := range d.functions {
-		err := d.LuaEngine.DoString(v)
-		if err != nil {
+		if err = d.LuaEngine.DoString(v); err != nil {
 			return err
 		}
 	}

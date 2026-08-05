@@ -54,8 +54,14 @@ func init() {
 		logging.ToSyslog = &config.Setting.LogSys
 	} else {
 		var fileRotator logp.FileRotator
-		fileRotator.Path = "./"
-		fileRotator.Name = "heplify-server.log"
+		fileRotator.Path = config.Setting.LogDir
+		if fileRotator.Path == "" {
+			fileRotator.Path = "./"
+		}
+		fileRotator.Name = config.Setting.LogName
+		if fileRotator.Name == "" {
+			fileRotator.Name = "heplify-server.log"
+		}
 		logging.Files = &fileRotator
 	}
 
