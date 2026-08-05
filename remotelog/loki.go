@@ -192,10 +192,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			l.entry.Entry.Line = pktMeta.String()
 
 			if config.Setting.LokiIPPortLabels {
-				l.entry.labels["src_ip"] = model.LabelValue(pkt.SrcIP)
-				l.entry.labels["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
-				l.entry.labels["dst_ip"] = model.LabelValue(pkt.DstIP)
-				l.entry.labels["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
+				applyLokiIPPortLabels(&l.entry.labels, pkt)
 			}
 
 			for k, v := range pkt.CustomLokiLabels {
@@ -291,4 +288,17 @@ func (l *Loki) send(ctx context.Context, buf []byte) (int, error) {
 		err = fmt.Errorf("server returned HTTP status %s (%d): %s", resp.Status, resp.StatusCode, line)
 	}
 	return resp.StatusCode, err
+}
+
+// applyLokiIPPortLabels adds src/dst IP labels and, unless TCP port skipping is
+// enabled for TCP packets, also adds src/dst port labels.
+func applyLokiIPPortLabels(labels *model.LabelSet, pkt *decoder.HEP) {
+	(*labels)["src_ip"] = model.LabelValue(pkt.SrcIP)
+	(*labels)["dst_ip"] = model.LabelValue(pkt.DstIP)
+	// TCP source ports are typically ephemeral and explode Loki cardinality.
+	if config.Setting.LokiSkipTCPPortLabels && pkt.Protocol == 6 {
+		return
+	}
+	(*labels)["src_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.SrcPort), 10))
+	(*labels)["dst_port"] = model.LabelValue(strconv.FormatUint(uint64(pkt.DstPort), 10))
 }
