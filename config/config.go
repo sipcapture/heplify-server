@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.60.3"
+const Version = "heplify-server 1.60.4"
 
 var Setting HeplifyServer
 
@@ -14,6 +14,10 @@ type HeplifyServer struct {
 	HEPv2Enable           bool     `default:"true"`
 	ESUser                string   `default:""`
 	ESPass                string   `default:""`
+	ESBulk                int      `default:"1000"`
+	ESBulkSize            int      `default:"2048"`
+	ESTimer               int      `default:"10"`
+	ESWorker              int      `default:"0"`
 	LokiURL               string   `default:""`
 	LokiOrgID             string   `default:""`
 	LokiBulk              int      `default:"400"`

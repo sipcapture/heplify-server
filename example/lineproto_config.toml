@@ -35,6 +35,10 @@ LineprotoIPPortLabels = false     # Set to true to include src_ip, src_port, dst
 ESAddr = ""
 ESUser = ""
 ESPass = ""
+ESBulk = 1000          # Flush after N documents
+ESBulkSize = 2048      # Flush after N KB
+ESTimer = 10           # Flush interval in seconds
+ESWorker = 0           # Bulk workers (0 = NumCPU)
 
 # Loki Output (optional - can be used alongside lineproto)
 LokiURL = ""

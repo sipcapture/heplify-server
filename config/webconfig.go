@@ -31,6 +31,18 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 	} else if ESDiscovery == "false" {
 		webSetting.ESDiscovery = false
 	}
+	if webSetting.ESBulk, err = strconv.Atoi(r.FormValue("ESBulk")); err != nil {
+		return nil, err
+	}
+	if webSetting.ESBulkSize, err = strconv.Atoi(r.FormValue("ESBulkSize")); err != nil {
+		return nil, err
+	}
+	if webSetting.ESTimer, err = strconv.Atoi(r.FormValue("ESTimer")); err != nil {
+		return nil, err
+	}
+	if webSetting.ESWorker, err = strconv.Atoi(r.FormValue("ESWorker")); err != nil {
+		return nil, err
+	}
 	webSetting.LokiURL = r.FormValue("LokiURL")
 	webSetting.LokiOrgID = r.FormValue("LokiOrgID")
 	if webSetting.LokiBulk, err = strconv.Atoi(r.FormValue("LokiBulk")); err != nil {
@@ -224,6 +236,22 @@ var WebForm = `
 				<option value="true">true</option>
 				<option value="false">false</option>
 			</select>
+		</div>
+		<div>
+			<label>ESBulk</label>
+			<input  type="number" name="ESBulk" placeholder="{{.ESBulk}}" value="{{.ESBulk}}" min="1" max="20000">
+		</div>
+		<div>
+			<label>ESBulkSize</label>
+			<input  type="number" name="ESBulkSize" placeholder="{{.ESBulkSize}}" value="{{.ESBulkSize}}" min="1" max="102400">
+		</div>
+		<div>
+			<label>ESTimer</label>
+			<input  type="number" name="ESTimer" placeholder="{{.ESTimer}}" value="{{.ESTimer}}" min="1" max="300">
+		</div>
+		<div>
+			<label>ESWorker</label>
+			<input  type="number" name="ESWorker" placeholder="{{.ESWorker}}" value="{{.ESWorker}}" min="0" max="256">
 		</div>
 		<div>
 			<label>LokiURL</label>
