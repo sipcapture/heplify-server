@@ -43,6 +43,16 @@ You have 3 options to get **heplify-server** up and running:
 ### Requirements
 These depend on which features you want to use and on whether you use homer5 or homer7 schema. For homer5, you need MySQL >= 5.7 or MariaDB >= 10. For homer7 you need PostgreSQL >= 10.
 
+Homer7 `raw` columns are stored as PostgreSQL `bytea` (binary-safe for SIP/ISUP multipart). Existing DBs are auto-migrated on startup when possible; if migration fails, run:
+
+```sql
+ALTER TABLE hep_proto_1_call ALTER COLUMN raw TYPE bytea USING convert_to(coalesce(raw::text, ''), 'UTF8');
+-- repeat for hep_proto_1_registration, hep_proto_1_default, hep_proto_5_default,
+-- hep_proto_35_default, hep_proto_53_default, hep_proto_54_default, hep_proto_100_default
+```
+
+DB health Prometheus metrics (when Prometheus is enabled): `heplify_db_up`, `heplify_db_insert_errors_total`, `heplify_db_insert_success_total`, `heplify_db_last_insert_success_timestamp_seconds`.
+
 ### Configuration
 **heplify-server** can be configured using command-line flags, environment variables, or a local [configuration file](https://github.com/sipcapture/heplify-server/blob/master/example/) or via web form by setting ConfigHTTPAddr  
 
