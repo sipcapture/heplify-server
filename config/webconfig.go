@@ -126,6 +126,12 @@ func WebConfig(r *http.Request) (*HeplifyServer, error) {
 		webSetting.Dedup = false
 	}
 	webSetting.LogLvl = r.FormValue("LogLvl")
+	if v := r.FormValue("LogDir"); v != "" {
+		webSetting.LogDir = v
+	}
+	if v := r.FormValue("LogName"); v != "" {
+		webSetting.LogName = v
+	}
 	LogSys := r.FormValue("LogSys")
 	if LogSys == "true" {
 		webSetting.LogSys = true
@@ -356,6 +362,14 @@ var WebForm = `
 		<div>
 			<label>LogLvl</label>
 			<input  type="text" name="LogLvl" placeholder="{{.LogLvl}}" value="{{.LogLvl}}">
+		</div>
+		<div>
+			<label>LogDir</label>
+			<input  type="text" name="LogDir" placeholder="{{.LogDir}}" value="{{.LogDir}}">
+		</div>
+		<div>
+			<label>LogName</label>
+			<input  type="text" name="LogName" placeholder="{{.LogName}}" value="{{.LogName}}">
 		</div>
 		<div>
 			<label>LogSys</label>

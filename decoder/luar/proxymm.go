@@ -331,7 +331,11 @@ func proxy__eq(L *lua.State) int {
 }
 
 func proxy__gc(L *lua.State) int {
-	proxyId := *(*uintptr)(L.ToUserdata(1))
+	ud := L.ToUserdata(1)
+	if ud == nil {
+		return 0
+	}
+	proxyId := *(*uintptr)(ud)
 	proxymu.Lock()
 	delete(proxyMap, proxyId)
 	proxymu.Unlock()

@@ -248,7 +248,12 @@ func unsizedKind(v reflect.Value) reflect.Kind {
 }
 
 func valueOfProxy(L *lua.State, idx int) (reflect.Value, reflect.Type) {
-	proxyId := *(*uintptr)(L.ToUserdata(idx))
+	ud := L.ToUserdata(idx)
+	if ud == nil {
+		L.RaiseError(fmt.Sprintf("No userdata proxy in arg #%d", idx))
+		return reflect.Value{}, nil
+	}
+	proxyId := *(*uintptr)(ud)
 
 	proxymu.RLock()
 	val, ok := proxyMap[proxyId]
@@ -256,6 +261,7 @@ func valueOfProxy(L *lua.State, idx int) (reflect.Value, reflect.Type) {
 
 	if !ok {
 		L.RaiseError(fmt.Sprintf("No value proxy in arg #%d", idx))
+		return reflect.Value{}, nil
 	}
 
 	return val.v, val.t

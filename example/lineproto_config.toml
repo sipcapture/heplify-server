@@ -72,4 +72,8 @@ TLSKeyFile = ""
 # Optional client certificate authentication
 TLSClientCAFile = ""
 TLSRequireClientCert = false
-TLSMinVersion = "1.2" 
+TLSMinVersion = "1.2"
+
+# Logging (when LogSys=false and LogStd=false, logs go to LogDir/LogName)
+LogDir = "./"
+LogName = "heplify-server.log" 
