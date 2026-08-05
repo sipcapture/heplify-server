@@ -45,6 +45,7 @@ func (e *Elasticsearch) setup() error {
 		BulkSize(2 << 20).
 		Stats(true).
 		FlushInterval(10 * time.Second).
+		After(bulkAfter).
 		Do(e.ctx)
 	if err != nil {
 		return err
@@ -81,7 +82,9 @@ func (e *Elasticsearch) start(hCh chan *decoder.HEP) {
 			if !ok {
 				return
 			}
-			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006-01-02")).Type("hep").Doc(pkt)
+			// Do not set .Type(): ES 8.x rejects bulk metadata with _type
+			// (illegal_argument_exception: unknown parameter [_type]).
+			r := elastic.NewBulkIndexRequest().Index("heplify-server-" + time.Now().Format("2006-01-02")).Doc(pkt)
 			e.bulkClient.Add(r)
 		case <-ticker.C:
 			err := e.createIndex(e.ctx, e.client)
@@ -130,6 +133,22 @@ func showNodes(client *elastic.Client) error {
 		logp.Info("%s, %s, %s", node.Name, id, node.TransportAddress)
 	}
 	return nil
+}
+
+// bulkAfter logs Elasticsearch bulk flush failures that would otherwise be silent.
+func bulkAfter(_ int64, _ []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+	if err != nil {
+		logp.Err("elasticsearch bulk flush failed: %v", err)
+		return
+	}
+	if response == nil || !response.Errors {
+		return
+	}
+	for _, item := range response.Failed() {
+		if item != nil && item.Error != nil {
+			logp.Err("elasticsearch bulk item failed: type=%s reason=%s", item.Error.Type, item.Error.Reason)
+		}
+	}
 }
 
 // printStats retrieves statistics from the BulkProcessor and logs them.
