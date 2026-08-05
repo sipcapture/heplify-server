@@ -38,13 +38,33 @@ func (e *Elasticsearch) setup() error {
 		return err
 	}
 
+	bulkActions := config.Setting.ESBulk
+	if bulkActions <= 0 {
+		bulkActions = 1000
+	}
+	bulkSizeKB := config.Setting.ESBulkSize
+	if bulkSizeKB <= 0 {
+		bulkSizeKB = 2048
+	}
+	flushSec := config.Setting.ESTimer
+	if flushSec <= 0 {
+		flushSec = 10
+	}
+	workers := config.Setting.ESWorker
+	if workers <= 0 {
+		workers = runtime.NumCPU()
+	}
+
+	logp.Info("elasticsearch bulk: actions=%d size=%dKB timer=%ds workers=%d",
+		bulkActions, bulkSizeKB, flushSec, workers)
+
 	e.bulkClient, err = e.client.BulkProcessor().
 		Name("ESBulkProcessor").
-		Workers(runtime.NumCPU()).
-		BulkActions(1000).
-		BulkSize(2 << 20).
+		Workers(workers).
+		BulkActions(bulkActions).
+		BulkSize(bulkSizeKB << 10).
 		Stats(true).
-		FlushInterval(10 * time.Second).
+		FlushInterval(time.Duration(flushSec) * time.Second).
 		After(bulkAfter).
 		Do(e.ctx)
 	if err != nil {
