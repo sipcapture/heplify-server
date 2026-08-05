@@ -53,3 +53,49 @@ func TestUri(t *testing.T) {
 		t.Errorf("[TestUri] Error parsing URI \"sip:myfoo.com\".  Host should be \"myfoo.com\" but received: " + u.Host)
 	}
 }
+
+func TestUriIPv6Bracketed(t *testing.T) {
+	u := ParseURI("sip:+32460214964@[2a0c:10c0:ffff:2::1234]")
+	if u.Error != nil {
+		t.Fatalf("unexpected error: %v", u.Error)
+	}
+	if got, want := u.Host, "2a0c:10c0:ffff:2::1234"; got != want {
+		t.Fatalf("Host = %q, want %q", got, want)
+	}
+	if u.Port != "" {
+		t.Fatalf("Port = %q, want empty", u.Port)
+	}
+}
+
+func TestUriIPv6BracketedWithPort(t *testing.T) {
+	u := ParseURI("sip:user@[2001:db8::1]:5060")
+	if u.Error != nil {
+		t.Fatalf("unexpected error: %v", u.Error)
+	}
+	if got, want := u.Host, "2001:db8::1"; got != want {
+		t.Fatalf("Host = %q, want %q", got, want)
+	}
+	if got, want := u.Port, "5060"; got != want {
+		t.Fatalf("Port = %q, want %q", got, want)
+	}
+	if u.PortInt != 5060 {
+		t.Fatalf("PortInt = %d, want 5060", u.PortInt)
+	}
+}
+
+func TestUriIPv6Unbracketed(t *testing.T) {
+	u := ParseURI("sip:9876@fe80:0:0:0:21a:a0ff:fe07:32e0")
+	if u.Error != nil {
+		t.Fatalf("unexpected error: %v", u.Error)
+	}
+	if got, want := u.Host, "fe80:0:0:0:21a:a0ff:fe07:32e0"; got != want {
+		t.Fatalf("Host = %q, want %q", got, want)
+	}
+}
+
+func TestFromHeaderIPv6Domain(t *testing.T) {
+	s := ParseMsg("INVITE sip:a@b SIP/2.0\r\nFrom: \"+32460214964\" <sip:+32460214964@[2a0c:10c0:ffff:2::1234]>;tag=x\r\nTo: <sip:b@c>\r\nCall-ID: 1\r\nCSeq: 1 INVITE\r\n\r\n", nil, nil)
+	if got, want := s.FromHost, "2a0c:10c0:ffff:2::1234"; got != want {
+		t.Fatalf("FromHost = %q, want %q", got, want)
+	}
+}

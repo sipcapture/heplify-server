@@ -110,3 +110,22 @@ func BenchmarkDissectJanusStats(b *testing.B) {
 		pmCh <- hep
 	}
 }
+
+func TestMatchTargetCIDR(t *testing.T) {
+	p := &Prometheus{}
+	if err := p.setTargets(
+		[]string{"10.1.2.111", "172.16.0.0/16"},
+		[]string{"sbc_access", "customer_a"},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if name, ok := p.matchTarget("10.1.2.111"); !ok || name != "sbc_access" {
+		t.Fatalf("exact match failed: ok=%v name=%q", ok, name)
+	}
+	if name, ok := p.matchTarget("172.16.5.9"); !ok || name != "customer_a" {
+		t.Fatalf("cidr match failed: ok=%v name=%q", ok, name)
+	}
+	if _, ok := p.matchTarget("192.168.1.1"); ok {
+		t.Fatal("expected no match for unrelated IP")
+	}
+}

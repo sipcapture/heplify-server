@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/binary"
 	"fmt"
+	"net"
 	"strings"
 	"sync"
 
@@ -18,11 +19,17 @@ const (
 	cacheSize = 60 * 1024 * 1024
 )
 
+type cidrTarget struct {
+	net  *net.IPNet
+	name string
+}
+
 type Prometheus struct {
 	TargetEmpty bool
 	TargetIP    []string
 	TargetName  []string
 	TargetMap   map[string]string
+	TargetCIDRs []cidrTarget
 	TargetConf  *sync.RWMutex
 	cache       *fastcache.Cache
 }
@@ -43,9 +50,8 @@ func (p *Prometheus) setup() (err error) {
 			for i := range p.TargetName {
 				logp.Info("prometheus tag assignment %d: %s -> %s", i+1, p.TargetIP[i], p.TargetName[i])
 			}
-			p.TargetMap = make(map[string]string)
-			for i := 0; i < len(p.TargetName); i++ {
-				p.TargetMap[p.TargetIP[i]] = p.TargetName[i]
+			if err = p.setTargets(p.TargetIP, p.TargetName); err != nil {
+				return err
 			}
 		}
 	} else {
@@ -54,6 +60,46 @@ func (p *Prometheus) setup() (err error) {
 	}
 
 	return err
+}
+
+func (p *Prometheus) setTargets(ips, names []string) error {
+	exact := make(map[string]string)
+	var cidrs []cidrTarget
+	for i := 0; i < len(names); i++ {
+		ip := ips[i]
+		name := names[i]
+		if strings.Contains(ip, "/") {
+			_, network, err := net.ParseCIDR(ip)
+			if err != nil {
+				return fmt.Errorf("invalid PromTargetIP CIDR %q: %w", ip, err)
+			}
+			cidrs = append(cidrs, cidrTarget{net: network, name: name})
+			continue
+		}
+		exact[ip] = name
+	}
+	p.TargetMap = exact
+	p.TargetCIDRs = cidrs
+	return nil
+}
+
+func (p *Prometheus) matchTarget(ipStr string) (string, bool) {
+	if name, ok := p.TargetMap[ipStr]; ok {
+		return name, true
+	}
+	if len(p.TargetCIDRs) == 0 {
+		return "", false
+	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return "", false
+	}
+	for _, c := range p.TargetCIDRs {
+		if c.net.Contains(ip) {
+			return c.name, true
+		}
+	}
+	return "", false
 }
 
 func (p *Prometheus) expose(hCh chan *decoder.HEP) {
@@ -65,8 +111,10 @@ func (p *Prometheus) expose(hCh chan *decoder.HEP) {
 		var srcHit, dstHit bool
 
 		if !p.TargetEmpty {
-			srcTarget, srcHit = p.TargetMap[pkt.SrcIP]
-			dstTarget, dstHit = p.TargetMap[pkt.DstIP]
+			p.TargetConf.RLock()
+			srcTarget, srcHit = p.matchTarget(pkt.SrcIP)
+			dstTarget, dstHit = p.matchTarget(pkt.DstIP)
+			p.TargetConf.RUnlock()
 		}
 
 		if pkt.SIP != nil && pkt.ProtoType == 1 {

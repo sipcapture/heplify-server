@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/negbie/logp"
@@ -58,8 +57,14 @@ func (d *Database) Run() error {
 		return err
 	}
 
-	if worker > runtime.NumCPU() {
-		worker = runtime.NumCPU()
+	// Cap only at a hard safety limit; DB pools are latency-bound, not CPU-bound (#463).
+	const maxDBWorker = 256
+	if worker < 1 {
+		worker = 1
+	}
+	if worker > maxDBWorker {
+		logp.Warn("DBWorker=%d exceeds max %d, clamping", worker, maxDBWorker)
+		worker = maxDBWorker
 	}
 
 	for i := 0; i < worker; i++ {
