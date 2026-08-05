@@ -188,7 +188,11 @@ func (h *HEP) normPayload() {
 		dedupCache.Set(kh, tb)
 	}
 
-	h.Payload = toUTF8(h.Payload, "")
+	// SIP (1) may carry multipart binary (e.g. ISUP); ISUP (54) is binary.
+	// Stripping NUL/invalid UTF-8 here corrupts payloads before DB storage (#540).
+	if h.ProtoType != 1 && h.ProtoType != 54 {
+		h.Payload = toUTF8(h.Payload, "")
+	}
 }
 
 func (h *HEP) EscapeFields(w io.Writer, tag string) (int, error) {

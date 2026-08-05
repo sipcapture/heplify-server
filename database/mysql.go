@@ -115,6 +115,8 @@ func (m *MySQL) setup() error {
 	m.sipBulkVal = sipQueryVal(m.bulkCnt)
 	m.rtcBulkVal = rtcQueryVal(m.bulkCnt)
 
+	startDBHealthMonitor(m.db, "mysql")
+
 	logp.Info("%s connection established\n", config.Setting.DBDriver)
 	return nil
 }
@@ -332,7 +334,10 @@ func (m *MySQL) bulkInsert(q, v []byte, rows []any) {
 	_, err := m.db.Exec(string(query), rows...)
 	if err != nil {
 		logp.Err("%v", err)
+		recordDBInsertError("mysql")
+		return
 	}
+	recordDBInsertSuccess("mysql")
 }
 
 func short(s string, i int) string {

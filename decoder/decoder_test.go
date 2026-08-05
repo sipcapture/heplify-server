@@ -160,3 +160,20 @@ func makeChunks(h *HEP) []byte {
 	}
 	return w.Bytes()
 }
+
+func TestNormPayloadPreservesSIPBinary(t *testing.T) {
+	// ISUP-like bytes including NUL and invalid UTF-8 sequences (#540).
+	bin := "SIP/2.0 200 OK\r\n\r\n" + string([]byte{0x01, 0x10, 0x48, 0x00, 0x0a, 0x87, 0xc0, 0xd0, 0xf5})
+	h := &HEP{ProtoType: 1, Payload: bin}
+	h.normPayload()
+	assert.Equal(t, bin, h.Payload)
+
+	h2 := &HEP{ProtoType: 54, Payload: bin}
+	h2.normPayload()
+	assert.Equal(t, bin, h2.Payload)
+
+	// Non-SIP still strips NUL / invalid UTF-8.
+	h3 := &HEP{ProtoType: 5, Payload: "ok\x00bad\xff"}
+	h3.normPayload()
+	assert.NotContains(t, h3.Payload, "\x00")
+}

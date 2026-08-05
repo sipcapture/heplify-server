@@ -131,7 +131,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_35_default (
@@ -140,7 +140,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_5_default (
@@ -149,7 +149,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_1_call (
@@ -158,7 +158,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_1_registration (
@@ -167,7 +167,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_1_default (
@@ -176,7 +176,7 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 
 	`CREATE TABLE IF NOT EXISTS hep_proto_54_default (
@@ -185,6 +185,6 @@ var tbldatapg = []string{
 		create_date timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 		protocol_header jsonb NOT NULL,
 		data_header jsonb NOT NULL,
-		raw varchar NOT NULL
+		raw bytea NOT NULL
 	) PARTITION BY RANGE (create_date);`,
 }
