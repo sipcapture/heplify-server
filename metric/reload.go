@@ -50,9 +50,10 @@ func (p *Prometheus) reload() {
 		p.TargetIP = fsTargetIP
 		p.TargetName = fsTargetName
 		p.TargetEmpty = false
-		p.TargetMap = make(map[string]string)
-		for i := 0; i < len(p.TargetName); i++ {
-			p.TargetMap[p.TargetIP[i]] = p.TargetName[i]
+		if err := p.setTargets(fsTargetIP, fsTargetName); err != nil {
+			p.TargetConf.Unlock()
+			logp.Err("failed to reload PromTargetIP: %v", err)
+			return
 		}
 		p.TargetConf.Unlock()
 		logp.Info("successfully reloaded PromTargetIP: %#v", fsTargetIP)

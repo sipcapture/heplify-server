@@ -7,8 +7,6 @@ package sipparser
 
 // Imports from the go standard library
 import (
-	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -147,92 +145,4 @@ func parseUriUser(u *URI) uriStateFn {
 		}
 	}
 	return parseUriHost
-}
-
-func parseUriHost(u *URI) uriStateFn {
-	if len(u.Raw) <= u.atPos {
-		u.Error = fmt.Errorf("malformed host part inside URI: %s", u.Raw)
-		return nil
-	}
-
-	firstSemi := strings.IndexRune(u.Raw[u.atPos:], ';')
-	/*
-		if firstSemi != -1 {
-			if u.UriParams == nil {
-				u.UriParams = make([]*Param, 0)
-			}
-			if len(u.Raw[u.atPos:])-1 > firstSemi+1 {
-				uriparams := strings.Split(u.Raw[u.atPos:][firstSemi+1:], ";")
-				for i := range uriparams {
-					u.UriParams = append(u.UriParams, getParam(uriparams[i]))
-				}
-			}
-		}
-	*/
-	colon := 0
-	if firstSemi != -1 {
-		for i := range u.Raw[u.atPos : u.atPos+firstSemi] {
-			if i != len(u.Raw[u.atPos+1:u.atPos+firstSemi]) {
-				if u.Raw[u.atPos+1 : u.atPos+firstSemi][i] == ':' {
-					//u.Port = cleanWs(u.Raw[u.atPos+1 : u.atPos+firstSemi][i+1:])
-					u.Port = u.Raw[u.atPos+1 : u.atPos+firstSemi][i+1:]
-					if len(u.Port) >= 2 {
-						u.PortInt, _ = strconv.Atoi(u.Port)
-					}
-					colon = i
-				}
-				if colon != 0 {
-					break
-				}
-			}
-		}
-		switch {
-		case colon == 0:
-			if u.atPos != 0 {
-				u.Host = u.Raw[u.atPos+1 : u.atPos+firstSemi]
-			} else {
-				u.Host = u.Raw[u.atPos : u.atPos+firstSemi]
-			}
-
-		default:
-			if u.atPos != 0 {
-				u.Host = u.Raw[u.atPos+1 : u.atPos+colon+1]
-			} else {
-				u.Host = u.Raw[u.atPos : u.atPos+colon+1]
-			}
-		}
-	}
-	if firstSemi == -1 {
-		for i := range u.Raw[u.atPos+1:] {
-			if i != len(u.Raw[u.atPos+1:]) {
-				if u.Raw[u.atPos+1:][i] == ':' {
-					//u.Port = cleanWs(u.Raw[u.atPos+1:][i+1:])
-					u.Port = u.Raw[u.atPos+1:][i+1:]
-					if len(u.Port) >= 2 {
-						u.PortInt, _ = strconv.Atoi(u.Port)
-					}
-					colon = i
-				}
-				if colon != 0 {
-					break
-				}
-			}
-		}
-		switch {
-		case colon == 0:
-			if u.atPos != 0 {
-				u.Host = u.Raw[u.atPos+1:]
-			} else {
-				u.Host = u.Raw[u.atPos:]
-			}
-
-		default:
-			if u.atPos != 0 {
-				u.Host = u.Raw[u.atPos+1 : u.atPos+colon+1]
-			} else {
-				u.Host = u.Raw[u.atPos : u.atPos+colon+1]
-			}
-		}
-	}
-	return nil
 }
