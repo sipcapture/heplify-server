@@ -1,6 +1,6 @@
 package config
 
-const Version = "heplify-server 1.60.5"
+const Version = "heplify-server 1.60.6"
 
 var Setting HeplifyServer
 
@@ -25,6 +25,7 @@ type HeplifyServer struct {
 	LokiBuffer            int      `default:"100000"`
 	LokiHEPFilter         []int    `default:"1,5,100"`
 	LokiIPPortLabels      bool     `default:"false"`
+	LokiSkipTCPPortLabels bool     `default:"true"`
 	LokiFromToLabels      bool     `default:"false"`
 	LokiCallIDLabels      bool     `default:"false"`
 	LokiAllowOutOfOrder   bool     `default:"false"`
@@ -86,6 +87,10 @@ type HeplifyServer struct {
 	ScriptEngine          string   `default:"lua"`
 	ScriptFolder          string   `default:""`
 	ScriptHEPFilter       []int    `default:"1,5,100"`
-	TLSCertFolder         string   `default:"."`
-	TLSMinVersion         string   `default:"1.2"`
+	TLSCertFolder        string `default:"."`
+	TLSCertFile          string `default:""`
+	TLSKeyFile           string `default:""`
+	TLSClientCAFile      string `default:""`
+	TLSRequireClientCert bool   `default:"false"`
+	TLSMinVersion        string `default:"1.2"`
 }

@@ -6,7 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prometheus/common/model"
 	"github.com/sipcapture/heplify-server/config"
+	"github.com/sipcapture/heplify-server/decoder"
 )
 
 func withConfig(t *testing.T, fn func()) {
@@ -95,3 +97,61 @@ func TestLokiSendSendsOrgIDHeaderAndFailsOnNon2xx(t *testing.T) {
 		}
 	})
 }
+
+func TestApplyLokiIPPortLabels_SkipsTCPPortsByDefault(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiSkipTCPPortLabels = true
+		labels := model.LabelSet{}
+		applyLokiIPPortLabels(&labels, &decoder.HEP{
+			Protocol: 6,
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  12345,
+			DstPort:  5060,
+		})
+		if _, ok := labels["src_port"]; ok {
+			t.Fatal("expected src_port to be skipped for TCP")
+		}
+		if _, ok := labels["dst_port"]; ok {
+			t.Fatal("expected dst_port to be skipped for TCP")
+		}
+		if labels["src_ip"] != "192.168.1.1" || labels["dst_ip"] != "192.168.1.2" {
+			t.Fatalf("unexpected IP labels: %v", labels)
+		}
+	})
+}
+
+func TestApplyLokiIPPortLabels_IncludesUDPPorts(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiSkipTCPPortLabels = true
+		labels := model.LabelSet{}
+		applyLokiIPPortLabels(&labels, &decoder.HEP{
+			Protocol: 17,
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  5060,
+			DstPort:  5060,
+		})
+		if labels["src_port"] != "5060" || labels["dst_port"] != "5060" {
+			t.Fatalf("expected UDP ports in labels, got %v", labels)
+		}
+	})
+}
+
+func TestApplyLokiIPPortLabels_IncludesTCPPortsWhenSkipDisabled(t *testing.T) {
+	withConfig(t, func() {
+		config.Setting.LokiSkipTCPPortLabels = false
+		labels := model.LabelSet{}
+		applyLokiIPPortLabels(&labels, &decoder.HEP{
+			Protocol: 6,
+			SrcIP:    "192.168.1.1",
+			DstIP:    "192.168.1.2",
+			SrcPort:  12345,
+			DstPort:  5060,
+		})
+		if labels["src_port"] != "12345" || labels["dst_port"] != "5060" {
+			t.Fatalf("expected TCP ports when skip disabled, got %v", labels)
+		}
+	})
+}
+

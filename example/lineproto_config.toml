@@ -46,7 +46,8 @@ LokiBulk = 400
 LokiTimer = 4
 LokiBuffer = 100000
 LokiHEPFilter = [1, 5, 100]
-LokiIPPortLabels = false
+LokiIPPortLabels = false          # Set to true to include src_ip, src_port, dst_ip, dst_port as labels
+LokiSkipTCPPortLabels = true      # Skip port labels for TCP to reduce cardinality (when LokiIPPortLabels is true)
 LokiAllowOutOfOrder = false
 LokiCustomLabels = []
 
@@ -63,5 +64,12 @@ ScriptFolder = ""
 ScriptHEPFilter = [1, 5, 100]
 
 # TLS Configuration
+# Legacy auto-generated cert under TLSCertFolder (used when TLSCertFile/TLSKeyFile are empty)
 TLSCertFolder = "."
+# Explicit server certificate (preferred for production)
+TLSCertFile = ""
+TLSKeyFile = ""
+# Optional client certificate authentication
+TLSClientCAFile = ""
+TLSRequireClientCert = false
 TLSMinVersion = "1.2" 
