@@ -51,6 +51,17 @@ type HEPStats struct {
 
 const maxPktLen = 65507
 const minPktLen = 6
+const maxChanBuffer = 10_000_000
+
+func clampChanBuffer(n, def int) int {
+	if n <= 0 {
+		return def
+	}
+	if n > maxChanBuffer {
+		return maxChanBuffer
+	}
+	return n
+}
 
 func NewHEPInput() *HEPInput {
 	h := &HEPInput{
@@ -66,7 +77,7 @@ func NewHEPInput() *HEPInput {
 	}
 	if len(config.Setting.DBAddr) > 2 {
 		h.useDB = true
-		h.dbCh = make(chan *decoder.HEP, config.Setting.DBBuffer)
+		h.dbCh = make(chan *decoder.HEP, clampChanBuffer(config.Setting.DBBuffer, 400000))
 	}
 	if len(config.Setting.PromAddr) > 2 {
 		h.usePM = true
@@ -78,11 +89,11 @@ func NewHEPInput() *HEPInput {
 	}
 	if len(config.Setting.LokiURL) > 2 {
 		h.useLK = true
-		h.lokiCh = make(chan *decoder.HEP, config.Setting.LokiBuffer)
+		h.lokiCh = make(chan *decoder.HEP, clampChanBuffer(config.Setting.LokiBuffer, 100000))
 	}
 	if len(config.Setting.LineprotoURL) > 2 {
 		h.useLP = true
-		h.lineprotoCh = make(chan *decoder.HEP, config.Setting.LineprotoBuffer)
+		h.lineprotoCh = make(chan *decoder.HEP, clampChanBuffer(config.Setting.LineprotoBuffer, 100000))
 	}
 
 	return h

@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -65,24 +66,32 @@ func (e *ExprEngine) SetHEPField(field string, value string) uint8 {
 
 	switch field {
 	case "ProtoType":
-		if i, err := strconv.Atoi(value); err == nil {
-			e.hepPkt.ProtoType = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				e.hepPkt.ProtoType = uint32(i)
+			}
 		}
 	case "SrcIP":
 		e.hepPkt.SrcIP = value
 	case "SrcPort":
-		if i, err := strconv.Atoi(value); err == nil {
-			e.hepPkt.SrcPort = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				e.hepPkt.SrcPort = uint32(i)
+			}
 		}
 	case "DstIP":
 		e.hepPkt.DstIP = value
 	case "DstPort":
-		if i, err := strconv.Atoi(value); err == nil {
-			e.hepPkt.DstPort = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				e.hepPkt.DstPort = uint32(i)
+			}
 		}
 	case "NodeID":
-		if i, err := strconv.Atoi(value); err == nil {
-			e.hepPkt.NodeID = uint32(i)
+		if i, err := strconv.ParseInt(value, 10, 32); err == nil {
+			if i >= 0 && i <= math.MaxUint32 {
+				e.hepPkt.NodeID = uint32(i)
+			}
 		}
 	case "CID":
 		e.hepPkt.CID = value
