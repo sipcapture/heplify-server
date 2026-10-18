@@ -209,14 +209,7 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			}
 
 			batchSize += len(l.entry.Line)
-			fp := l.entry.labels.FastFingerprint()
-			stream, ok := batch[fp]
-			if !ok {
-				stream = &logproto.Stream{
-					Labels: l.entry.labels.String(),
-				}
-				batch[fp] = stream
-			}
+			stream := lokiStream(batch, l.entry.labels)
 			stream.Entries = append(stream.Entries, l.Entry)
 
 		case <-maxWait.C:
@@ -230,6 +223,30 @@ func (l *Loki) start(hCh chan *decoder.HEP) {
 			maxWait.Reset(l.BatchWait)
 		}
 	}
+}
+
+// lokiStream returns the batch stream for labels. FastFingerprint is an XOR of
+// per-label hashes, so two sets whose changed labels have the same hash delta
+// share a fingerprint. 486→487 and 172.17.47.195→172.17.47.194 are such a pair:
+// a 487 to the .194 host was stored with the 486/.195 labels. On a collision,
+// key the stream by the sorted fingerprint instead of appending to the first set.
+func lokiStream(batch map[model.Fingerprint]*logproto.Stream, labels model.LabelSet) *logproto.Stream {
+	labelStr := labels.String()
+	fp := labels.FastFingerprint()
+	stream, ok := batch[fp]
+	if ok && stream.Labels != labelStr {
+		fp = labels.Fingerprint()
+		stream, ok = batch[fp]
+	}
+	for ok && stream.Labels != labelStr {
+		fp++
+		stream, ok = batch[fp]
+	}
+	if !ok {
+		stream = &logproto.Stream{Labels: labelStr}
+		batch[fp] = stream
+	}
+	return stream
 }
 
 func (l *Loki) sendBatch(batch map[model.Fingerprint]*logproto.Stream) error {
