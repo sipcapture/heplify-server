@@ -1,0 +1,15 @@
+name: Publish release binaries
+description: Upload release assets. The heplify-server binaries are static, so the image only needs curl and jq.
+inputs:
+  args:
+    description: File pattern to upload
+    required: true
+  releaseId:
+    description: Release id to target. Defaults to the release that triggered the workflow.
+    required: false
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.args }}
+    - ${{ inputs.releaseId }}

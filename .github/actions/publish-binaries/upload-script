@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# Upload binary artifacts when a new release is made.
+#
+# Invoked with a pattern for files to upload, and optionally the release id.
+# GitHub Actions passes those as INPUT_ARGS and INPUT_RELEASEID.
+
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  echo "Set the GITHUB_TOKEN env variable."
+  exit 1
+fi
+
+if [[ -z "$INPUT_ARGS" ]]; then
+  echo "Missing file (pattern) to upload."
+  exit 1
+fi
+
+echo "Arguments : ${INPUT_ARGS}"
+echo "Release ID: ${INPUT_RELEASEID}"
+
+found=
+for file in $INPUT_ARGS; do
+  if [ -e "$file" ]; then
+    found=1
+  fi
+done
+
+if [ -z "${found}" ]; then
+  echo "No files matched ${INPUT_ARGS}"
+  exit 1
+fi
+
+AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
+
+if [ -z "${INPUT_RELEASEID}" ]; then
+  RELEASE_ID=$(jq --raw-output '.release.id' "$GITHUB_EVENT_PATH")
+  echo "Discovered RELEASE_ID: ${RELEASE_ID}"
+else
+  RELEASE_ID="${INPUT_RELEASEID}"
+  echo "Using supplied RELEASE_ID: ${RELEASE_ID}"
+fi
+
+for file in $INPUT_ARGS; do
+  echo "Processing file ${file}"
+
+  if [ ! -e "$file" ]; then
+    echo "file not found - skipping."
+    continue
+  fi
+
+  if [ ! -s "$file" ]; then
+    echo "file is empty - skipping."
+    continue
+  fi
+
+  FILENAME=$(basename "${file}")
+  UPLOAD_URL="https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=${FILENAME}"
+  echo "Upload URL is ${UPLOAD_URL}"
+
+  tmp=$(mktemp)
+  response=$(curl \
+    -sSL \
+    -XPOST \
+    -H "${AUTH_HEADER}" \
+    --upload-file "${file}" \
+    --header "Content-Type:application/octet-stream" \
+    --write-out "%{http_code}" \
+    --output "$tmp" \
+    "${UPLOAD_URL}")
+
+  if [ "$?" -ne 0 ]; then
+    echo "curl command did not return zero."
+    cat "$tmp"
+    rm "$tmp"
+    exit 1
+  fi
+
+  if [ "$response" -ge 400 ]; then
+    echo "upload was not successful. HTTP status is $response"
+    cat "$tmp"
+    rm "$tmp"
+    exit 1
+  fi
+
+  jq . "$tmp"
+  rm "$tmp"
+done
