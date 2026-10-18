@@ -47,8 +47,11 @@ func TestLokiStreamSeparatesFastFingerprintCollision(t *testing.T) {
 	if busyStream == terminatedStream {
 		t.Fatal("colliding label sets shared one stream")
 	}
-	if busyStream.Labels == terminatedStream.Labels {
-		t.Fatal("stream labels were taken from the other set")
+	if busyStream.Labels != busy.String() {
+		t.Fatalf("busy stream labels = %s, want %s", busyStream.Labels, busy.String())
+	}
+	if terminatedStream.Labels != terminated.String() {
+		t.Fatalf("terminated stream labels = %s, want %s", terminatedStream.Labels, terminated.String())
 	}
 	if lokiStream(batch, busy) != busyStream || lokiStream(batch, terminated) != terminatedStream {
 		t.Fatal("a later packet did not rejoin its own stream")
